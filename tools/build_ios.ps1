@@ -24,7 +24,8 @@
 [CmdletBinding()]
 param(
   [int]$TimeoutMinutes = 45,
-  [string]$Repo = 'Mersaduv/Internet-Management',
+  # اگر خالی باشد از git remote origin گرفته می‌شود
+  [string]$Repo = '',
   [string]$Sha = '',
   [switch]$Latest
 )
@@ -275,10 +276,28 @@ function Get-IosFromCiOrRelease([string]$Version, [string]$TargetSha) {
   Write-Host ('CI: https://github.com/{0}/actions/runs/{1}' -f $Repo, $run.Id) -ForegroundColor DarkGray
 }
 
+function Get-GitHubRepoSlug {
+  $url = (& git remote get-url origin 2>$null)
+  if (-not $url) { return $null }
+  $url = $url.Trim()
+  if ($url -match 'github\.com[:/](?<owner>[^/]+)/(?<repo>[^/.]+)') {
+    return ('{0}/{1}' -f $Matches.owner, $Matches.repo)
+  }
+  return $null
+}
+
 # ---- main ----
 $version = Get-AppVersion
 Write-Step ("iOS IPA - v{0}" -f $version)
 Write-Host ("Root: {0}" -f $Root)
+
+if ([string]::IsNullOrWhiteSpace($Repo)) {
+  $Repo = Get-GitHubRepoSlug
+  if (-not $Repo) {
+    throw 'Could not detect GitHub repo from origin. Pass -Repo owner/name'
+  }
+}
+Write-Host ("Repo: {0}" -f $Repo) -ForegroundColor DarkGray
 
 if (Test-IsMacOS) {
   Build-IosLocal -Version $version

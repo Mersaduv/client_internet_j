@@ -6,8 +6,8 @@
 
 ## قبل از آپلود
 
-1. فایل‌های `docs/store/privacy_policy.html` و `terms_of_use.html` را روی یک URL عمومی HTTPS میزبانی کنید.
-2. همان URL را در **App Store Connect** و **Play Console** و در صورت تمایل در `LegalDocuments.privacyPolicyPublicUrl` قرار دهید.
+1. لینک عمومی Privacy (فعال روی Vercel / پروژه `jahan-bit`): `https://jahan-bit.vercel.app/privacy-policy.html`
+2. لینک Terms: `https://jahan-bit.vercel.app/terms-of-use.html` — همین URLها را در **App Store Connect** و **Play Console** و داخل اپ (`LegalDocuments.privacyPolicyPublicUrl`) قرار دهید.
 3. در اپ، مسیرهای Settings → Privacy Policy / Terms همیشه در دسترس‌اند (الزام داخل‌برنامه).
 
 ## Google Play — Data safety (پیشنهاد پر کردن)

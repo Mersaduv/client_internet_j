@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/support_contacts.dart';
 import '../utils/app_localizations.dart';
 import '../utils/app_theme.dart';
 import '../utils/main_navigation.dart';
@@ -10,8 +11,6 @@ import '../widgets/desktop_content.dart';
 /// صفحه راهنمای مشترکین — آموزش مرحله‌به‌مرحله عملیات‌ها
 class SubscriberHelpScreen extends StatelessWidget {
   const SubscriberHelpScreen({super.key});
-
-  static const List<String> _supportPhones = ['0795336608', '0700336608'];
 
   void _goToTab(BuildContext context, int tabIndex) {
     Navigator.of(context).pop();
@@ -318,7 +317,8 @@ class SubscriberHelpScreen extends StatelessWidget {
                 title: l10n?.helpSupportTitle ?? 'تماس با پشتیبانی',
                 subtitle: l10n?.helpSupportSubtitle ??
                     'برای کپی شماره، روی آن ضربه بزنید',
-                phones: _supportPhones,
+                english: l10n?.locale.languageCode == 'en',
+                provinces: SupportContacts.provinces,
                 onCopy: (phone) => _copyPhone(context, phone),
               ),
             ],
@@ -723,14 +723,16 @@ class _SupportCard extends StatelessWidget {
     required this.primary,
     required this.title,
     required this.subtitle,
-    required this.phones,
+    required this.english,
+    required this.provinces,
     required this.onCopy,
   });
 
   final Color primary;
   final String title;
   final String subtitle;
-  final List<String> phones;
+  final bool english;
+  final List<ProvinceSupportContacts> provinces;
   final void Function(String phone) onCopy;
 
   @override
@@ -783,48 +785,86 @@ class _SupportCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            ...phones.map(
-              (phone) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Material(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.65,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => onCopy(phone),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
+            ...provinces.map((province) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      province.name(english: english),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: primary,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.phone_in_talk_rounded, color: primary),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              phone,
-                              textDirection: TextDirection.ltr,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.4,
+                    ),
+                    const SizedBox(height: 8),
+                    ...province.phones.map((line) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          color: colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.65,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => onCopy(line.number),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.phone_in_talk_rounded,
+                                    color: primary,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          line.number,
+                                          textDirection: TextDirection.ltr,
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.4,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          line.role(english: english),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color:
+                                                colorScheme.onSurfaceVariant,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.copy_rounded,
+                                    color: primary.withValues(alpha: 0.8),
+                                    size: 20,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          Icon(
-                            Icons.copy_rounded,
-                            color: primary.withValues(alpha: 0.8),
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
+                      );
+                    }),
+                  ],
                 ),
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),

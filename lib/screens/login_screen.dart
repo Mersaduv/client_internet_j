@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/support_contacts.dart';
 import '../models/mikrotik_connection.dart';
 import '../services/mikrotik_service_manager.dart';
 import '../services/settings_service.dart';
@@ -612,52 +613,74 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     const SizedBox(height: 20),
-                    // شماره خدمات پشتیبانی
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            'شماره خدمات',
-                            textAlign: TextAlign.center,
-                            textDirection: TextDirection.rtl,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.65)
-                                  : Colors.grey.shade600,
-                            ),
+                    // شماره‌های پشتیبانی بر اساس ولایت
+                    Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context);
+                        final isEnglish = l10n?.locale.languageCode == 'en';
+                        final muted = isDark
+                            ? colorScheme.onSurface.withOpacity(0.65)
+                            : Colors.grey.shade600;
+                        final strong = isDark
+                            ? colorScheme.onSurface.withOpacity(0.9)
+                            : Colors.grey.shade800;
+
+                        return Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                isEnglish
+                                    ? 'Support numbers by province'
+                                    : 'شماره پشتیبانی بر اساس ولایت',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: muted,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              ...SupportContacts.provinces.map((province) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        province.name(english: isEnglish),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: strong,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      ...province.phones.map((line) {
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 2),
+                                          child: Text(
+                                            '${line.number}  ${line.role(english: isEnglish)}',
+                                            textAlign: TextAlign.center,
+                                            textDirection: TextDirection.ltr,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: strong,
+                                              letterSpacing: 0.3,
+                                              height: 1.45,
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '0795336608',
-                            textAlign: TextAlign.center,
-                            textDirection: TextDirection.ltr,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.85)
-                                  : Colors.grey.shade800,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '0700336608',
-                            textAlign: TextAlign.center,
-                            textDirection: TextDirection.ltr,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.85)
-                                  : Colors.grey.shade800,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
 
                     // نمایش خطا

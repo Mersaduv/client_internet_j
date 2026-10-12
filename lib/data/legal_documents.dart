@@ -5,17 +5,19 @@ class LegalDocuments {
   /// نام Seller در App Store Connect (باید با حساب انتشار یکی باشد)
   static const String appStoreSellerName = 'Muhammad Aref Abdul Hadi';
 
-  /// ایمیل پشتیبانی رسمی ناشر — قبل از سابمیت با ایمیل حساب/برند جهان بیت جایگزین شود
-  static const String supportEmail = 'mersadkarimi001@gmail.com';
+  static const String supportPhonePrimary = '0795336608';
+  static const String supportPhoneSecondary = '0700336608';
 
   static const String developerName = appStoreSellerName;
   static const String appNameFa = 'جهان بیت';
   static const String appNameEn = 'Jahan Bit';
   static const String copyrightNotice = '© 2026 Jahan Bit';
 
-  /// در صورت میزبانی عمومی، این URL را در App Store Connect و Play Console بگذارید.
-  static const String privacyPolicyPublicUrl = '';
-  static const String termsPublicUrl = '';
+  /// لینک عمومی برای App Store Connect و Google Play
+  static const String privacyPolicyPublicUrl =
+      'https://jahan-bit.vercel.app/privacy-policy.html';
+  static const String termsPublicUrl =
+      'https://jahan-bit.vercel.app/terms-of-use.html';
 
   static String privacyPolicy({required bool english}) =>
       english ? _privacyEn : _privacyFa;
@@ -28,6 +30,7 @@ class LegalDocuments {
 
 آخرین به‌روزرسانی: اکتبر ۲۰۲۶
 ناشر App Store: $appStoreSellerName
+نسخهٔ وب: $privacyPolicyPublicUrl
 
 ۱. معرفی
 جهان بیت یک برنامهٔ مدیریت شبکهٔ محلی برای مشترکین اینترنت است که به روتر MikroTik (RouterOS) روی شبکهٔ محلی شما متصل می‌شود و امکان مشاهدهٔ دستگاه‌ها، مدیریت دسترسی، تنظیم وای‌فای و مشاهدهٔ پنل سرویس ارائه‌دهنده را فراهم می‌کند.
@@ -57,7 +60,7 @@ class LegalDocuments {
 ابزار شبکهٔ عمومی است و محتوای کودک‌محور ندارد.
 
 ۹. تماس
-$emailContactFa
+$contactFa
 ''';
 
   static const String _privacyEn = '''
@@ -65,6 +68,7 @@ Privacy Policy — Jahan Bit
 
 Last updated: October 2026
 App Store seller: $appStoreSellerName
+Web version: $privacyPolicyPublicUrl
 
 1. Overview
 Jahan Bit connects to your MikroTik RouterOS device on your LAN to manage devices, Wi‑Fi, and the ISP subscriber panel.
@@ -85,7 +89,7 @@ No ad SDKs; no sale of router credentials or LAN device lists.
 Use Clear local data in Settings to erase stored credentials and preferences on this device.
 
 7. Contact
-$emailContactEn
+$contactEn
 ''';
 
   static const String _termsFa = '''
@@ -99,7 +103,8 @@ $emailContactEn
 ۳. کاربر مسئول امنیت رمز روتر و استفادهٔ قانونی است.
 ۴. استفاده برای دسترسی غیرمجاز یا شنود غیرقانونی ممنوع است.
 ۵. پرداخت داخل پنل ISP تابع همان ارائه‌دهنده است؛ IAP کالای دیجیتال جدا نداریم.
-۶. تماس: $supportEmail
+۶. سیاست حریم خصوصی: $privacyPolicyPublicUrl
+۷. تماس: $supportPhonePrimary · $supportPhoneSecondary
 $copyrightNotice
 ''';
 
@@ -114,13 +119,20 @@ App Store seller: $appStoreSellerName
 3. You are responsible for lawful use and router security.
 4. No unauthorized network access or interception.
 5. ISP panel payments follow the provider’s terms.
-6. Contact: $supportEmail
+6. Privacy policy: $privacyPolicyPublicUrl
+7. Contact: $supportPhonePrimary · $supportPhoneSecondary
 $copyrightNotice
 ''';
 
-  static const String emailContactFa =
-      'سؤالات حریم خصوصی: $supportEmail\nناشر: $appStoreSellerName\n$copyrightNotice';
+  static const String contactFa =
+      'پشتیبانی تلفنی: $supportPhonePrimary · $supportPhoneSecondary\n'
+      'ناشر: $appStoreSellerName\n'
+      'نسخهٔ وب سیاست حریم خصوصی: $privacyPolicyPublicUrl\n'
+      '$copyrightNotice';
 
-  static const String emailContactEn =
-      'Privacy questions: $supportEmail\nPublisher: $appStoreSellerName\n$copyrightNotice';
+  static const String contactEn =
+      'Support phones: $supportPhonePrimary · $supportPhoneSecondary\n'
+      'Publisher: $appStoreSellerName\n'
+      'Web privacy policy: $privacyPolicyPublicUrl\n'
+      '$copyrightNotice';
 }
