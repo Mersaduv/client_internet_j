@@ -410,6 +410,14 @@ class AppLocalizations {
       locale.languageCode == 'en' ? 'Upload Speed' : 'سرعت آپلود';
   String get liveTraffic =>
       locale.languageCode == 'en' ? 'Live Traffic' : 'ترافیک لحظه‌ای';
+  String get totalTraffic =>
+      locale.languageCode == 'en' ? 'Total usage' : 'مصرف کل';
+  String get networkTotalTraffic => locale.languageCode == 'en'
+      ? 'Connected devices usage'
+      : 'مصرف دستگاه‌های متصل';
+  String get totalTrafficHint => locale.languageCode == 'en'
+      ? 'Cumulative counters from the router (queue / session)'
+      : 'شمارندهٔ تجمعی روتر (صف / نشست)';
   String get value => locale.languageCode == 'en' ? 'Value' : 'مقدار';
   String get unit => locale.languageCode == 'en' ? 'Unit' : 'واحد';
   String get pleaseEnterNumber => locale.languageCode == 'en'

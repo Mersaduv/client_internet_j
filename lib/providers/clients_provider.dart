@@ -1796,6 +1796,28 @@ class ClientsProvider extends ChangeNotifier {
   ClientTrafficRate? trafficForClient(ClientInfo client) =>
       trafficForIp(client.ipAddress);
 
+  /// Network-wide cumulative volume (prefer full router counters from engine).
+  AggregateTrafficVolume get aggregateTrafficVolume {
+    final fromEngine = _serviceManager.networkAggregateVolume;
+    if (fromEngine.hasData) {
+      return fromEngine;
+    }
+    return _trafficStore.aggregateVolumeFor(
+      clientsForDisplay.map((c) => c.ipAddress),
+    );
+  }
+
+  /// Network-wide live per-second rate (prefer engine-wide queue rates).
+  AggregateLiveTrafficRate get aggregateLiveTrafficRate {
+    final fromEngine = _serviceManager.networkAggregateLiveRate;
+    if (fromEngine.hasData) {
+      return fromEngine;
+    }
+    return _trafficStore.aggregateLiveRateFor(
+      clientsForDisplay.map((c) => c.ipAddress),
+    );
+  }
+
   bool _trafficRateChanged(int? previous, int? next) {
     if (previous == null && next == null) {
       return false;

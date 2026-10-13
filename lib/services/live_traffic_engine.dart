@@ -33,12 +33,51 @@ class LiveTrafficEngine {
   final Map<String, ({int bytesUp, int bytesDown})> _prevKidBytes = {};
   final Map<String, ({int bytesIn, int bytesOut})> _prevHotspotBytes = {};
   final Map<String, ({int rxBytes, int txBytes})> _prevConnectionBytes = {};
+  /// Absolute volumes for all discovered hosts (not limited to viewport).
+  final Map<String, ({int rxBytes, int txBytes, LiveTrafficSource source})>
+      _networkVolumes = {};
+  /// Live bps for discovered host queues (prefer instant queue `rate`).
+  final Map<String, ({int rxBps, int txBps})> _networkLiveRates = {};
   final TrafficMonitorQueueSync _queueSync = TrafficMonitorQueueSync();
 
   LiveTrafficCapabilities get capabilities => _caps;
   bool get isReady => _client?.isConnected ?? false;
   bool get usesInstantQueueRates =>
       _caps.queueStats && _caps.primary == LiveTrafficSource.queueStats;
+
+  /// Network-wide cumulative usage from the latest full counter prints.
+  AggregateTrafficVolume get networkAggregateVolume {
+    var rx = 0;
+    var tx = 0;
+    var count = 0;
+    for (final entry in _networkVolumes.values) {
+      rx += entry.rxBytes;
+      tx += entry.txBytes;
+      count++;
+    }
+    return AggregateTrafficVolume(
+      rxBytes: rx,
+      txBytes: tx,
+      deviceCount: count,
+    );
+  }
+
+  /// Network-wide live download/upload rate (bits/s).
+  AggregateLiveTrafficRate get networkAggregateLiveRate {
+    var rx = 0;
+    var tx = 0;
+    var count = 0;
+    for (final entry in _networkLiveRates.values) {
+      rx += entry.rxBps;
+      tx += entry.txBps;
+      count++;
+    }
+    return AggregateLiveTrafficRate(
+      rxBps: rx,
+      txBps: tx,
+      deviceCount: count,
+    );
+  }
 
   Future<void> connect(MikroTikConnection connection) async {
     if (_connection == connection && (_client?.isConnected ?? false)) {
@@ -188,7 +227,76 @@ class LiveTrafficEngine {
       return {};
     }
 
+    // Attach absolute counters already cached for delta math — no extra API.
+    _attachKnownVolumes(rates, trackedIps, sampledAt);
+    _mergeTrackedRatesIntoNetwork(rates);
     return rates;
+  }
+
+  void _mergeTrackedRatesIntoNetwork(Map<String, ClientTrafficRate> rates) {
+    for (final entry in rates.entries) {
+      _networkLiveRates[entry.key] = (
+        rxBps: entry.value.rxBps,
+        txBps: entry.value.txBps,
+      );
+    }
+  }
+
+  /// Prefer durable counters: dedicated queue → hotspot session → kid-control.
+  /// Firewall connection totals are skipped (reset when connections close).
+  void _attachKnownVolumes(
+    Map<String, ClientTrafficRate> rates,
+    Set<String> trackedIps,
+    DateTime sampledAt,
+  ) {
+    for (final ip in trackedIps) {
+      int? rx;
+      int? tx;
+      LiveTrafficSource? source;
+
+      final queue = _prevQueueBytes[ip];
+      if (queue != null) {
+        rx = queue.rxBytes;
+        tx = queue.txBytes;
+        source = LiveTrafficSource.queueStats;
+      } else {
+        final hotspot = _prevHotspotBytes[ip];
+        if (hotspot != null) {
+          rx = hotspot.bytesIn;
+          tx = hotspot.bytesOut;
+          source = LiveTrafficSource.hotspotActive;
+        } else {
+          final kid = _prevKidBytes[ip];
+          if (kid != null) {
+            rx = kid.bytesDown;
+            tx = kid.bytesUp;
+            source = LiveTrafficSource.kidControl;
+          }
+        }
+      }
+
+      if (source == null || rx == null || tx == null) {
+        continue;
+      }
+
+      final existing = rates[ip];
+      if (existing != null) {
+        rates[ip] = existing.withVolume(
+          rxBytes: rx,
+          txBytes: tx,
+          source: source,
+        );
+      } else {
+        rates[ip] = ClientTrafficRate(
+          rxBps: 0,
+          txBps: 0,
+          sampledAt: sampledAt,
+          rxBytesTotal: rx,
+          txBytesTotal: tx,
+          volumeSource: source,
+        );
+      }
+    }
   }
 
   Future<void> _mergeSecondarySources(
@@ -280,6 +388,7 @@ class LiveTrafficEngine {
   ) async {
     if (_caps.queueStats) {
       final rows = await _fetchQueueStats(client, pollTimeout);
+      _ingestQueueNetworkVolumes(rows);
       for (final row in rows) {
         final ip = TrafficRateParser.ipFromQueueTarget(row['target']);
         if (ip == null) {
@@ -336,6 +445,7 @@ class LiveTrafficEngine {
     bool onlyMissing = false,
   }) async {
     final rows = await _fetchQueueStats(client, pollTimeout);
+    _ingestQueueNetworkVolumes(rows);
     for (final row in rows) {
       if (!TrafficRateParser.isDedicatedHostQueueTarget(row['target'])) {
         continue;
@@ -400,6 +510,7 @@ class LiveTrafficEngine {
     bool onlyMissing = false,
   }) async {
     final rows = await _fetchKidControlDevices(client);
+    _ingestKidNetworkVolumes(rows, macToIp);
     for (final row in rows) {
       final mac = _normalizeMac(row['mac-address']);
       if (mac == null) {
@@ -495,6 +606,7 @@ class LiveTrafficEngine {
     bool onlyMissing = false,
   }) async {
     final rows = await _fetchHotspotActive(client);
+    _ingestHotspotNetworkVolumes(rows);
     for (final row in rows) {
       final ip = row['address']?.trim();
       if (ip == null || !trackedIps.contains(ip)) {
@@ -814,6 +926,104 @@ class LiveTrafficEngine {
     );
   }
 
+  void _rememberNetworkVolume({
+    required String ip,
+    required int rxBytes,
+    required int txBytes,
+    required LiveTrafficSource source,
+  }) {
+    final existing = _networkVolumes[ip];
+    if (existing != null &&
+        !_volumeSourcePreferred(source, existing.source)) {
+      return;
+    }
+    _networkVolumes[ip] = (
+      rxBytes: rxBytes,
+      txBytes: txBytes,
+      source: source,
+    );
+  }
+
+  bool _volumeSourcePreferred(
+    LiveTrafficSource candidate,
+    LiveTrafficSource current,
+  ) {
+    const rank = {
+      LiveTrafficSource.queueStats: 3,
+      LiveTrafficSource.hotspotActive: 2,
+      LiveTrafficSource.kidControl: 1,
+    };
+    return (rank[candidate] ?? 0) >= (rank[current] ?? 0);
+  }
+
+  void _ingestQueueNetworkVolumes(List<Map<String, String>> rows) {
+    for (final row in rows) {
+      if (!TrafficRateParser.isDedicatedHostQueueTarget(row['target'])) {
+        continue;
+      }
+      final ip = TrafficRateParser.ipFromQueueTarget(row['target']);
+      if (ip == null) {
+        continue;
+      }
+      final bytesField = row['bytes'];
+      if (bytesField != null && bytesField.contains('/')) {
+        final parts = bytesField.split('/');
+        if (parts.length >= 2) {
+          _rememberNetworkVolume(
+            ip: ip,
+            rxBytes: int.tryParse(parts[1].trim()) ?? 0,
+            txBytes: int.tryParse(parts[0].trim()) ?? 0,
+            source: LiveTrafficSource.queueStats,
+          );
+        }
+      }
+      final parsed = TrafficRateParser.fromQueueStatsRow(row);
+      if (parsed != null) {
+        _networkLiveRates[ip] = (
+          rxBps: parsed.rxBps,
+          txBps: parsed.txBps,
+        );
+      }
+    }
+  }
+
+  void _ingestHotspotNetworkVolumes(List<Map<String, String>> rows) {
+    for (final row in rows) {
+      final ip = row['address']?.trim();
+      if (ip == null || ip.isEmpty) {
+        continue;
+      }
+      _rememberNetworkVolume(
+        ip: ip,
+        rxBytes: int.tryParse(row['bytes-in'] ?? '') ?? 0,
+        txBytes: int.tryParse(row['bytes-out'] ?? '') ?? 0,
+        source: LiveTrafficSource.hotspotActive,
+      );
+    }
+  }
+
+  void _ingestKidNetworkVolumes(
+    List<Map<String, String>> rows,
+    Map<String, String> macToIp,
+  ) {
+    for (final row in rows) {
+      final mac = _normalizeMac(row['mac-address']);
+      if (mac == null) {
+        continue;
+      }
+      final ip = macToIp[mac];
+      if (ip == null) {
+        continue;
+      }
+      _rememberNetworkVolume(
+        ip: ip,
+        rxBytes: int.tryParse(row['bytes-down'] ?? '') ?? 0,
+        txBytes: int.tryParse(row['bytes-up'] ?? '') ?? 0,
+        source: LiveTrafficSource.kidControl,
+      );
+    }
+  }
+
   void _touchBaselines(Set<String> ips, DateTime at) {
     for (final ip in ips) {
       _byteBaselineAt[ip] = at;
@@ -894,6 +1104,8 @@ class LiveTrafficEngine {
     _prevKidBytes.clear();
     _prevHotspotBytes.clear();
     _prevConnectionBytes.clear();
+    _networkVolumes.clear();
+    _networkLiveRates.clear();
   }
 
   String? _normalizeMac(String? mac) => mac?.trim().toUpperCase();

@@ -482,6 +482,12 @@ class MikroTikServiceManager {
 
   bool get trafficUsesInstantQueueRates => _trafficMonitor.usesInstantQueueRates;
 
+  AggregateTrafficVolume get networkAggregateVolume =>
+      _trafficMonitor.networkAggregateVolume;
+
+  AggregateLiveTrafficRate get networkAggregateLiveRate =>
+      _trafficMonitor.networkAggregateLiveRate;
+
   Future<void> disconnectTrafficMonitor() async {
     await _trafficMonitor.disconnect();
   }

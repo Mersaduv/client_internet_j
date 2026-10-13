@@ -2153,7 +2153,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen>
                                 },
                               ),
                             if (widget.device.ipAddress != null &&
-                                !widget.isBanned)
+                                !widget.isBanned) ...[
                               Builder(
                                 builder: (context) {
                                   final l10n = AppLocalizations.of(context);
@@ -2164,6 +2164,18 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen>
                                   );
                                 },
                               ),
+                              Builder(
+                                builder: (context) {
+                                  final l10n = AppLocalizations.of(context);
+                                  return ClientTotalTrafficDetailRow(
+                                    client: widget.device,
+                                    ipAddress: widget.device.ipAddress!,
+                                    label: l10n?.totalTraffic ?? 'Total usage',
+                                    hint: l10n?.totalTrafficHint,
+                                  );
+                                },
+                              ),
+                            ],
                             if (widget.device.macAddress != null)
                               Builder(
                                 builder: (context) {

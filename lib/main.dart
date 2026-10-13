@@ -1512,40 +1512,47 @@ class _HomePageState extends State<HomePage> with RouteAware {
       );
     }
 
-    return _buildPullToRefresh(
-      onRefresh: provider.refresh,
-      child: TrafficListScrollScope(
-        controller: _connectedScrollController,
-        child: ListView.builder(
-          key: const PageStorageKey<String>('home-connected-list'),
-          controller: _connectedScrollController,
-          cacheExtent: 500,
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          itemCount: _connectedListItemCount(provider),
-          itemBuilder: (context, index) {
-            final clients = provider.clientsForDisplay;
-            if (index >= clients.length) {
-              return _buildConnectedListFooter(provider);
-            }
+    return Column(
+      children: [
+        const NetworkTotalTrafficBanner(),
+        Expanded(
+          child: _buildPullToRefresh(
+            onRefresh: provider.refresh,
+            child: TrafficListScrollScope(
+              controller: _connectedScrollController,
+              child: ListView.builder(
+                key: const PageStorageKey<String>('home-connected-list'),
+                controller: _connectedScrollController,
+                cacheExtent: 500,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                itemCount: _connectedListItemCount(provider),
+                itemBuilder: (context, index) {
+                  final clients = provider.clientsForDisplay;
+                  if (index >= clients.length) {
+                    return _buildConnectedListFooter(provider);
+                  }
 
-            provider.noteListItemVisible(index);
-            provider.maybePrefetchConnectedAtIndex(index);
-            final client = clients[index];
-            final stableKey =
-                client.macAddress ?? client.ipAddress ?? index.toString();
-            return RepaintBoundary(
-              key: ValueKey('client-$stableKey'),
-              child: TrafficListItemVisibility(
-                key: ValueKey('traffic-vis-$stableKey'),
-                index: index,
-                child: _buildClientCard(context, client, provider),
+                  provider.noteListItemVisible(index);
+                  provider.maybePrefetchConnectedAtIndex(index);
+                  final client = clients[index];
+                  final stableKey =
+                      client.macAddress ?? client.ipAddress ?? index.toString();
+                  return RepaintBoundary(
+                    key: ValueKey('client-$stableKey'),
+                    child: TrafficListItemVisibility(
+                      key: ValueKey('traffic-vis-$stableKey'),
+                      index: index,
+                      child: _buildClientCard(context, client, provider),
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -2051,7 +2058,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isStatic = _isStaticDevice(client);
     final isPendingApproval = provider.isDevicePendingApproval(
       client,
       isCurrentDevice: isCurrentDevice,
@@ -2210,17 +2216,17 @@ class _HomePageState extends State<HomePage> with RouteAware {
     final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: isPendingApproval ? null : openDeviceDetail,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           splashColor: colorScheme.primary.withValues(alpha: 0.1),
           highlightColor: colorScheme.primary.withValues(alpha: 0.05),
           child: Ink(
             decoration: AppTheme.cosmicCardDecoration(
-              radius: 18,
+              radius: 14,
               brightness: theme.brightness,
             ),
             child: Column(
@@ -2228,228 +2234,138 @@ class _HomePageState extends State<HomePage> with RouteAware {
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
                       Stack(
                         children: [
                           if (showPhase2Skeleton)
                             const _SkeletonBox(
-                              width: 48,
-                              height: 48,
-                              borderRadius: 24,
+                              width: 36,
+                              height: 36,
+                              borderRadius: 18,
                             )
                           else
                             CircleAvatar(
+                              radius: 18,
                               backgroundColor: isCurrentDevice
                                   ? (isDark
-                                        ? AppTheme.darkGlow.withValues(alpha: 0.25)
-                                        : colorScheme.primary.withValues(alpha: 0.2))
+                                        ? AppTheme.darkGlow
+                                            .withValues(alpha: 0.25)
+                                        : colorScheme.primary
+                                            .withValues(alpha: 0.2))
                                   : typeColor.withValues(alpha: 0.2),
                               child: Icon(
                                 typeIcon,
                                 color: isCurrentDevice
-                                    ? (isDark ? AppTheme.primaryDark : colorScheme.primary)
+                                    ? (isDark
+                                        ? AppTheme.primaryDark
+                                        : colorScheme.primary)
                                     : typeColor,
-                                size: 24,
+                                size: 18,
                               ),
                             ),
                           if (isCurrentDevice)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 12,
-                            ),
-                          ),
-                        )
-                      else if (client.isOnline == true)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: _buildOnlineStatusDot(client),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getDeviceDisplayName(client),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isCurrentDevice
-                                ? colorScheme.primary
-                                : colorScheme.onSurface,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (isStatic) ...[
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 3,
-                                ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(1.5),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primary.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: colorScheme.primary,
-                                    width: 1,
-                                  ),
+                                  color: colorScheme.primary,
+                                  shape: BoxShape.circle,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.lock,
-                                      size: 12,
-                                      color: colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      'Static',
-                                      style: TextStyle(
-                                        color: colorScheme.primary,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                                child: const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 9,
+                                ),
+                              ),
+                            )
+                          else if (client.isOnline == true)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: _buildOnlineStatusDot(client),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getDeviceDisplayName(client),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                height: 1.2,
+                                color: isCurrentDevice
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (isPendingApproval) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                AppLocalizations.of(context)?.pendingApproval ??
+                                    'Pending Approval',
+                                style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
-                          ),
-                        ],
-                        if (isPendingApproval) ...[
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 3,
+                            if (client.ipAddress != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                client.ipAddress!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  height: 1.2,
+                                  color: theme.brightness == Brightness.dark
+                                      ? colorScheme.onSurface
+                                          .withValues(alpha: 0.6)
+                                      : Colors.grey.shade600,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.orange,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.pending_actions,
-                                      size: 12,
-                                      color: Colors.orange,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      AppLocalizations.of(
-                                            context,
-                                          )?.pendingApproval ??
-                                          'Pending Approval',
-                                      style: const TextStyle(
-                                        color: Colors.orange,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
-                          ),
-                        ],
-                        const SizedBox(height: 4),
-                        if (client.ipAddress != null)
-                          Text(
-                            client.macAddress != null
-                                ? '${client.ipAddress} · ${client.macAddress}'
-                                : 'IP: ${client.ipAddress}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.brightness == Brightness.dark
-                                  ? colorScheme.onSurface.withOpacity(0.65)
-                                  : Colors.grey.shade600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        if (showPhase2Skeleton) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            children: const [
-                              _SkeletonBox(width: 14, height: 10),
-                              SizedBox(width: 3),
-                              _SkeletonBox(width: 14, height: 10),
-                              SizedBox(width: 3),
-                              _SkeletonBox(width: 14, height: 10),
-                              SizedBox(width: 8),
-                              _SkeletonBox(width: 48, height: 10),
-                            ],
-                          ),
-                        ] else if (client.signalStrength != null &&
-                            client.signalStrength!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '${client.signalStrength} dBm'
-                            '${client.ssid != null && client.ssid!.isNotEmpty ? ' · ${client.ssid}' : ''}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: theme.brightness == Brightness.dark
-                                  ? colorScheme.onSurface.withOpacity(0.55)
-                                  : Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                        if (isPendingApproval) pendingApprovalPanel(),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ClientLiveTrafficBadge(client: client, fixedSlot: true),
-                      if (!isPendingApproval) ...[
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.chevron_right,
-                          size: 20,
-                          color: theme.brightness == Brightness.dark
-                              ? colorScheme.onSurface.withOpacity(0.4)
-                              : Colors.grey,
+                            if (isPendingApproval) pendingApprovalPanel(),
+                          ],
                         ),
-                      ],
+                      ),
+                      const SizedBox(width: 6),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          ClientLiveTrafficBadge(
+                            client: client,
+                            fixedSlot: true,
+                            showVolume: false,
+                          ),
+                          if (!isPendingApproval) ...[
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 18,
+                              color: theme.brightness == Brightness.dark
+                                  ? colorScheme.onSurface.withValues(alpha: 0.35)
+                                  : Colors.grey,
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
                 if (showOperationProgress)
                   RepaintBoundary(
                     child: LinearProgressIndicator(
@@ -2465,27 +2381,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
         ),
       ),
     );
-  }
-
-  bool _isStaticDevice(ClientInfo client) {
-    // 1. بررسی مستقیم isStaticLease
-    if (client.isStaticLease == true) {
-      return true;
-    }
-
-    // 2. اگر isStaticLease null است، از rawData  بررسی کن
-    if (client.isStaticLease == null && client.rawData.isNotEmpty) {
-      if (client.rawData.containsKey('dynamic')) {
-        final dynamicValue = client.rawData['dynamic']
-            ?.toString()
-            .toLowerCase();
-        if (dynamicValue == 'false' || dynamicValue == 'no') {
-          return true; // Static
-        }
-      }
-    }
-
-    return false;
   }
 
   String _getDeviceDisplayName(ClientInfo client) {

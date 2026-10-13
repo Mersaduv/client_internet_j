@@ -142,13 +142,14 @@ class ClientTrafficStore {
       }
 
       final isZero = sample.rxBps == 0 && sample.txBps == 0;
-      if (isZero) {
+      // Volume-only samples are still useful; skip zero-rate warmup for them.
+      if (isZero && !sample.hasVolume) {
         final streak = (_zeroSampleStreak[ip] ?? 0) + 1;
         _zeroSampleStreak[ip] = streak;
         if (!_measuredIps.contains(ip) && streak < _zeroWarmupPolls) {
           continue;
         }
-      } else {
+      } else if (!isZero) {
         _zeroSampleStreak.remove(ip);
       }
 
@@ -178,13 +179,71 @@ class ClientTrafficStore {
       final previous = _displayRatesByIp[ip];
       if (previous != null &&
           previous.rxBps == sample.rxBps &&
-          previous.txBps == sample.txBps) {
+          previous.txBps == sample.txBps &&
+          previous.rxBytesTotal == sample.rxBytesTotal &&
+          previous.txBytesTotal == sample.txBytesTotal) {
         continue;
       }
       _displayRatesByIp[ip] = sample;
       changed = true;
     }
     return changed;
+  }
+
+  /// Sum of live rates for [ips] that currently have samples.
+  AggregateLiveTrafficRate aggregateLiveRateFor(Iterable<String?> ips) {
+    var rx = 0;
+    var tx = 0;
+    var count = 0;
+    final seen = <String>{};
+
+    for (final raw in ips) {
+      final ip = _normalizeIp(raw);
+      if (ip == null || !seen.add(ip)) {
+        continue;
+      }
+      final sample = _displayRatesByIp[ip] ?? _sampleRatesByIp[ip];
+      if (sample == null) {
+        continue;
+      }
+      rx += sample.rxBps;
+      tx += sample.txBps;
+      count++;
+    }
+
+    return AggregateLiveTrafficRate(
+      rxBps: rx,
+      txBps: tx,
+      deviceCount: count,
+    );
+  }
+
+  /// Sum of cumulative volume for [ips] that currently have counters.
+  AggregateTrafficVolume aggregateVolumeFor(Iterable<String?> ips) {
+    var rx = 0;
+    var tx = 0;
+    var count = 0;
+    final seen = <String>{};
+
+    for (final raw in ips) {
+      final ip = _normalizeIp(raw);
+      if (ip == null || !seen.add(ip)) {
+        continue;
+      }
+      final sample = _displayRatesByIp[ip] ?? _sampleRatesByIp[ip];
+      if (sample == null || !sample.hasVolume) {
+        continue;
+      }
+      rx += sample.rxBytesTotal ?? 0;
+      tx += sample.txBytesTotal ?? 0;
+      count++;
+    }
+
+    return AggregateTrafficVolume(
+      rxBytes: rx,
+      txBytes: tx,
+      deviceCount: count,
+    );
   }
 
   void reset() {

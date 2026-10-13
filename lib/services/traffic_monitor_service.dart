@@ -16,6 +16,11 @@ class TrafficMonitorService {
 
   LiveTrafficCapabilities get capabilities => _engine.capabilities;
   bool get usesInstantQueueRates => _engine.usesInstantQueueRates;
+  AggregateTrafficVolume get networkAggregateVolume =>
+      _engine.networkAggregateVolume;
+
+  AggregateLiveTrafficRate get networkAggregateLiveRate =>
+      _engine.networkAggregateLiveRate;
 
   Future<void> ensureConnected(MikroTikConnection connection) async {
     if (_connection == connection && _engine.isReady) {
