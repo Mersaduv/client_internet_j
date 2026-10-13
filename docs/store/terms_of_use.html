@@ -1,26 +1,158 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Jahan Bit — Terms of Use</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Use | Jahan Bit</title>
+  <meta name="description" content="Terms of Use for the Jahan Bit application." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://jahan-bit.vercel.app/terms-of-use.html" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1a1a1a; }
-    h1 { font-size: 1.6rem; }
-    h2 { font-size: 1.15rem; margin-top: 1.5rem; }
-    .meta { color: #555; font-size: 0.95rem; }
+    .legal-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+      direction: ltr;
+      text-align: left;
+    }
+    .legal-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .legal-nav a.home {
+      color: var(--navy-mid);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .legal-nav a.home:hover { color: var(--cyan); }
+    .legal-hero {
+      background: linear-gradient(145deg, var(--navy-deep), var(--navy-mid));
+      color: #fff;
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .legal-hero h1 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      margin: 10px 0 8px;
+      line-height: 1.35;
+    }
+    .legal-hero .meta {
+      opacity: 0.85;
+      line-height: 1.7;
+    }
+    .legal-panel {
+      background: var(--surface, #fff);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px 22px;
+      box-shadow: var(--shadow);
+    }
+    .legal-panel h2 {
+      font-size: 1.15rem;
+      color: var(--navy);
+      margin: 1.5rem 0 0.5rem;
+    }
+    .legal-panel h2:first-child { margin-top: 0; }
+    .legal-panel p,
+    .legal-panel li {
+      line-height: 1.85;
+      color: var(--text);
+    }
+    .legal-panel ul {
+      padding-left: 1.3rem;
+    }
+    .legal-footer {
+      margin-top: 28px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+    .legal-footer a {
+      color: var(--navy-mid);
+      font-weight: 600;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
-  <h1>شرایط استفاده — جهان بیت</h1>
-  <p class="meta">آخرین به‌روزرسانی: اکتبر ۲۰۲۶</p>
-  <h2>۱. ماهیت سرویس</h2>
-  <p>جهان بیت ابزار مدیریت روتر MikroTik و مشاهدهٔ پنل مشترک ارائه‌دهنده است و محصول رسمی MikroTik نیست.</p>
-  <h2>۲. مسئولیت کاربر</h2>
-  <p>کاربر مسئول امنیت رمز روتر و استفادهٔ قانونی از شبکه است.</p>
-  <h2>۳. پرداخت‌ها</h2>
-  <p>پرداخت/اشتراک داخل پنل ISP تابع شرایط همان ارائه‌دهنده است. جهان بیت کالای دیجیتال جدا از طریق IAP نمی‌فروشد.</p>
-  <h2>۴. تماس</h2>
-  <p>mersadkarimi001@gmail.com</p>
+  <div class="legal-wrap">
+    <div class="legal-nav">
+      <a class="home" href="index.html">← Back to Jahan Bit</a>
+      <a class="home" href="privacy-policy.html">Privacy Policy</a>
+    </div>
+
+    <header class="legal-hero">
+      <span class="chip" style="background:rgba(0,198,255,.15);color:#e8f7ff;border-color:rgba(0,198,255,.35)">Terms of Use</span>
+      <h1>Terms of Use — Jahan Bit</h1>
+      <p class="meta">
+        Last updated: October 4, 2026<br />
+        App Store seller: Muhammad Aref Abdul Hadi<br />
+        © 2026 Jahan Bit
+      </p>
+    </header>
+
+    <article class="legal-panel">
+      <h2>1. Acceptance</h2>
+      <p>
+        By installing or using Jahan Bit, you agree to these Terms of Use. If you do not agree, do not use the application.
+      </p>
+
+      <h2>2. Nature of the Service</h2>
+      <p>
+        Jahan Bit is a utility for managing a MikroTik router on your local network and, where applicable, viewing your ISP subscriber panel. It is not an official MikroTik product and does not claim to represent hardware brands.
+      </p>
+
+      <h2>3. User Responsibilities</h2>
+      <p>
+        You are responsible for securing your router credentials, your local network, and for using the app in accordance with applicable law and your ISP agreement. Unauthorized access, unlawful interception, or misuse of networks you do not control is prohibited.
+      </p>
+
+      <h2>4. ISP Web Panel and Payments</h2>
+      <p>
+        Any payments or subscription management performed inside an ISP web panel are governed by that provider’s terms. Jahan Bit does not sell separate digital goods through in-app purchase for those ISP services.
+      </p>
+
+      <h2>5. Disclaimer</h2>
+      <p>
+        The app is provided “as is.” Functionality depends on the availability of your router, network, and (where used) ISP systems. To the extent permitted by law, we disclaim warranties of uninterrupted or error-free operation.
+      </p>
+
+      <h2>6. Privacy</h2>
+      <p>
+        Details about data processing are described in the <a href="privacy-policy.html">Privacy Policy</a>.
+      </p>
+
+      <h2>7. Changes</h2>
+      <p>
+        We may update these Terms. The “Last updated” date above controls. Continued use after changes means you accept the updated Terms.
+      </p>
+
+      <h2>8. Contact</h2>
+      <p>
+        Support by province (Sales / Services):<br />
+        <strong>Herat</strong> — 0795223279 Sales · 0799120543 Services<br />
+        <strong>Nimroz</strong> — 0799205444 Sales · 0799161150 Services<br />
+        <strong>Farah</strong> — 0792979691 Sales · 0795336608 Services<br />
+        App Store seller: Muhammad Aref Abdul Hadi<br />
+        Brand: Jahan Bit
+      </p>
+    </article>
+
+    <p class="legal-footer">
+      <a href="privacy-policy.html">Privacy Policy</a>
+      ·
+      <a href="index.html">jahan-bit.vercel.app</a>
+    </p>
+  </div>
 </body>
 </html>

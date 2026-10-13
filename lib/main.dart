@@ -1,11 +1,7 @@
 import 'dart:async';
 
 /// Jahan Bit — جهان بیت
-///
-/// Developer: Mersad Karimi
-/// Email: mersadkarimi001@gmail.com
-///
-/// A Flutter application for managing internet connections and MikroTik routers.
+/// Flutter app for local MikroTik / ISP subscriber management.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -78,45 +74,24 @@ class _MyAppState extends State<MyApp> {
     _logNetworkInfoOnStartup();
   }
 
-  /// لاگ اطلاعات شبکه به محض باز شدن برنامه
+  /// لاگ اطلاعات شبکه فقط در بیلد دیباگ (بدون افشای شبکه در release فروشگاه)
   Future<void> _logNetworkInfoOnStartup() async {
+    if (!kDebugMode) return;
     try {
-      print('═══════════════════════════════════════════════════════');
-      print('🚀 [APP_STARTUP] برنامه در حال راه‌اندازی...');
-      print('═══════════════════════════════════════════════════════');
-
+      debugPrint('[APP_STARTUP] starting…');
       final networkInfo = NetworkInfoService();
-
-      // دریافت IPv4 Address دستگاه
       final deviceIp = await networkInfo.getDeviceIPv4Address();
-      if (deviceIp != null) {
-        print('✅ [APP_STARTUP] IPv4 Address دستگاه کاربر: $deviceIp');
-      } else {
-        print('⚠️ [APP_STARTUP] IPv4 Address دستگاه کاربر: یافت نشد');
-      }
-
+      debugPrint('[APP_STARTUP] deviceIp=$deviceIp');
       final gatewayDiscovery = await networkInfo.discoverDeviceDefaultGateway();
-      if (gatewayDiscovery.found) {
-        print(
-          '✅ [APP_STARTUP] Default Gateway اینترنت: ${gatewayDiscovery.ip}',
-        );
-        print(
-          '   └─ منبع: ${networkInfo.sourceLabel(gatewayDiscovery.source)}',
-        );
-      } else {
-        print('⚠️ [APP_STARTUP] Default Gateway اینترنت: یافت نشد (OS)');
-      }
-
-      // دریافت تنظیمات اتصال
+      debugPrint(
+        '[APP_STARTUP] gateway=${gatewayDiscovery.ip} source=${gatewayDiscovery.source}',
+      );
       final settings = await _settingsService.getAllSettings();
-      print('📋 [APP_STARTUP] تنظیمات اتصال:');
-      print('   └─ Router Host: ${settings['host']}');
-      print('   └─ Router Port: ${settings['port']}');
-      print('   └─ Use SSL: ${settings['useSsl']}');
-
-      print('═══════════════════════════════════════════════════════');
+      debugPrint(
+        '[APP_STARTUP] host=${settings['host']} port=${settings['port']} ssl=${settings['useSsl']}',
+      );
     } catch (e) {
-      print('❌ [APP_STARTUP] خطا در دریافت اطلاعات شبکه: $e');
+      debugPrint('[APP_STARTUP] network log failed: $e');
     }
   }
 
@@ -249,7 +224,8 @@ class _MyAppState extends State<MyApp> {
           '/': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),
           '/home': (context) => const MainScaffold(),
-          '/test': (context) => const ConnectionTestScreen(),
+          if (kDebugMode)
+            '/test': (context) => const ConnectionTestScreen(),
           '/device-detail': (context) {
             final args =
                 ModalRoute.of(context)!.settings.arguments
@@ -423,59 +399,22 @@ class _MainScaffoldState extends State<MainScaffold>
     }
   }
 
-  /// بارگذاری اطلاعات شبکه (IPv4 Address و Default Gateway)
-  /// این متد هنگام باز شدن برنامه اطلاعات شبکه را دریافت می‌کند
+  /// بارگذاری اطلاعات شبکه — لاگ فقط در دیباگ
   Future<void> _loadNetworkInfo() async {
     try {
-      print('═══════════════════════════════════════════════════════');
-      print('🌐 [NETWORK_INFO] در حال دریافت اطلاعات شبکه دستگاه...');
-      print('═══════════════════════════════════════════════════════');
-
       final networkInfo = NetworkInfoService();
-
-      // دریافت IPv4 Address دستگاه
-      final deviceIp = await networkInfo.getDeviceIPv4Address();
-      if (deviceIp != null) {
-        print('✅ [NETWORK_INFO] IPv4 Address دستگاه کاربر: $deviceIp');
-      } else {
-        print('⚠️ [NETWORK_INFO] IPv4 Address دستگاه کاربر: یافت نشد');
-      }
-
-      final gatewayDiscovery = await networkInfo.discoverDeviceDefaultGateway();
-      if (gatewayDiscovery.found) {
-        print(
-          '✅ [NETWORK_INFO] Default Gateway اینترنت: ${gatewayDiscovery.ip}',
+      await networkInfo.getDeviceIPv4Address();
+      await networkInfo.discoverDeviceDefaultGateway();
+      await networkInfo.getNetworkInfo();
+      if (kDebugMode) {
+        debugPrint(
+          '[NETWORK_INFO] connected=${_serviceManager.isConnected}',
         );
-        print(
-          '   └─ منبع: ${networkInfo.sourceLabel(gatewayDiscovery.source)}',
-        );
-      } else {
-        print('⚠️ [NETWORK_INFO] Default Gateway اینترنت: یافت نشد (OS)');
       }
-
-      // بررسی وضعیت اتصال RouterOS
-      if (_serviceManager.isConnected) {
-        print('✅ [NETWORK_INFO] اتصال به RouterOS: برقرار است');
-        final routerInfo = _serviceManager.routerInfo;
-        if (routerInfo != null) {
-          print('   └─ Router Version: ${routerInfo['version']}');
-          print('   └─ Router Platform: ${routerInfo['platform']}');
-          print('   └─ Router Uptime: ${routerInfo['uptime']}');
-        }
-      } else {
-        print('⚠️ [NETWORK_INFO] اتصال به RouterOS: برقرار نیست');
-      }
-
-      // دریافت همه اطلاعات شبکه
-      final allInfo = await networkInfo.getNetworkInfo();
-      print('📊 [NETWORK_INFO] خلاصه اطلاعات شبکه:');
-      print('   └─ Device IPv4: ${allInfo['deviceIp'] ?? 'N/A'}');
-      print('   └─ Default Gateway: ${allInfo['defaultGateway'] ?? 'N/A'}');
-      print('   └─ Gateway Source: ${allInfo['gatewaySource'] ?? 'N/A'}');
-
-      print('═══════════════════════════════════════════════════════');
     } catch (e) {
-      print('❌ [NETWORK_INFO] خطا در دریافت اطلاعات شبکه: $e');
+      if (kDebugMode) {
+        debugPrint('[NETWORK_INFO] failed: $e');
+      }
     }
   }
 

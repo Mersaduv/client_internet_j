@@ -53,24 +53,13 @@
 	<!-- رمزنگاری استاندارد HTTPS/TLS — بدون رمزنگاری سفارشی معاف‌نشده -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<!-- ATS: بدون ArbitraryLoads سراسری؛ فقط شبکه محلی + استثنای میزبان‌های پنل -->
+	<!-- ATS: بدون ArbitraryLoads؛ LAN با NSAllowsLocalNetworking؛ بدون cleartext عمومی -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>165.99.189.40</key>
-			<dict>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.0</string>
-			</dict>
 			<key>192.168.12.12</key>
 			<dict>
 				<key>NSIncludesSubdomains</key>

@@ -1,5 +1,3 @@
-// Developer: Mersad Karimi <mersadkarimi001@gmail.com>
-
 import java.util.Properties
 import java.io.FileInputStream
 

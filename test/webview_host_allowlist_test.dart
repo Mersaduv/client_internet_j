@@ -2,10 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jahan_bit/utils/webview_host_allowlist.dart';
 
 void main() {
-  test('allows known ISP and CPE hosts only', () {
+  test('allows known ISP and CPE hosts with store-safe schemes', () {
+    expect(
+      WebViewHostAllowlist.isAllowedUrl(
+        'https://jb-herat.mersadkarimi001.workers.dev/users/',
+      ),
+      isTrue,
+    );
+    // Public cleartext must be blocked (store policy).
     expect(
       WebViewHostAllowlist.isAllowedUrl('http://165.99.189.40:9394/users/'),
-      isTrue,
+      isFalse,
     );
     expect(
       WebViewHostAllowlist.isAllowedUrl('http://192.168.12.12/'),

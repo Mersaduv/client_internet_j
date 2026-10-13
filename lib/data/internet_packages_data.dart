@@ -47,11 +47,12 @@ extension PackageProvinceX on PackageProvince {
 
   String title(bool isEnglish) => isEnglish ? titleEn() : titleFa();
 
-  /// آدرس پنل کاربری سرویس اینترنت همان ولایت
+  /// آدرس پیش‌فرض پنل؛ مسیر واقعی با [PanelUrlResolver] و failover انتخاب می‌شود.
   String get servicePanelUrl {
     switch (this) {
       case PackageProvince.herat:
-        return 'http://165.99.189.40:9394/users/';
+        // HTTPS عمومی که به IP واقعی پنل پروکسی می‌شود
+        return 'https://jb-herat.mersadkarimi001.workers.dev/users/';
       case PackageProvince.nimroz:
         return 'http://192.168.12.12/';
       case PackageProvince.farah:

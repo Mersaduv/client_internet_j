@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ import '../data/internet_packages_data.dart';
 import '../services/settings_service.dart';
 import '../utils/app_localizations.dart';
 import '../utils/app_theme.dart';
+import '../utils/panel_url_resolver.dart';
 import '../utils/webview_host_allowlist.dart';
 import '../widgets/province_selector.dart';
 
@@ -145,7 +147,17 @@ class _InternetServiceScreenState extends State<InternetServiceScreen> {
     PackageProvince province, {
     required bool persist,
   }) async {
-    final url = province.servicePanelUrl;
+    if (!mounted) return;
+    setState(() {
+      _province = province;
+      _loadingProvince = true;
+      _pickerVisible = false;
+      _isLoading = true;
+      _showError = false;
+      _errorMessage = null;
+    });
+
+    final url = await PanelUrlResolver.resolveBest(province);
     if (!WebViewHostAllowlist.isAllowedUrl(url)) {
       if (!mounted) return;
       setState(() {
@@ -194,6 +206,27 @@ class _InternetServiceScreenState extends State<InternetServiceScreen> {
         debugPrint('province reload: $e');
       }
     }
+  }
+
+  Future<void> _failoverToNextPanelUrl(String reason) async {
+    final province = _province;
+    final current = _currentUrl;
+    if (province == null || current == null) return;
+    final next = PanelUrlResolver.nextAfter(province, current);
+    if (next == null || next == current) return;
+    debugPrint('[WEBVIEW] failover ($reason) -> $next');
+    if (!mounted) return;
+    setState(() {
+      _currentUrl = next;
+      _showError = false;
+      _errorMessage = null;
+      _isLoading = true;
+      _progress = 0.0;
+      _webViewController = null;
+    });
+    try {
+      await _settingsService.setServiceUrl(next);
+    } catch (_) {}
   }
 
   Future<void> _loadFixedOrStoredUrl() async {
@@ -328,7 +361,7 @@ class _InternetServiceScreenState extends State<InternetServiceScreen> {
           controller: urlController,
           decoration: const InputDecoration(
             labelText: 'URL',
-            hintText: 'http://165.99.189.40:9394/users/',
+            hintText: 'https://jb-herat.mersadkarimi001.workers.dev/users/',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.url,
@@ -562,11 +595,17 @@ class _InternetServiceScreenState extends State<InternetServiceScreen> {
                   if (request.isForMainFrame == false) {
                     return;
                   }
+                  final desc = error.description;
+                  if (_province != null) {
+                    unawaited(
+                      _failoverToNextPanelUrl('load_error:$desc'),
+                    );
+                    return;
+                  }
                   setState(() {
                     _isLoading = false;
                     _showError = true;
-                    _errorMessage =
-                        'خطا در بارگذاری صفحه: ${error.description}';
+                    _errorMessage = 'خطا در بارگذاری صفحه: $desc';
                   });
                 },
                 onReceivedHttpError: (controller, request, response) {
@@ -574,7 +613,19 @@ class _InternetServiceScreenState extends State<InternetServiceScreen> {
                     return;
                   }
                   final statusCode = response.statusCode;
-                  if (statusCode != null && statusCode >= 400) {
+                  if (statusCode == null) return;
+                  // Cloudflare edge / gateway failures → منبع بعدی
+                  if (_province != null &&
+                      (statusCode == 530 ||
+                          statusCode == 502 ||
+                          statusCode == 503 ||
+                          statusCode == 1016)) {
+                    unawaited(
+                      _failoverToNextPanelUrl('http_$statusCode'),
+                    );
+                    return;
+                  }
+                  if (statusCode >= 400) {
                     setState(() {
                       _isLoading = false;
                       _showError = true;

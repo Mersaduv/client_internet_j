@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../data/support_contacts.dart';
 import '../models/mikrotik_connection.dart';
@@ -65,36 +66,25 @@ class _LoginScreenState extends State<LoginScreen> {
   /// این متد Default Gateway را شناسایی می‌کند و در Router Host ذخیره می‌کند
   Future<void> _autoSetRouterHostFromGateway() async {
     try {
-      print(
-        '🔍 [LOGIN] در حال شناسایی Default Gateway برای تنظیم Router Host...',
-      );
-
       final networkInfo = NetworkInfoService();
       final discovery = await networkInfo.discoverDeviceDefaultGateway();
 
       if (discovery.found) {
         final gateway = discovery.ip!;
         final currentHost = await _settingsService.getHost();
-
         await _settingsService.setHost(gateway);
-
-        if (currentHost != gateway) {
-          print('✅ [LOGIN] Router Host از Default Gateway سیستم‌عامل ست شد:');
-          print('   └─ Router Host قبلی: $currentHost');
-          print('   └─ Router Host جدید: $gateway');
-          print('   └─ منبع: ${networkInfo.sourceLabel(discovery.source)}');
-        } else {
-          print(
-            'ℹ️ [LOGIN] Router Host با Default Gateway سیستم هماهنگ است: $gateway',
+        if (kDebugMode && currentHost != gateway) {
+          debugPrint(
+            '[LOGIN] router host set from gateway=$gateway source=${discovery.source}',
           );
         }
-      } else {
-        print(
-          '⚠️ [LOGIN] Default Gateway از OS شناسایی نشد — Router Host دست‌نخورده ماند (بدون حدس IP)',
-        );
+      } else if (kDebugMode) {
+        debugPrint('[LOGIN] gateway not found; host unchanged');
       }
     } catch (e) {
-      print('❌ [LOGIN] خطا در تنظیم خودکار Router Host: $e');
+      if (kDebugMode) {
+        debugPrint('[LOGIN] auto host failed: $e');
+      }
     }
   }
 

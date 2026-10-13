@@ -1,0 +1,8 @@
+name = "jahanbit-farah"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+ORIGIN_BASE = "http://192.168.10.10"
+ORIGIN_PREFIX = "/"

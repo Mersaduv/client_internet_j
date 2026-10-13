@@ -1,12 +1,11 @@
-/// متون حقوقی داخل‌برنامه‌ای — هماهنگ با Seller در App Store: Muhammad Aref Abdul Hadi
+import 'support_contacts.dart';
+
+/// متون حقوقی داخل‌برنامه‌ای — هم‌تراز با https://jahan-bit.vercel.app
 class LegalDocuments {
   LegalDocuments._();
 
   /// نام Seller در App Store Connect (باید با حساب انتشار یکی باشد)
   static const String appStoreSellerName = 'Muhammad Aref Abdul Hadi';
-
-  static const String supportPhonePrimary = '0795336608';
-  static const String supportPhoneSecondary = '0700336608';
 
   static const String developerName = appStoreSellerName;
   static const String appNameFa = 'جهان بیت';
@@ -20,119 +19,176 @@ class LegalDocuments {
       'https://jahan-bit.vercel.app/terms-of-use.html';
 
   static String privacyPolicy({required bool english}) =>
-      english ? _privacyEn : _privacyFa;
+      english ? _privacyEn() : _privacyFa();
 
   static String termsOfUse({required bool english}) =>
-      english ? _termsEn : _termsFa;
+      english ? _termsEn() : _termsFa();
 
-  static const String _privacyFa = '''
+  static String _supportLinesFa() {
+    final buf = StringBuffer();
+    for (final province in SupportContacts.provinces) {
+      buf.writeln(province.nameFa);
+      for (final line in province.phones) {
+        buf.writeln('  ${line.number} — ${line.roleFa}');
+      }
+    }
+    return buf.toString().trimRight();
+  }
+
+  static String _supportLinesEn() {
+    final buf = StringBuffer();
+    for (final province in SupportContacts.provinces) {
+      buf.writeln(province.nameEn);
+      for (final line in province.phones) {
+        buf.writeln('  ${line.number} — ${line.roleEn}');
+      }
+    }
+    return buf.toString().trimRight();
+  }
+
+  static String _privacyFa() => '''
 سیاست حریم خصوصی — جهان بیت (Jahan Bit)
 
 آخرین به‌روزرسانی: اکتبر ۲۰۲۶
 ناشر App Store: $appStoreSellerName
-نسخهٔ وب: $privacyPolicyPublicUrl
+نسخهٔ وب (مرجع کامل): $privacyPolicyPublicUrl
 
-۱. معرفی
-جهان بیت یک برنامهٔ مدیریت شبکهٔ محلی برای مشترکین اینترنت است که به روتر MikroTik (RouterOS) روی شبکهٔ محلی شما متصل می‌شود و امکان مشاهدهٔ دستگاه‌ها، مدیریت دسترسی، تنظیم وای‌فای و مشاهدهٔ پنل سرویس ارائه‌دهنده را فراهم می‌کند.
+۱. معرفی و دامنه
+جهان بیت ابزار مدیریت شبکهٔ محلی برای مشترکین اینترنت است. اپ به روتر MikroTik (RouterOS) روی LAN شما متصل می‌شود تا دستگاه‌ها را نشان دهد، دسترسی را مدیریت کند، محدودیت سرعت اعمال کند، وای‌فای را تنظیم کند، بسته‌ها را نشان دهد و در صورت نیاز پنل مشترک ISP را در WebView داخلی با میزبان‌های ازپیش‌تأییدشده نمایش دهد. این اپ محصول رسمی MikroTik نیست.
 
-۲. داده‌هایی که جمع‌آوری یا ذخیره می‌کنیم
-- اعتبارنامهٔ ورود به روتر (نام کاربری و رمز عبور RouterOS): فقط روی دستگاه شما و در حافظهٔ امن سیستم (Android Keystore / iOS Keychain) ذخیره می‌شود.
-- نشانی IP/هاست روتر، پورت، تنظیمات SSL، ولایت، زبان و تم: به‌صورت محلی روی دستگاه ذخیره می‌شود.
-- شناسه‌های محلی دستگاه‌های شبکه (مانند MAC/نام) برای نمایش فهرست و اعمال مسدودسازی محلی: فقط روی دستگاه شما نگهداری می‌شود.
-- برنامه به‌طور پیش‌فرض دادهٔ حساب ابری برای جهان بیت نمی‌سازد و اطلاعات ورود روتر را به سرورهای ناشر ارسال نمی‌کند.
+۲. کنترل‌گر / ناشر
+ناشر App Store: $appStoreSellerName
+برند محصول: جهان بیت / Jahan Bit
 
-۳. دسترسی به شبکهٔ محلی
-برنامه برای کشف دروازهٔ پیش‌فرض و اتصال به روتر MikroTik شما به شبکهٔ محلی دسترسی دارد. این دسترسی فقط برای عملکرد اصلی برنامه استفاده می‌شود.
+۳. داده‌هایی که روی دستگاه شما پردازش یا ذخیره می‌شوند
+- اعتبارنامهٔ RouterOS در حافظهٔ امن سیستم (Keystore / Keychain) در صورت «مرا به خاطر بسپار»
+- تنظیمات اتصال: IP/هاست روتر، پورت، SSL، ولایت، زبان، تم
+- شناسه‌های محلی دستگاه‌های LAN (نام/MAC/IP محلی/وضعیت مسدود) برای نمایش و اقدام محلی شما
+- برچسب زمانی نشست محلی در صورت فعال بودن
+اپ به‌طور پیش‌فرض حساب ابری جهان بیت نمی‌سازد و اعتبارنامهٔ روتر را به سرورهای ناشر ارسال نمی‌کند. ترافیک API عمدتاً بین دستگاه شما و روتر روی LAN است.
 
-۴. WebView پنل سرویس
-تب سرویس اینترنت ممکن است پنل کاربری ارائه‌دهنده را در نمای وب داخلی نمایش دهد. ناوبری به میزبان‌های تأیید‌شده محدود است.
+۴. داده‌هایی که جمع‌آوری نمی‌کنیم
+موقعیت GPS برای ردیابی، Advertising ID، دفترچه تلفن/پیامک/تماس/دوربین/میکروفون، فروش داده به کارگزاران. SDK تبلیغات یا analytics تبلیغاتی نداریم.
 
-۵. اشتراک‌گذاری
-دادهٔ ورود روتر یا فهرست دستگاه‌ها برای تبلیغات/فروش به اشخاص ثالث ارسال نمی‌شود. SDK تبلیغات وجود ندارد.
+۵. شبکهٔ محلی
+برای کشف دروازه و اتصال به روتر MikroTik و پنل‌های تأییدشده روی LAN استفاده می‌شود؛ نه برای نقشه‌برداری مخفی یا شنود ترافیک.
 
-۶. امنیت
-اعتبارنامه‌ها در ذخیره‌سازی امن سیستم نگهداری می‌شوند. اتصال API معمولاً روی شبکهٔ محلی است.
+۶. WebView پنل ISP
+محتوا، حساب، پرداخت و حریم خصوصی پنل تحت کنترل ISP است. ناوبری به allowlist محدود است.
 
-۷. حذف داده
-با «پاک‌سازی داده‌های محلی» اعتبارنامه‌ها و تنظیمات روی دستگاه حذف می‌شوند. حساب مشترک ISP تابع سیاست ارائه‌دهنده است.
+۷. امنیت انتقال (TLS / cleartext)
+- میزبان‌های عمومی اینترنت فقط با HTTPS بارگذاری می‌شوند؛ cleartext به IP/دامنهٔ عمومی مجاز نیست.
+- HTTP بدون TLS فقط برای میزبان‌های خصوصی/محلی تأییدشده (مثلاً پنل LAN ولایت یا CPE روی ۱۰.۱۰.۱۰.۲) ممکن است.
+- گواهی TLS نامعتبر برای میزبان‌های عمومی پذیرفته نمی‌شود.
 
-۸. کودکان
-ابزار شبکهٔ عمومی است و محتوای کودک‌محور ندارد.
+۸. اشتراک‌گذاری
+اعتبارنامهٔ روتر یا فهرست LAN برای تبلیغات/فروش به اشخاص ثالث ارسال نمی‌شود. استفاده از پنل ISP تابع سیاست همان ارائه‌دهنده است.
 
-۹. تماس
-$contactFa
+۹. نگه‌داری و حذف
+خروج، «پاک‌سازی داده‌های محلی»، یا حذف اپ داده‌های محلی را طبق سیستم‌عامل پاک می‌کند. حساب ISP تابع قرارداد همان ارائه‌دهنده است.
+
+۱۰. کودکان
+ابزار شبکهٔ عمومی است؛ محتوای کودک‌محور ندارد و عمداً دادهٔ کودکان را برای تبلیغات جمع‌آوری نمی‌کند.
+
+۱۱. حقوق شما
+بسته به حوزهٔ قضایی ممکن است حق دسترسی/حذف داشته باشید؛ سریع‌ترین مسیر معمولاً پاک‌سازی محلی یا حذف اپ است.
+
+۱۲. تغییرات
+تاریخ «آخرین به‌روزرسانی» معیار است. این متن و URL عمومی باید هم‌خوان بمانند.
+
+۱۳. تماس پشتیبانی (بر اساس ولایت)
+${_supportLinesFa()}
+ناشر: $appStoreSellerName
+$copyrightNotice
 ''';
 
-  static const String _privacyEn = '''
+  static String _privacyEn() => '''
 Privacy Policy — Jahan Bit
 
 Last updated: October 2026
 App Store seller: $appStoreSellerName
-Web version: $privacyPolicyPublicUrl
+Web version (canonical): $privacyPolicyPublicUrl
 
-1. Overview
-Jahan Bit connects to your MikroTik RouterOS device on your LAN to manage devices, Wi‑Fi, and the ISP subscriber panel.
+1. Overview and Scope
+Jahan Bit is a local-network management utility for internet subscribers. It connects to your MikroTik RouterOS device on your LAN to list devices, manage access, apply speed limits, change Wi‑Fi settings, show packages, and optionally display your ISP subscriber panel in an embedded WebView limited to allowlisted hosts. Jahan Bit is not an official MikroTik product.
 
-2. Data we store
-Router credentials stay on-device in secure storage. Host/port/SSL/province/language/theme are local. LAN device identifiers for ban/unban stay on-device. No Jahan Bit cloud account; credentials are not uploaded to the publisher’s servers.
+2. Publisher / Controller
+App Store seller: $appStoreSellerName
+Product brand: Jahan Bit
 
-3. Local network
-Used only to discover the gateway and talk to the MikroTik router / approved ISP panel hosts.
+3. Data Processed or Stored On Your Device
+- RouterOS credentials in OS secure storage when Remember Me / local session is used
+- Connection settings: router host/IP, port, SSL preference, province, language, theme
+- LAN device identifiers (hostname/MAC/local IP/ban state) for listing and local actions you initiate
+- Local session timestamp when enabled
+Jahan Bit does not create its own cloud user account by default and does not upload router credentials to publisher servers. Router API traffic is primarily between your device and your router on the LAN.
 
-4. WebView
-ISP panel navigation is limited to allowlisted hosts.
+4. Data We Do Not Collect
+No GPS tracking, Advertising ID, contacts/SMS/calls/camera/microphone, or sale of personal data to brokers. No advertising or ad-analytics SDKs.
 
-5. Sharing
-No ad SDKs; no sale of router credentials or LAN device lists.
+5. Local Network Access
+Used only to discover the default gateway and connect to your MikroTik router / allowlisted LAN ISP panels — not for covert scanning or traffic interception.
 
-6. Deletion
-Use Clear local data in Settings to erase stored credentials and preferences on this device.
+6. ISP Panel WebView
+Panel content, accounts, payments, and privacy practices are controlled by your ISP. Navigation is limited to allowlisted hosts.
 
-7. Contact
-$contactEn
+7. Transport Security (TLS / Cleartext)
+- Public internet hosts are loaded over HTTPS only; cleartext to public IPs/domains is not permitted.
+- HTTP without TLS may be used only for approved private/local hosts (for example a province LAN panel or CPE at 10.10.10.2).
+- Invalid TLS certificates are not accepted for public hosts.
+
+8. Sharing
+We do not sell or share router credentials or LAN device lists with advertisers. ISP panel use follows that provider’s policies.
+
+9. Retention and Deletion
+Logout, Clear local data, or uninstall removes on-device app data per OS behavior. ISP accounts remain subject to the ISP’s contract.
+
+10. Children
+General network utility; not child-directed; does not knowingly collect children’s data for advertising.
+
+11. Your Rights
+Depending on jurisdiction you may have access/deletion rights; the fastest path is usually Clear local data or uninstall.
+
+12. Changes
+The “Last updated” date controls. Keep this in-app text aligned with the public URL.
+
+13. Support Contacts (by province)
+${_supportLinesEn()}
+Publisher: $appStoreSellerName
+$copyrightNotice
 ''';
 
-  static const String _termsFa = '''
+  static String _termsFa() => '''
 شرایط استفاده — جهان بیت (Jahan Bit)
 
 آخرین به‌روزرسانی: اکتبر ۲۰۲۶
 ناشر App Store: $appStoreSellerName
 
-۱. پذیرش شرایط با نصب/استفاده.
-۲. ابزار مدیریت روتر MikroTik و پنل ISP است؛ اپ رسمی MikroTik نیست.
-۳. کاربر مسئول امنیت رمز روتر و استفادهٔ قانونی است.
-۴. استفاده برای دسترسی غیرمجاز یا شنود غیرقانونی ممنوع است.
-۵. پرداخت داخل پنل ISP تابع همان ارائه‌دهنده است؛ IAP کالای دیجیتال جدا نداریم.
+۱. با نصب یا استفاده، این شرایط را می‌پذیرید.
+۲. ابزار مدیریت روتر MikroTik و مشاهدهٔ پنل ISP است؛ محصول رسمی MikroTik نیست.
+۳. شما مسئول امنیت رمز روتر، شبکهٔ محلی و استفادهٔ قانونی مطابق قرارداد ISP هستید. دسترسی غیرمجاز یا شنود غیرقانونی ممنوع است.
+۴. پرداخت/اشتراک داخل پنل ISP تابع شرایط همان ارائه‌دهنده است؛ جهان بیت فروش کالای دیجیتال جدا از طریق IAP برای آن سرویس‌ها انجام نمی‌دهد.
+۵. اپ «همان‌گونه که هست» ارائه می‌شود و به در دسترس بودن روتر/شبکه/سیستم‌های ISP وابسته است.
 ۶. سیاست حریم خصوصی: $privacyPolicyPublicUrl
-۷. تماس: $supportPhonePrimary · $supportPhoneSecondary
+۷. تماس:
+${_supportLinesFa()}
 $copyrightNotice
 ''';
 
-  static const String _termsEn = '''
+  static String _termsEn() => '''
 Terms of Use — Jahan Bit
 
 Last updated: October 2026
 App Store seller: $appStoreSellerName
 
-1. By using the app you accept these terms.
-2. LAN MikroTik / ISP utility — not an official MikroTik product.
-3. You are responsible for lawful use and router security.
-4. No unauthorized network access or interception.
-5. ISP panel payments follow the provider’s terms.
+1. By installing or using Jahan Bit you accept these Terms.
+2. MikroTik LAN management utility with optional ISP panel viewing — not an official MikroTik product.
+3. You are responsible for router credentials, your LAN, and lawful use under your ISP agreement. Unauthorized access or unlawful interception is prohibited.
+4. Payments or subscription management inside an ISP web panel follow that provider’s terms. Jahan Bit does not sell separate digital goods via IAP for those ISP services.
+5. The app is provided “as is” and depends on router, network, and ISP system availability.
 6. Privacy policy: $privacyPolicyPublicUrl
-7. Contact: $supportPhonePrimary · $supportPhoneSecondary
+7. Contact:
+${_supportLinesEn()}
 $copyrightNotice
 ''';
-
-  static const String contactFa =
-      'پشتیبانی تلفنی: $supportPhonePrimary · $supportPhoneSecondary\n'
-      'ناشر: $appStoreSellerName\n'
-      'نسخهٔ وب سیاست حریم خصوصی: $privacyPolicyPublicUrl\n'
-      '$copyrightNotice';
-
-  static const String contactEn =
-      'Support phones: $supportPhonePrimary · $supportPhoneSecondary\n'
-      'Publisher: $appStoreSellerName\n'
-      'Web privacy policy: $privacyPolicyPublicUrl\n'
-      '$copyrightNotice';
 }

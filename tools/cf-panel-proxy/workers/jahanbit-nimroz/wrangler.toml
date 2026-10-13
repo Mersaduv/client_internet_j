@@ -1,0 +1,9 @@
+name = "jahanbit-nimroz"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+# Reached via Cloudflare Tunnel sidecar when available; fallback public path
+ORIGIN_BASE = "http://192.168.12.12"
+ORIGIN_PREFIX = "/"

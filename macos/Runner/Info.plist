@@ -38,15 +38,6 @@
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>165.99.189.40</key>
-			<dict>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-			</dict>
 			<key>192.168.12.12</key>
 			<dict>
 				<key>NSIncludesSubdomains</key>
