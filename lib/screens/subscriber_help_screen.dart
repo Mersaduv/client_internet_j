@@ -198,7 +198,7 @@ class SubscriberHelpScreen extends StatelessWidget {
                     icon: Icons.web_asset_rounded,
                     title: l10n?.helpWifiActWebTitle ?? 'بعضی آنتن‌ها (LHG / SXT / …)',
                     detail: l10n?.helpWifiActWebDetail ??
-                        'در برخی مدل‌ها به‌جای فرم، صفحه مرورگر داخلی باز می‌شود. همان‌جا نام و رمز را عوض کنید.',
+                        'در این آنتن‌ها همان فرم وای‌فای داخل برنامه باز می‌شود. نام و رمز را آنجا عوض کنید.',
                   ),
                 ],
                 actionLabel:
@@ -208,66 +208,9 @@ class SubscriberHelpScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // —— ۳. سرویس اینترنت
               _GuideSection(
                 primary: primary,
                 number: '۳',
-                icon: Icons.public_rounded,
-                title: l10n?.helpInternetSectionTitle ?? 'سرویس اینترنت',
-                subtitle: l10n?.helpInternetSectionSubtitle ??
-                    'دیدن پنل کاربری و وضعیت اشتراک',
-                whereFrom: l10n?.helpInternetWhere ??
-                    'از کجا: نوار پایین → آیکون کره زمین',
-                whereIcon: Icons.public_rounded,
-                steps: [
-                  _HelpAction(
-                    icon: Icons.public_rounded,
-                    title: l10n?.helpNetActTabTitle ?? 'آیکون سرویس انترنت',
-                    detail: l10n?.helpNetActTabDetail ??
-                        'دومین آیکون نوار پایین (کره) را بزنید. پنل کاربری خودکار باز می‌شود.',
-                  ),
-                  _HelpAction(
-                    icon: Icons.login_rounded,
-                    title: l10n?.helpNetActLoginTitle ?? 'ورود به پنل',
-                    detail: l10n?.helpNetActLoginDetail ??
-                        'با نام کاربری و رمز اختصاصی خود وارد شوید تا وضعیت اشتراک را ببینید.',
-                  ),
-                  _HelpAction(
-                    icon: Icons.arrow_back_rounded,
-                    title: l10n?.helpNetActBackTitle ?? 'دکمه بازگشت (هدر)',
-                    detail: l10n?.helpNetActBackDetail ??
-                        'آیکون فلش چپ در بالای صفحه — صفحه قبلی داخل پنل را نشان می‌دهد.',
-                  ),
-                  _HelpAction(
-                    icon: Icons.arrow_forward_rounded,
-                    title: l10n?.helpNetActForwardTitle ?? 'دکمه جلو (هدر)',
-                    detail: l10n?.helpNetActForwardDetail ??
-                        'آیکون فلش راست — اگر قبلاً برگشته باشید، دوباره جلو می‌رود.',
-                  ),
-                  _HelpAction(
-                    icon: Icons.refresh_rounded,
-                    title: l10n?.helpNetActReloadTitle ?? 'دکمه تازه‌سازی',
-                    detail: l10n?.helpNetActReloadDetail ??
-                        'آیکون دایره فلش‌دار — صفحه پنل را دوباره بارگذاری می‌کند.',
-                  ),
-                  _HelpAction(
-                    icon: Icons.link_rounded,
-                    title: l10n?.helpNetActLinkTitle ?? 'دکمه تغییر آدرس',
-                    detail: l10n?.helpNetActLinkDetail ??
-                        'آیکون لینک در هدر — فقط اگر لازم شد آدرس پنل را عوض کنید.',
-                  ),
-                ],
-                actionLabel:
-                    l10n?.helpOpenInternetService ?? 'باز کردن سرویس اینترنت',
-                actionIcon: Icons.public_rounded,
-                onAction: () => _goToTab(context, 1),
-              ),
-              const SizedBox(height: 16),
-
-              // —— ۴. بسته‌ها
-              _GuideSection(
-                primary: primary,
-                number: '۴',
                 icon: Icons.style_rounded,
                 title: l10n?.helpPackagesSectionTitle ?? 'بسته‌های اینترنتی',
                 subtitle: l10n?.helpPackagesSectionSubtitle ??
@@ -280,7 +223,7 @@ class SubscriberHelpScreen extends StatelessWidget {
                     icon: Icons.style_rounded,
                     title: l10n?.helpPkgActTabTitle ?? 'آیکون بسته‌ها',
                     detail: l10n?.helpPkgActTabDetail ??
-                        'سومین آیکون نوار پایین را بزنید تا فهرست بسته‌ها باز شود.',
+                        'دومین آیکون نوار پایین را بزنید تا فهرست بسته‌ها باز شود.',
                   ),
                   _HelpAction(
                     icon: Icons.tab_rounded,
@@ -291,7 +234,7 @@ class SubscriberHelpScreen extends StatelessWidget {
                 ],
                 actionLabel: l10n?.helpOpenPackages ?? 'رفتن به بسته‌ها',
                 actionIcon: Icons.style_rounded,
-                onAction: () => _goToTab(context, 2),
+                onAction: () => _goToTab(context, 1),
               ),
               const SizedBox(height: 16),
 
@@ -306,7 +249,7 @@ class SubscriberHelpScreen extends StatelessWidget {
                   l10n?.helpTip3 ??
                       'بعد از عوض کردن رمز وای‌فای، دستگاه‌ها را با رمز جدید وصل کنید.',
                   l10n?.helpTip4 ??
-                      'اگر پنل سرویس باز نشد، دکمه تازه‌سازی (دایره فلش‌دار) را بزنید.',
+                      'کارت اشتراک در صفحهٔ اصلی، حجم یا زمان مانده را نشان می‌دهد.',
                   l10n?.helpTip5 ??
                       'برای مشکل ورود یا رمز فراموش‌شده، با پشتیبانی تماس بگیرید.',
                 ],

@@ -106,7 +106,7 @@
       <span class="chip" style="background:rgba(0,198,255,.15);color:#e8f7ff;border-color:rgba(0,198,255,.35)">Privacy Policy</span>
       <h1>Privacy Policy — Jahan Bit</h1>
       <p class="meta">
-        Last updated: October 4, 2026<br />
+        Last updated: October 18, 2026<br />
         App Store seller: Muhammad Aref Abdul Hadi<br />
         © 2026 Jahan Bit
       </p>
@@ -119,7 +119,7 @@
 
       <h2>1. Overview and Scope</h2>
       <p>
-        Jahan Bit is a local-network management utility for internet subscribers. It connects to your MikroTik RouterOS device on your LAN to list connected devices, manage access (approve/reject, ban/unban), apply speed limits, change Wi‑Fi settings, show package catalogs, and optionally display your ISP subscriber panel in an embedded web view.
+        Jahan Bit is a local-network management utility for internet subscribers. It connects to your MikroTik RouterOS device on your LAN to list connected devices, manage access (approve/reject, ban/unban), apply speed limits, change Wi‑Fi settings on the router, show package catalogs, and show the subscriber package and name. There is no in-app browser.
       </p>
       <p>Jahan Bit is not an official MikroTik product and does not claim to represent hardware brands.</p>
 
@@ -139,6 +139,7 @@
       <p>Depending on use, the following may be stored or processed <strong>on your device</strong>:</p>
       <ul>
         <li><strong>Router credentials:</strong> RouterOS username/password in platform secure storage (Android Keystore / iOS Keychain) when Remember Me / local session is used.</li>
+        <li><strong>Accounting login:</strong> the same subscriber username and password, plus the accounting session token, in that secure storage. They are used only to read the package and the subscriber name over HTTPS.</li>
         <li><strong>Connection settings:</strong> router host/IP, port, SSL preference, selected province, language, theme.</li>
         <li><strong>LAN device information:</strong> hostname, MAC address, local IP, and ban state for listing and local policy actions you initiate.</li>
         <li><strong>Local session timestamp:</strong> to continue a session for a limited period (for example up to 14 days) when enabled.</li>
@@ -158,12 +159,12 @@
 
       <h2>5. Local Network Access</h2>
       <p>
-        Local network access may be used to discover the default gateway and connect to your MikroTik router. It is used only for core router and allowlisted ISP-panel functionality, not for covert scanning of third-party networks or traffic interception.
+        Local network access is used only to discover the default gateway and connect to your MikroTik router API. On some antennas the Wi‑Fi page opens in the device’s default browser, not inside the app. The app does not intercept traffic.
       </p>
 
-      <h2>6. ISP Panel WebView</h2>
+      <h2>6. Package Information</h2>
       <p>
-        The Internet Service tab may show your ISP subscriber panel in an embedded web view limited to allowlisted hosts. Content, accounts, payments, and privacy practices of that panel are controlled by your ISP, not necessarily by Jahan Bit.
+        Volume, time, service name, and the subscriber name are read over HTTPS from that province’s accounting service and shown only inside the app. There is no embedded browser and no private-link redirect.
       </p>
 
       <h2>7. Purposes of Processing</h2>
@@ -172,20 +173,20 @@
         <li>Display and manage connected/banned devices</li>
         <li>Apply Wi‑Fi and speed settings you request</li>
         <li>Remember language and theme preferences</li>
-        <li>Show allowlisted ISP panel content</li>
+        <li>Show the subscriber package and name</li>
       </ul>
 
       <h2>8. Sharing with Third Parties</h2>
       <p>We do not sell or share your router credentials or LAN device lists with advertisers or advertising analytics providers.</p>
-      <p>Use of an ISP web panel inside the WebView is governed by that provider’s policies.</p>
+      <p>The accounting login is sent only to that province’s HTTPS address. It is not sold and is not sent to advertisers.</p>
 
       <h2>9. Security and Transport</h2>
       <ul>
         <li>Credentials are stored in OS secure storage.</li>
         <li>Management traffic typically stays on your LAN; use trusted networks.</li>
-        <li><strong>Public internet hosts are loaded over HTTPS only.</strong> Cleartext HTTP to public IPs or domains is not permitted by the app.</li>
-        <li>HTTP without TLS may be used only for approved private/local hosts (for example a province LAN ISP panel or CPE at 10.10.10.2).</li>
-        <li>Invalid TLS certificates are not accepted for public hosts; limited LAN self-signed scenarios may apply only to private router hosts.</li>
+        <li><strong>Internet requests use HTTPS only.</strong> Android and iOS builds do not allow insecure HTTP exceptions for public or private addresses.</li>
+        <li>Invalid TLS certificates are not accepted.</li>
+        <li>The router connection is a local API socket, not a web page.</li>
       </ul>
       <p>No system is 100% secure. You are responsible for protecting router passwords and physical/network access to your device.</p>
 

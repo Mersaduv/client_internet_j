@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/connection_test_screen.dart';
 import 'screens/device_detail_screen.dart';
-import 'screens/internet_service_screen.dart';
 import 'screens/internet_packages_screen.dart';
 import 'screens/app_settings_screen.dart';
 import 'screens/wifi_settings_screen.dart';
@@ -27,8 +26,8 @@ import 'utils/app_localizations.dart';
 import 'utils/app_theme.dart';
 import 'widgets/client_live_traffic_badge.dart';
 import 'widgets/cosmic_background.dart';
+import 'widgets/home_subscriber_panel.dart';
 import 'widgets/traffic_list_item_visibility.dart';
-import 'utils/wifi_panel_url_resolver.dart';
 import 'utils/main_navigation.dart';
 
 export 'utils/main_navigation.dart' show mainBottomTabRequest;
@@ -237,11 +236,6 @@ class _MyAppState extends State<MyApp> {
             );
           },
           '/wifi-settings': (context) => const WifiSettingsRouter(),
-          '/wifi-webview': (context) => const InternetServiceScreen(
-            fixedUrl: WifiPanelUrlResolver.cpeWifiPanelUrl,
-            defaultTitle: 'اطلاعات Wifi',
-            allowUrlChange: false,
-          ),
           '/subscriber-help': (context) => const SubscriberHelpScreen(),
           '/privacy-policy': (context) => const LegalDocumentScreen(
             type: LegalDocumentType.privacyPolicy,
@@ -290,12 +284,6 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _attemptAutoLogin() async {
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-
-    if (!mounted) {
-      return;
-    }
-
     final manager = MikroTikServiceManager();
     final success = await manager.autoConnect();
 
@@ -470,7 +458,6 @@ class _MainScaffoldState extends State<MainScaffold>
         index: _currentIndex,
         children: const [
           HomePage(),
-          InternetServiceScreen(),
           InternetPackagesScreen(),
           AppSettingsScreen(),
         ],
@@ -512,22 +499,16 @@ class _MainScaffoldState extends State<MainScaffold>
                     isActive: _currentIndex == 0,
                   ),
                   _buildNavItem(
-                    icon: Icons.public_outlined,
-                    activeIcon: Icons.public_rounded,
+                    icon: Icons.style_outlined,
+                    activeIcon: Icons.style,
                     index: 1,
                     isActive: _currentIndex == 1,
                   ),
                   _buildNavItem(
-                    icon: Icons.style_outlined,
-                    activeIcon: Icons.style,
-                    index: 2,
-                    isActive: _currentIndex == 2,
-                  ),
-                  _buildNavItem(
                     icon: Icons.settings_outlined,
                     activeIcon: Icons.settings,
-                    index: 3,
-                    isActive: _currentIndex == 3,
+                    index: 2,
+                    isActive: _currentIndex == 2,
                   ),
                 ],
               ),
@@ -631,8 +612,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with RouteAware {
-  final MikroTikServiceManager _serviceManager = MikroTikServiceManager();
   int _selectedTab = 0; // 0: متصل, 1: مسدود
+  bool _showDevices = false;
   bool _routeObserverSubscribed = false;
   late final ScrollController _connectedScrollController;
   late final ScrollController _bannedScrollController;
@@ -772,7 +753,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final connection = _serviceManager.currentConnection;
     final provider = Provider.of<ClientsProvider>(context);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -803,6 +783,12 @@ class _HomePageState extends State<HomePage> with RouteAware {
                   l10n?.appTitle ?? 'Jahan Bit';
               final onBar = AppTheme.onAppBar(theme.brightness);
               return AppBar(
+                automaticallyImplyLeading: _showDevices,
+                leading: _showDevices
+                    ? BackButton(
+                        onPressed: () => setState(() => _showDevices = false),
+                      )
+                    : null,
                 title: LayoutBuilder(
                   builder: (context, constraints) {
                     final maxW = constraints.maxWidth.isFinite
@@ -886,133 +872,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
       body: Builder(
         builder: (context) {
           final theme = Theme.of(context);
-          final colorScheme = theme.colorScheme;
           final isDark = theme.brightness == Brightness.dark;
 
           final content = Column(
             children: [
-              if (connection != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: AppTheme.cosmicCardDecoration(
-                      radius: 20,
-                      brightness: theme.brightness,
-                    ),
-                    child: !provider.phase1Complete && provider.isLoading
-                        ? _buildConnectionHeaderSkeleton(context)
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isDark
-                                          ? AppTheme.darkGlow.withValues(alpha: 0.18)
-                                          : colorScheme.primary.withValues(alpha: 0.1),
-                                      border: isDark
-                                          ? Border.all(
-                                              color: AppTheme.darkRim.withValues(alpha: 0.45),
-                                            )
-                                          : null,
-                                    ),
-                                    child: Icon(
-                                      Icons.router,
-                                      color: isDark
-                                          ? AppTheme.primaryDark
-                                          : colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          provider.routerInfo?['identity'] != null &&
-                                                  provider.routerInfo!['identity'] != 'Unknown' &&
-                                                  provider.routerInfo!['identity']!.toString().isNotEmpty
-                                              ? provider.routerInfo!['identity']!
-                                              : provider.routerInfo?['board-name'] != null &&
-                                                    provider.routerInfo!['board-name'] != 'Unknown'
-                                              ? provider.routerInfo!['board-name']!
-                                              : '${connection.host}:${connection.port}',
-                                          style: TextStyle(
-                                            color: isDark ? AppTheme.pureWhite : Colors.black87,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (connection.useSsl) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? AppTheme.darkAction
-                                            : colorScheme.primary,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        'SSL',
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? AppTheme.darkActionForeground
-                                              : Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Builder(
-                                builder: (context) {
-                                  final l10n = AppLocalizations.of(context);
-                                  return Text(
-                                    '${l10n?.user ?? 'User'}: ${connection.username}',
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? AppTheme.darkTextSecondary
-                                          : Colors.grey.shade700,
-                                      fontSize: 14,
-                                    ),
-                                  );
-                                },
-                              ),
-                              if (provider.deviceIp != null) ...[
-                                const SizedBox(height: 4),
-                                Builder(
-                                  builder: (context) {
-                                    final l10n = AppLocalizations.of(context);
-                                    return Text(
-                                      '${l10n?.yourDeviceIP ?? 'Your Device IP'}: ${provider.deviceIp}',
-                                      style: TextStyle(
-                                        color: isDark
-                                            ? AppTheme.darkTextSecondary.withValues(alpha: 0.85)
-                                            : Colors.grey.shade600,
-                                        fontSize: 12,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ],
-                          ),
-                  ),
-                ),
               Expanded(
                 child: Column(
                   children: [
@@ -1182,9 +1045,27 @@ class _HomePageState extends State<HomePage> with RouteAware {
             ],
           );
 
+          final dashboard = ListView(
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              HomeSubscriberPanel(
+                connectedCount: provider.connectedTabCount,
+                limitedCount: provider.bannedTabCount,
+                onOpenConnected: () {
+                  setState(() => _showDevices = true);
+                  _switchHomeTab(0);
+                },
+                onOpenLimited: () {
+                  setState(() => _showDevices = true);
+                  _switchHomeTab(1);
+                },
+              ),
+            ],
+          );
+
           return CosmicBackground(
             showStars: isDark,
-            child: content,
+            child: _showDevices ? content : dashboard,
           );
         },
       ),
@@ -1279,28 +1160,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildConnectionHeaderSkeleton(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const _SkeletonBox(width: 20, height: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [_SkeletonBox(width: 160, height: 16)],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        const _SkeletonBox(width: 140, height: 12),
-      ],
     );
   }
 

@@ -92,7 +92,6 @@ class _InternetPackagesScreenState extends State<InternetPackagesScreen> {
     });
     if (persist) {
       await _settingsService.setPackageProvinceId(province.id);
-      await _settingsService.setServiceUrl(province.servicePanelUrl);
     }
   }
 

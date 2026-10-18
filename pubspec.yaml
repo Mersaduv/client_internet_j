@@ -52,12 +52,12 @@ dependencies:
   
   # Provider برای مدیریت state
   provider: ^6.1.1
-  
-  # WebView برای نمایش وب‌سایت در برنامه
-  flutter_inappwebview: ^6.1.0+11
 
   # Default gateway واقعی دستگاه از OS (Android/iOS/macOS/Linux/Windows)
   network_info_plus: ^7.0.0
+
+  # باز کردن صفحهٔ وای‌فای بعضی آنتن‌ها در مرورگر پیش‌فرض دستگاه
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

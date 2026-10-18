@@ -47,6 +47,18 @@ extension PackageProvinceX on PackageProvince {
 
   String title(bool isEnglish) => isEnglish ? titleEn() : titleFa();
 
+  /// مبدأ HTTPS وب‌سرویس دلتاسیب (SIB) همان ولایت. مسیر API: /1.0/auth/
+  String get sibApiOrigin {
+    switch (this) {
+      case PackageProvince.herat:
+        return 'https://jb-herat.mersadkarimi001.workers.dev';
+      case PackageProvince.nimroz:
+        return 'https://jb-nimroz.mersadkarimi001.workers.dev';
+      case PackageProvince.farah:
+        return 'https://jb-farah.mersadkarimi001.workers.dev';
+    }
+  }
+
   /// آدرس پیش‌فرض پنل؛ مسیر واقعی با [PanelUrlResolver] و failover انتخاب می‌شود.
   String get servicePanelUrl {
     switch (this) {

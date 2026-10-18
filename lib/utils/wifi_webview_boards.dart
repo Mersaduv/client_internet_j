@@ -27,39 +27,44 @@ String normalizeWifiBoardKey(String? value) {
   return (value ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 }
 
-/// True only when [routerInfo] matches one entry in [kWifiWebViewBoardCatalog].
-bool isWifiWebViewBoard(Map<String, dynamic>? routerInfo) {
-  if (routerInfo == null) {
-    return false;
-  }
-
-  final boardName = (routerInfo['board-name'] ?? '').toString().trim();
-  final model = (routerInfo['model'] ?? '').toString().trim();
-  final normBoard = normalizeWifiBoardKey(boardName);
-  final normModel = normalizeWifiBoardKey(model);
-  final modelKnown = normModel.isNotEmpty && normModel != 'unknown';
+bool _wifiFieldMatchesCatalog(String raw) {
+  final norm = normalizeWifiBoardKey(raw);
+  if (norm.isEmpty || norm == 'unknown') return false;
 
   for (final entry in kWifiWebViewBoardCatalog) {
-    final entryNormModel = normalizeWifiBoardKey(entry.model);
-
-    if (modelKnown && normModel == entryNormModel) {
+    final entryModel = normalizeWifiBoardKey(entry.model);
+    if (entryModel.isNotEmpty &&
+        (norm == entryModel || norm.contains(entryModel))) {
       return true;
     }
-
-    if (model.isNotEmpty &&
-        model != 'Unknown' &&
-        model.toLowerCase().contains(entry.model.toLowerCase())) {
-      return true;
-    }
-
-    if (!modelKnown && normBoard.isNotEmpty) {
-      for (final type in entry.types) {
-        if (normBoard == normalizeWifiBoardKey(type)) {
-          return true;
-        }
+    for (final type in entry.types) {
+      final entryType = normalizeWifiBoardKey(type);
+      if (entryType.isNotEmpty &&
+          (norm == entryType || norm.contains(entryType))) {
+        return true;
       }
     }
   }
 
+  // نام‌های واقعی RouterOS اغلب فاصله یا پسوند دارند: «LHG 5»، «RBLHG-5nD».
+  const families = ['lhg', 'sxt', 'qrt', 'sextant'];
+  for (final family in families) {
+    if (norm.contains(family)) return true;
+  }
+  return false;
+}
+
+/// True when [routerInfo] is an antenna whose Wi‑Fi page is http://10.10.10.2/.
+bool isWifiWebViewBoard(Map<String, dynamic>? routerInfo) {
+  if (routerInfo == null) return false;
+  final fields = [
+    routerInfo['board-name'],
+    routerInfo['model'],
+    routerInfo['board'],
+    routerInfo['platform'],
+  ];
+  for (final field in fields) {
+    if (_wifiFieldMatchesCatalog(field?.toString() ?? '')) return true;
+  }
   return false;
 }

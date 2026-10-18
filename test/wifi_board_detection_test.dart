@@ -111,6 +111,16 @@ void main() {
       );
     });
 
+    test('spaced RouterOS names still open the browser', () {
+      expect(
+        WifiSettingsRouter.isWebViewWifiBoard({
+          'board-name': 'RBLHG-5nD',
+          'model': 'LHG 5',
+        }),
+        isTrue,
+      );
+    });
+
     test('generic hAP uses native form', () {
       expect(
         WifiSettingsRouter.isWebViewWifiBoard({

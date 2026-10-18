@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../data/internet_packages_data.dart';
 import '../data/support_contacts.dart';
 import '../models/mikrotik_connection.dart';
+import '../services/deltasib_auth_service.dart';
+import '../services/sib_package_store.dart';
 import '../services/mikrotik_service_manager.dart';
 import '../services/settings_service.dart';
 import '../services/network_info_service.dart';
 import '../utils/app_localizations.dart';
+import '../widgets/province_selector.dart';
 import '../utils/app_theme.dart';
 import '../widgets/cosmic_background.dart';
 
@@ -25,6 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isConnecting = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  PackageProvince? _province;
+  bool _provinceDialogOpen = false;
   String? _errorMessage;
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
@@ -53,13 +61,34 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    final savedProvince = PackageProvinceX.tryParse(
+      await _settingsService.getPackageProvinceId(),
+    );
+
     setState(() {
       _rememberMe = rememberMe;
+      _province = savedProvince;
       if (rememberMe && credentials != null) {
         _usernameController.text = credentials['username']!;
         _passwordController.text = credentials['password']!;
       }
     });
+    if (savedProvince == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _pickProvinceOnce();
+      });
+    }
+  }
+
+  Future<void> _pickProvinceOnce() async {
+    if (!mounted || _province != null || _provinceDialogOpen) return;
+    _provinceDialogOpen = true;
+    final picked = await showLoginProvinceDialog(context);
+    _provinceDialogOpen = false;
+    if (!mounted || picked == null) return;
+    await _settingsService.setPackageProvinceId(picked.id);
+    if (!mounted) return;
+    setState(() => _province = picked);
   }
 
   /// تنظیم خودکار Router Host از Default Gateway
@@ -107,6 +136,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    if (_province == null) {
+      await _pickProvinceOnce();
+      if (_province == null) return;
+    }
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -132,25 +165,41 @@ class _LoginScreenState extends State<LoginScreen> {
         useSsl: settings['useSsl'] as bool,
       );
 
-      // استفاده از Service Manager برای نگه‌داری اتصال
+      // MikroTik و دلتاسیب با همان یوزر/رمز، همزمان
       final serviceManager = MikroTikServiceManager();
-      final success = await serviceManager.connect(connection);
+      final sib = DeltaSibAuthService();
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text;
+      final province = _province!;
+      unawaited(_settingsService.setPackageProvinceId(province.id));
+      unawaited(() async {
+        try {
+          await sib.login(
+            username: username,
+            password: password,
+            origin: province.sibApiOrigin,
+          );
+          await SibPackageStore.refresh();
+        } catch (_) {}
+      }());
+      final success = await serviceManager.connect(connection) == true;
 
       setState(() {
         _isConnecting = false;
       });
 
       if (success && serviceManager.isConnected) {
-        await _settingsService.setRememberMe(_rememberMe);
-        await _settingsService.setLoginTimestamp();
-        if (_rememberMe) {
-          await _settingsService.saveCredentials(
-            username: _usernameController.text.trim(),
-            password: _passwordController.text,
-          );
-        } else {
-          await _settingsService.clearCredentials();
-        }
+        await Future.wait<void>([
+          _settingsService.setRememberMe(_rememberMe),
+          _settingsService.setLoginTimestamp(),
+          if (_rememberMe)
+            _settingsService.saveCredentials(
+              username: username,
+              password: password,
+            )
+          else
+            _settingsService.clearCredentials(),
+        ]);
 
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/home');
@@ -168,6 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     } catch (e) {
+      MikroTikServiceManager().disconnect();
       setState(() {
         _isConnecting = false;
         final l10n = AppLocalizations.of(context);
@@ -263,7 +313,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 32),
+                    if (_province != null) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Text(
+                          Localizations.localeOf(context).languageCode == 'en'
+                              ? _province!.titleEn()
+                              : _province!.titleFa(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
 
                     // فیلد نام کاربری
                     Builder(

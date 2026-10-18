@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/mikrotik_connection.dart';
 import '../providers/clients_provider.dart';
@@ -11,9 +13,39 @@ import '../services/settings_service.dart';
 import '../utils/app_localizations.dart';
 import '../utils/app_theme.dart';
 import '../utils/smart_text_direction.dart';
+import '../utils/wifi_panel_url_resolver.dart';
 import '../utils/wifi_webview_boards.dart';
 
-/// Entry point: routes to WebView or native WiFi form based on router board.
+/// صفحهٔ وای‌فای آنتن را در مرورگر پیش‌فرض دستگاه باز می‌کند، نه داخل اپ.
+Future<bool> openCpeWifiInExternalBrowser() async {
+  final uri = Uri.parse(WifiPanelUrlResolver.cpeWifiPanelUrl);
+  if (Platform.isWindows) {
+    try {
+      final result = await Process.run(
+        'cmd.exe',
+        ['/c', 'start', '', uri.toString()],
+      );
+      if (result.exitCode == 0) return true;
+    } catch (e) {
+      debugPrint('[WIFI_SETTINGS] windows start failed: $e');
+    }
+  }
+  try {
+    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      return true;
+    }
+  } catch (e) {
+    debugPrint('[WIFI_SETTINGS] externalApplication failed: $e');
+  }
+  try {
+    return await launchUrl(uri, mode: LaunchMode.platformDefault);
+  } catch (e) {
+    debugPrint('[WIFI_SETTINGS] platformDefault failed: $e');
+    return false;
+  }
+}
+
+/// برای آنتن‌های CPE صفحه در مرورگر دستگاه باز می‌شود؛ بقیه روترها فرم داخلی دارند.
 class WifiSettingsRouter extends StatelessWidget {
   const WifiSettingsRouter({super.key});
 
@@ -28,48 +60,102 @@ class WifiSettingsRouter extends StatelessWidget {
     return matched;
   }
 
+  static bool shouldOpenExternally({
+    String? host,
+    Map<String, dynamic>? routerInfo,
+  }) {
+    return WifiPanelUrlResolver.isCpeHost(host) || isWebViewWifiBoard(routerInfo);
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ClientsProvider>(context);
     final routerInfo =
         provider.routerInfo ?? MikroTikServiceManager().routerInfo;
+    final liveHost = MikroTikServiceManager().currentConnection?.host;
 
-    if (routerInfo == null) {
-      return const _WifiLoadingPlaceholder();
-    }
-
-    if (isWebViewWifiBoard(routerInfo)) {
-      return const _WifiWebViewRedirect();
+    if (routerInfo == null ||
+        shouldOpenExternally(host: liveHost, routerInfo: routerInfo)) {
+      return const _ExternalWifiPanelRedirect();
     }
 
     return const WifiNativeSettingsScreen();
   }
 }
 
-/// Opens the WebView WiFi panel after the first frame (keeps navigation out of build).
-class _WifiWebViewRedirect extends StatefulWidget {
-  const _WifiWebViewRedirect();
+/// صفحهٔ وای‌فای این آنتن داخل اپ بارگذاری نمی‌شود؛ مرورگر پیش‌فرض دستگاه آن را باز می‌کند.
+class _ExternalWifiPanelRedirect extends StatefulWidget {
+  const _ExternalWifiPanelRedirect();
 
   @override
-  State<_WifiWebViewRedirect> createState() => _WifiWebViewRedirectState();
+  State<_ExternalWifiPanelRedirect> createState() =>
+      _ExternalWifiPanelRedirectState();
 }
 
-class _WifiWebViewRedirectState extends State<_WifiWebViewRedirect> {
+class _ExternalWifiPanelRedirectState extends State<_ExternalWifiPanelRedirect> {
+  bool _failed = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      debugPrint('[WIFI_SETTINGS] opening /wifi-webview at http://10.10.10.2/');
-      Navigator.of(context).pushReplacementNamed('/wifi-webview');
+      unawaited(_openBrowser());
     });
+  }
+
+  Future<void> _openBrowser() async {
+    setState(() => _failed = false);
+    final opened = await openCpeWifiInExternalBrowser();
+    if (!mounted) return;
+    if (opened) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() => _failed = true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final l10n = AppLocalizations.of(context);
+    final brightness = Theme.of(context).brightness;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n?.wifiSettings ?? 'تنظیمات وایفای'),
+        backgroundColor: AppTheme.appBarFor(brightness),
+        foregroundColor: AppTheme.onAppBar(brightness),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: _failed
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'مرورگر دستگاه باز نشد. دوباره تلاش کنید.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => unawaited(_openBrowser()),
+                      child: const Text('باز کردن در مرورگر'),
+                    ),
+                  ],
+                )
+              : const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'در حال باز کردن صفحه در مرورگر دستگاه…',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
   }
 }
 
@@ -85,19 +171,13 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
   Timer? _pollTimer;
   int _elapsedMs = 0;
   static const int _maxWaitMs = 10000;
-  String? _errorMessage;
+  bool _openBrowser = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final provider = Provider.of<ClientsProvider>(context, listen: false);
-      if (provider.routerInfo == null) {
-        unawaited(provider.loadRouterInfo());
-      }
+      unawaited(_leaveIfCpeHost());
     });
     _pollTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       if (!mounted) {
@@ -105,6 +185,13 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
       }
       _elapsedMs += 500;
       final provider = Provider.of<ClientsProvider>(context, listen: false);
+      final liveHost = MikroTikServiceManager().currentConnection?.host;
+      if (WifiPanelUrlResolver.isCpeHost(liveHost) ||
+          WifiSettingsRouter.isWebViewWifiBoard(provider.routerInfo)) {
+        _pollTimer?.cancel();
+        setState(() => _openBrowser = true);
+        return;
+      }
       if (provider.routerInfo != null) {
         _pollTimer?.cancel();
         setState(() {});
@@ -112,11 +199,28 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
       }
       if (_elapsedMs >= _maxWaitMs) {
         _pollTimer?.cancel();
-        setState(() {
-          _errorMessage = 'اطلاعات روتر بارگذاری نشد. لطفاً دوباره تلاش کنید.';
-        });
+        setState(() => _openBrowser = true);
       }
     });
+  }
+
+  Future<void> _leaveIfCpeHost() async {
+    if (!mounted) return;
+    final provider = Provider.of<ClientsProvider>(context, listen: false);
+    if (provider.routerInfo == null) {
+      unawaited(provider.loadRouterInfo());
+    }
+    final saved = await SettingsService().getHost();
+    final live = MikroTikServiceManager().currentConnection?.host;
+    if (!mounted) return;
+    if (WifiSettingsRouter.shouldOpenExternally(
+      host: saved,
+      routerInfo: provider.routerInfo ?? MikroTikServiceManager().routerInfo,
+    ) ||
+        WifiPanelUrlResolver.isCpeHost(live)) {
+      _pollTimer?.cancel();
+      setState(() => _openBrowser = true);
+    }
   }
 
   @override
@@ -128,38 +232,18 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = AppTheme.primaryFor(Theme.of(context).brightness);
     final provider = Provider.of<ClientsProvider>(context);
+
+    if (_openBrowser ||
+        WifiSettingsRouter.shouldOpenExternally(
+          host: MikroTikServiceManager().currentConnection?.host,
+          routerInfo: provider.routerInfo,
+        )) {
+      return const _ExternalWifiPanelRedirect();
+    }
 
     if (provider.routerInfo != null) {
       return const WifiSettingsRouter();
-    }
-
-    if (_errorMessage != null) {
-      final brightness = Theme.of(context).brightness;
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n?.wifiSettings ?? 'تنظیمات وایفای'),
-          backgroundColor: AppTheme.appBarFor(brightness),
-          foregroundColor: AppTheme.onAppBar(brightness),
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(_errorMessage!, textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n?.cancel ?? 'بازگشت'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
     }
 
     final brightness = Theme.of(context).brightness;
@@ -249,6 +333,16 @@ class _WifiNativeSettingsScreenState extends State<WifiNativeSettingsScreen> {
 
   Future<void> _loadWifiSettings({String? interfaceId}) async {
     debugPrint('[WIFI_SETTINGS] _loadWifiSettings');
+    final routerInfo = Provider.of<ClientsProvider>(context, listen: false).routerInfo ??
+        _manager.routerInfo;
+    if (WifiSettingsRouter.isWebViewWifiBoard(routerInfo)) {
+      final opened = await openCpeWifiInExternalBrowser();
+      if (!mounted) return;
+      if (opened) {
+        Navigator.of(context).pop();
+        return;
+      }
+    }
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -295,6 +389,16 @@ class _WifiNativeSettingsScreenState extends State<WifiNativeSettingsScreen> {
         return;
       }
       final message = e.toString().replaceAll('Exception: ', '');
+      final noWireless =
+          message.contains('هیچ رابط وایرلسی') || message.contains('wireless');
+      if (noWireless) {
+        final opened = await openCpeWifiInExternalBrowser();
+        if (!mounted) return;
+        if (opened) {
+          Navigator.of(context).pop();
+          return;
+        }
+      }
       final l10n = AppLocalizations.of(context);
       setState(() {
         _isLoading = false;

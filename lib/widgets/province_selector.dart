@@ -3,6 +3,168 @@ import 'package:flutter/material.dart';
 import '../data/internet_packages_data.dart';
 import '../utils/app_theme.dart';
 
+/// مودال یک‌بارهٔ انتخاب ولایت برای صفحهٔ ورود.
+Future<PackageProvince?> showLoginProvinceDialog(
+  BuildContext context, {
+  PackageProvince? selected,
+}) {
+  final isEnglish = Localizations.localeOf(context).languageCode == 'en';
+  return showGeneralDialog<PackageProvince>(
+    context: context,
+    barrierDismissible: false,
+    barrierLabel: 'province',
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (context, animation, secondary) {
+      return SafeArea(
+        child: Center(
+          child: _LoginProvinceCard(
+            isEnglish: isEnglish,
+            selected: selected,
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, animation, secondary, child) {
+      final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      return FadeTransition(
+        opacity: curve,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.96, end: 1).animate(curve),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
+class _LoginProvinceCard extends StatelessWidget {
+  const _LoginProvinceCard({
+    required this.isEnglish,
+    required this.selected,
+  });
+
+  final bool isEnglish;
+  final PackageProvince? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Material(
+          color: isDark ? const Color(0xFF121826) : Colors.white,
+          elevation: 8,
+          shadowColor: Colors.black26,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.place_outlined,
+                  size: 28,
+                  color: isDark ? AppTheme.darkGlow : AppTheme.primary,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isEnglish ? 'Choose your province' : 'ولایت خود را انتخاب کنید',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  isEnglish
+                      ? 'Chosen once and used for sign-in.'
+                      : 'فقط یک بار انتخاب می‌شود و برای ورود استفاده می‌شود.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                for (final province in PackageProvince.values)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ProvinceChoice(
+                      label: province.title(isEnglish),
+                      selected: selected == province,
+                      isDark: isDark,
+                      onTap: () => Navigator.of(context).pop(province),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProvinceChoice extends StatelessWidget {
+  const _ProvinceChoice({
+    required this.label,
+    required this.selected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isDark ? AppTheme.darkGlow : AppTheme.primary;
+    return Material(
+      color: selected
+          ? accent.withValues(alpha: 0.14)
+          : (isDark ? const Color(0xFF1B2433) : const Color(0xFFF4F7FB)),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Icon(
+                selected ? Icons.check_circle : Icons.circle_outlined,
+                size: 20,
+                color: accent,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// دیالوگ انتخاب ولایت — برای بسته‌ها و سرویس اینترنت مشترک است.
 class ProvincePickerOverlay extends StatelessWidget {
   const ProvincePickerOverlay({

@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../data/internet_packages_data.dart';
 import '../models/mikrotik_connection.dart';
 import 'connection_heartbeat.dart';
+import 'deltasib_auth_service.dart';
 import 'mikrotik_service.dart';
 import 'mikrotik_timeouts.dart';
 import 'settings_service.dart';
+import 'sib_package_store.dart';
 import 'traffic_monitor_service.dart';
 import '../models/client_traffic_rate.dart';
 
@@ -67,13 +70,23 @@ class MikroTikServiceManager {
         useSsl: settings['useSsl'] as bool? ?? false,
       );
 
-      final success = await connect(connection).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Auto-login timeout');
-        },
+      unawaited(SibPackageStore.hydrate());
+      final province = PackageProvinceX.tryParse(
+        await settingsService.getPackageProvinceId(),
       );
-      return success;
+      final sibOrigin =
+          province?.sibApiOrigin ?? DeltaSibAuthService.defaultOrigin;
+      unawaited(() async {
+        try {
+          await DeltaSibAuthService().login(
+            username: credentials['username']!,
+            password: credentials['password']!,
+            origin: sibOrigin,
+          );
+          await SibPackageStore.refresh();
+        } catch (_) {}
+      }());
+      return await connect(connection).timeout(const Duration(seconds: 12));
     } catch (e) {
       debugPrint('[AUTO_LOGIN] Failed: $e');
       return false;

@@ -777,8 +777,8 @@ class AppLocalizations {
       ? 'Some antennas (LHG / SXT / …)'
       : 'بعضی آنتن‌ها (LHG / SXT / …)';
   String get helpWifiActWebDetail => locale.languageCode == 'en'
-      ? 'On some models an in-app browser opens instead of the form. Change name and password there.'
-      : 'در برخی مدل‌ها به‌جای فرم، صفحه مرورگر داخلی باز می‌شود. همان‌جا نام و رمز را عوض کنید.';
+      ? 'On these antennas the phone leaves the app and opens the Wi‑Fi page in the device’s default browser.'
+      : 'در این آنتن‌ها برنامه بسته نمی‌ماند؛ صفحهٔ وای‌فای در مرورگر پیش‌فرض گوشی باز می‌شود.';
 
   String get helpInternetSectionTitle =>
       locale.languageCode == 'en' ? 'Internet service' : 'سرویس اینترنت';
@@ -836,8 +836,8 @@ class AppLocalizations {
   String get helpPkgActTabTitle =>
       locale.languageCode == 'en' ? 'Packages icon' : 'آیکون بسته‌ها';
   String get helpPkgActTabDetail => locale.languageCode == 'en'
-      ? 'Tap the third bottom icon to open the packages list.'
-      : 'سومین آیکون نوار پایین را بزنید تا فهرست بسته‌ها باز شود.';
+      ? 'Tap the second bottom icon to open the packages list.'
+      : 'دومین آیکون نوار پایین را بزنید تا فهرست بسته‌ها باز شود.';
   String get helpPkgActTabsTitle =>
       locale.languageCode == 'en' ? 'Top tabs' : 'زبانه‌های بالا';
   String get helpPkgActTabsDetail => locale.languageCode == 'en'
@@ -856,8 +856,8 @@ class AppLocalizations {
       ? 'After changing the Wi‑Fi password, reconnect devices with the new password.'
       : 'بعد از عوض کردن رمز وای‌فای، دستگاه‌ها را با رمز جدید وصل کنید.';
   String get helpTip4 => locale.languageCode == 'en'
-      ? 'If the service panel does not open, tap Refresh (circular arrow).'
-      : 'اگر پنل سرویس باز نشد، دکمه تازه‌سازی (دایره فلش‌دار) را بزنید.';
+      ? 'The subscription card on the home page shows remaining volume or time.'
+      : 'کارت اشتراک در صفحهٔ اصلی، حجم یا زمان مانده را نشان می‌دهد.';
   String get helpTip5 => locale.languageCode == 'en'
       ? 'For login issues or forgotten password, contact support.'
       : 'برای مشکل ورود یا رمز فراموش‌شده، با پشتیبانی تماس بگیرید.';

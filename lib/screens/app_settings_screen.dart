@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../main.dart';
 import '../utils/app_localizations.dart';
 import '../utils/app_theme.dart';
+import '../utils/wifi_panel_url_resolver.dart';
+import 'wifi_settings_screen.dart';
 
 /// ??????
 class AppSettingsScreen extends StatefulWidget {
@@ -19,7 +21,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   final MikroTikServiceManager _serviceManager = MikroTikServiceManager();
   final SettingsService _settingsService = SettingsService();
   ThemeMode _selectedThemeMode = ThemeMode.dark;
-  String _selectedLanguageCode = 'fa';
   bool _isLoading = true;
 
   Color get _primaryColor =>
@@ -35,70 +36,17 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   Future<void> _loadSettings() async {
     try {
       // ??????
-      final languageCode = await _settingsService.getLanguage();
-
-      // ??????
       final themeMode = await _settingsService.getThemeModeEnum();
 
       setState(() {
-        _selectedLanguageCode = languageCode;
         _selectedThemeMode = themeMode;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _selectedLanguageCode = 'fa';
         _selectedThemeMode = ThemeMode.dark;
         _isLoading = false;
       });
-    }
-  }
-
-  /// ????
-  Future<void> _changeLanguage(String languageCode) async {
-    if (_isLoading) return;
-
-    setState(() {
-      _selectedLanguageCode = languageCode;
-    });
-
-    try {
-      // ??????
-      await _settingsService.setLanguage(languageCode);
-
-      // ?????????
-      final newLocale = languageCode == 'en'
-          ? const Locale('en', 'US')
-          : const Locale('fa', 'IR');
-
-      // ???????????
-      if (onLanguageChanged != null) {
-        onLanguageChanged!(newLocale);
-      }
-
-      if (mounted) {
-        final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n?.languageChanged ?? 'Language changed'),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: _primaryColor,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${l10n?.languageChangeError ?? 'Error'}: $e'),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -242,79 +190,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     );
   }
 
-  /// ?????????
-  void _showLanguageSelector(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final primaryColor = AppTheme.primaryFor(theme.brightness);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ??
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                l10n?.language ?? 'Language',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
-            const Divider(),
-            // ?????
-            ListTile(
-              leading: Icon(Icons.g_translate, color: primaryColor),
-              title: Text(l10n?.persian ?? 'Persian'),
-              subtitle: Builder(
-                builder: (context) {
-                  final l10n = AppLocalizations.of(context);
-                  return Text(l10n?.persian ?? 'Persian');
-                },
-              ),
-              trailing: _selectedLanguageCode == 'fa'
-                  ? Icon(Icons.check, color: primaryColor)
-                  : null,
-              onTap: () {
-                Navigator.pop(context);
-                if (_selectedLanguageCode != 'fa') {
-                  _changeLanguage('fa');
-                }
-              },
-            ),
-            // ????
-            ListTile(
-              leading: Icon(Icons.g_translate, color: primaryColor),
-              title: Text(l10n?.english ?? 'English'),
-              subtitle: const Text('English'),
-              trailing: _selectedLanguageCode == 'en'
-                  ? Icon(Icons.check, color: primaryColor)
-                  : null,
-              onTap: () {
-                Navigator.pop(context);
-                if (_selectedLanguageCode != 'en') {
-                  _changeLanguage('en');
-                }
-              },
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -389,7 +264,23 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       size: 16,
                       color: AppTheme.primaryFor(theme.brightness),
                     ),
-                    onTap: () {
+                    onTap: () async {
+                      final live = MikroTikServiceManager().currentConnection?.host;
+                      final saved = await _settingsService.getHost();
+                      final info = Provider.of<ClientsProvider>(context, listen: false)
+                              .routerInfo ??
+                          MikroTikServiceManager().routerInfo;
+                      final openBrowser = info == null ||
+                          WifiSettingsRouter.shouldOpenExternally(
+                            host: live ?? saved,
+                            routerInfo: info,
+                          ) ||
+                          WifiPanelUrlResolver.isCpeHost(saved);
+                      if (openBrowser) {
+                        final opened = await openCpeWifiInExternalBrowser();
+                        if (opened || !context.mounted) return;
+                      }
+                      if (!context.mounted) return;
                       Navigator.of(context).pushNamed('/wifi-settings');
                     },
                   ),
@@ -419,56 +310,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     onTap: () {
                       Navigator.of(context).pushNamed('/subscriber-help');
                     },
-                  ),
-                  const Divider(height: 1),
-                  // زبان
-                  ListTile(
-                    leading: Icon(Icons.g_translate, color: primaryColor),
-                    title: Text(
-                      l10n?.language ?? 'Language',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _selectedLanguageCode == 'en'
-                          ? (l10n?.english ?? 'English')
-                          : (l10n?.persian ?? 'Persian'),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    trailing: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _selectedLanguageCode == 'en'
-                                    ? (l10n?.english ?? 'English')
-                                    : (l10n?.persian ?? 'Persian'),
-                                style: TextStyle(
-                                  color: primaryColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: primaryColor,
-                              ),
-                            ],
-                          ),
-                    onTap: _isLoading
-                        ? null
-                        : () => _showLanguageSelector(context),
                   ),
                   const Divider(height: 1),
                   // ????

@@ -15,10 +15,11 @@ export default {
     }
 
     const defaultPath = env.DEFAULT_PATH || "/";
+    const isApi = incoming.pathname.startsWith("/1.0/");
     let path = incoming.pathname;
-    if (path === "/" || path === "") path = defaultPath;
+    if (!isApi && (path === "/" || path === "")) path = defaultPath;
 
-    const candidates = buildCandidates(env);
+    const candidates = isApi ? buildApiCandidates(env) : buildCandidates(env);
     if (!candidates.length) {
       return friendlyError(
         503,
@@ -67,6 +68,25 @@ function isPrivateLanIp(ip) {
   if (a === 192 && b === 168) return true;
   if (a === 172 && b >= 16 && b <= 31) return true;
   return false;
+}
+
+function buildApiCandidates(env) {
+  const list = [];
+  const push = (v) => {
+    const s = String(v || "")
+      .trim()
+      .replace(/\/$/, "");
+    if (s && !list.includes(s)) list.push(s);
+  };
+  const ip = String(env.PANEL_IP || "").trim();
+  const port = String(env.API_PORT || "1043").trim();
+  if (ip && !isPrivateLanIp(ip)) {
+    push(`http://${ip}.sslip.io:${port}`);
+    push(`http://${ip}.nip.io:${port}`);
+    push(`https://${ip}.sslip.io:${port}`);
+  }
+  push(env.API_ORIGIN);
+  return list;
 }
 
 function buildCandidates(env) {

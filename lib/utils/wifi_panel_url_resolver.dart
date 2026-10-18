@@ -7,6 +7,18 @@ class WifiPanelUrlResolver {
 
   static const String cpeWifiPanelUrl = 'http://10.10.10.2/';
 
+  /// میزبان پنل وای‌فای آنتن، با یا بدون اسکیما و پورت.
+  static bool isCpeHost(String? value) {
+    if (value == null) return false;
+    var text = value.trim().toLowerCase();
+    if (text.isEmpty) return false;
+    text = text.replaceFirst(RegExp(r'^[a-z][a-z0-9+.-]*://'), '');
+    text = text.split('/').first.split('?').first;
+    if (text.startsWith('[')) return false;
+    text = text.split(':').first;
+    return text == '10.10.10.2';
+  }
+
   /// Sole URL for CPE WiFi WebView (no fallbacks).
   static Future<String> resolve() async => cpeWifiPanelUrl;
 

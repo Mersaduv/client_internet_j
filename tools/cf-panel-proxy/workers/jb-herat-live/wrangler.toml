@@ -1,0 +1,11 @@
+name = "jb-herat"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+
+[vars]
+SERVICE_NAME = "jb-herat"
+DEFAULT_PATH = "/users/"
+PANEL_IP = "165.99.189.40"
+PANEL_PORT = "9394"
+API_PORT = "1043"

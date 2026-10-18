@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cleartext فقط برای میزبان‌های خصوصی/محلی ISP و CPE — بدون IP عمومی -->
+<!-- هیچ استثنای cleartext نیست؛ اتصال روتر از سوکت API است نه HTTP. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.12.12</domain>
-        <domain includeSubdomains="true">192.168.10.10</domain>
-        <domain includeSubdomains="true">10.10.10.2</domain>
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-    </domain-config>
 </network-security-config>

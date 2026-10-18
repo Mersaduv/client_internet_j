@@ -9,5 +9,9 @@ void main() {
     );
     expect(WifiPanelUrlResolver.cpeWifiPanelUrl, 'http://10.10.10.2/');
     expect(await WifiPanelUrlResolver.buildCandidates(), ['http://10.10.10.2/']);
+    expect(WifiPanelUrlResolver.isCpeHost('10.10.10.2'), isTrue);
+    expect(WifiPanelUrlResolver.isCpeHost('http://10.10.10.2/'), isTrue);
+    expect(WifiPanelUrlResolver.isCpeHost('10.10.10.2:8728'), isTrue);
+    expect(WifiPanelUrlResolver.isCpeHost('192.168.88.1'), isFalse);
   });
 }

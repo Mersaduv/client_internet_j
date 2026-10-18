@@ -54,7 +54,7 @@ class LegalDocuments {
 نسخهٔ وب (مرجع کامل): $privacyPolicyPublicUrl
 
 ۱. معرفی و دامنه
-جهان بیت ابزار مدیریت شبکهٔ محلی برای مشترکین اینترنت است. اپ به روتر MikroTik (RouterOS) روی LAN شما متصل می‌شود تا دستگاه‌ها را نشان دهد، دسترسی را مدیریت کند، محدودیت سرعت اعمال کند، وای‌فای را تنظیم کند، بسته‌ها را نشان دهد و در صورت نیاز پنل مشترک ISP را در WebView داخلی با میزبان‌های ازپیش‌تأییدشده نمایش دهد. این اپ محصول رسمی MikroTik نیست.
+جهان بیت ابزار مدیریت شبکهٔ محلی برای مشترکین اینترنت است. اپ به روتر MikroTik (RouterOS) روی LAN شما متصل می‌شود تا دستگاه‌ها را نشان دهد، دسترسی را مدیریت کند، محدودیت سرعت اعمال کند، وای‌فای را تنظیم کند و بستهٔ اینترنت مشترک را نشان دهد. این اپ محصول رسمی MikroTik نیست.
 
 ۲. کنترل‌گر / ناشر
 ناشر App Store: $appStoreSellerName
@@ -62,6 +62,7 @@ class LegalDocuments {
 
 ۳. داده‌هایی که روی دستگاه شما پردازش یا ذخیره می‌شوند
 - اعتبارنامهٔ RouterOS در حافظهٔ امن سیستم (Keystore / Keychain) در صورت «مرا به خاطر بسپار»
+- نام کاربری، رمز و توکن نشست سرویس حسابداری ولایت در همان حافظهٔ امن، فقط برای نمایش بسته و نام مشترک
 - تنظیمات اتصال: IP/هاست روتر، پورت، SSL، ولایت، زبان، تم
 - شناسه‌های محلی دستگاه‌های LAN (نام/MAC/IP محلی/وضعیت مسدود) برای نمایش و اقدام محلی شما
 - برچسب زمانی نشست محلی در صورت فعال بودن
@@ -71,18 +72,20 @@ class LegalDocuments {
 موقعیت GPS برای ردیابی، Advertising ID، دفترچه تلفن/پیامک/تماس/دوربین/میکروفون، فروش داده به کارگزاران. SDK تبلیغات یا analytics تبلیغاتی نداریم.
 
 ۵. شبکهٔ محلی
-برای کشف دروازه و اتصال به روتر MikroTik و پنل‌های تأییدشده روی LAN استفاده می‌شود؛ نه برای نقشه‌برداری مخفی یا شنود ترافیک.
+فقط برای کشف دروازه و اتصال API به روتر MikroTik روی شبکهٔ خودتان است. برای بعضی آنتن‌ها (مثل LHG و SXT) صفحهٔ وای‌فای همان دستگاه در مرورگر پیش‌فرض گوشی باز می‌شود، نه داخل اپ. اپ ترافیک را شنود نمی‌کند.
 
-۶. WebView پنل ISP
-محتوا، حساب، پرداخت و حریم خصوصی پنل تحت کنترل ISP است. ناوبری به allowlist محدود است.
+۶. اطلاعات بسته
+حجم، زمان، نام سرویس و نام مشترک از وب‌سرویس حسابداری همان ولایت با HTTPS خوانده می‌شود و فقط داخل اپ نشان داده می‌شود. مرورگر داخلی وجود ندارد.
 
 ۷. امنیت انتقال (TLS / cleartext)
-- میزبان‌های عمومی اینترنت فقط با HTTPS بارگذاری می‌شوند؛ cleartext به IP/دامنهٔ عمومی مجاز نیست.
-- HTTP بدون TLS فقط برای میزبان‌های خصوصی/محلی تأییدشده (مثلاً پنل LAN ولایت یا CPE روی ۱۰.۱۰.۱۰.۲) ممکن است.
-- گواهی TLS نامعتبر برای میزبان‌های عمومی پذیرفته نمی‌شود.
+- هر درخواست اینترنتی خود اپ فقط با HTTPS است.
+- استثنای HTTP ناامن برای IP عمومی یا خصوصی در تنظیمات شبکهٔ اندروید و iOS وجود ندارد.
+- صفحهٔ وای‌فای بعضی آنتن‌ها را خود اپ بارگذاری نمی‌کند؛ گوشی آن را در مرورگر پیش‌فرض باز می‌کند.
+- گواهی TLS نامعتبر پذیرفته نمی‌شود.
+- اتصال روتر از سوکت API شبکهٔ محلی است، نه از بارگذاری صفحهٔ وب.
 
 ۸. اشتراک‌گذاری
-اعتبارنامهٔ روتر یا فهرست LAN برای تبلیغات/فروش به اشخاص ثالث ارسال نمی‌شود. استفاده از پنل ISP تابع سیاست همان ارائه‌دهنده است.
+اعتبارنامهٔ روتر یا فهرست دستگاه‌های LAN برای تبلیغات فروخته یا ارسال نمی‌شود. ورود حسابداری فقط به نشانی HTTPS همان ولایت می‌رود.
 
 ۹. نگه‌داری و حذف
 خروج، «پاک‌سازی داده‌های محلی»، یا حذف اپ داده‌های محلی را طبق سیستم‌عامل پاک می‌کند. حساب ISP تابع قرارداد همان ارائه‌دهنده است.
@@ -110,7 +113,7 @@ App Store seller: $appStoreSellerName
 Web version (canonical): $privacyPolicyPublicUrl
 
 1. Overview and Scope
-Jahan Bit is a local-network management utility for internet subscribers. It connects to your MikroTik RouterOS device on your LAN to list devices, manage access, apply speed limits, change Wi‑Fi settings, show packages, and optionally display your ISP subscriber panel in an embedded WebView limited to allowlisted hosts. Jahan Bit is not an official MikroTik product.
+Jahan Bit is a local-network management utility for internet subscribers. It connects to your MikroTik RouterOS device on your LAN to list devices, manage access, apply speed limits, change Wi‑Fi settings, and show the subscriber internet package. Jahan Bit is not an official MikroTik product.
 
 2. Publisher / Controller
 App Store seller: $appStoreSellerName
@@ -118,6 +121,7 @@ Product brand: Jahan Bit
 
 3. Data Processed or Stored On Your Device
 - RouterOS credentials in OS secure storage when Remember Me / local session is used
+- Accounting username, password, and session token in the same secure storage, used only to show the package and subscriber name
 - Connection settings: router host/IP, port, SSL preference, province, language, theme
 - LAN device identifiers (hostname/MAC/local IP/ban state) for listing and local actions you initiate
 - Local session timestamp when enabled
@@ -127,18 +131,20 @@ Jahan Bit does not create its own cloud user account by default and does not upl
 No GPS tracking, Advertising ID, contacts/SMS/calls/camera/microphone, or sale of personal data to brokers. No advertising or ad-analytics SDKs.
 
 5. Local Network Access
-Used only to discover the default gateway and connect to your MikroTik router / allowlisted LAN ISP panels — not for covert scanning or traffic interception.
+Used only to discover the default gateway and open the MikroTik API on your own LAN. On some antennas (such as LHG and SXT) the Wi‑Fi page of that device opens in the phone’s default browser, not inside the app. The app does not intercept traffic.
 
-6. ISP Panel WebView
-Panel content, accounts, payments, and privacy practices are controlled by your ISP. Navigation is limited to allowlisted hosts.
+6. Package information
+Volume, time, service name, and the subscriber name are read over HTTPS from that province’s accounting service and shown only inside the app. There is no in-app browser.
 
 7. Transport Security (TLS / Cleartext)
-- Public internet hosts are loaded over HTTPS only; cleartext to public IPs/domains is not permitted.
-- HTTP without TLS may be used only for approved private/local hosts (for example a province LAN panel or CPE at 10.10.10.2).
-- Invalid TLS certificates are not accepted for public hosts.
+- Every internet request made by the app uses HTTPS.
+- Android and iOS network settings do not allow insecure HTTP exceptions for public or private addresses.
+- On some antennas the Wi‑Fi page is not loaded by the app; the phone opens it in the default browser.
+- Invalid TLS certificates are not accepted.
+- The router connection is a local API socket, not a web page.
 
 8. Sharing
-We do not sell or share router credentials or LAN device lists with advertisers. ISP panel use follows that provider’s policies.
+Router credentials and LAN device lists are not sold or sent to advertisers. The accounting login goes only to that province’s HTTPS address.
 
 9. Retention and Deletion
 Logout, Clear local data, or uninstall removes on-device app data per OS behavior. ISP accounts remain subject to the ISP’s contract.
