@@ -344,6 +344,9 @@ class _MainScaffoldState extends State<MainScaffold>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     mainBottomTabRequest.addListener(_onMainBottomTabRequested);
+    _serviceManager.reviewSimulationListenable.addListener(
+      _onReviewSimulationChanged,
+    );
     _checkLoginExpiration();
     if (kDebugMode) {
       unawaited(_loadNetworkInfo());
@@ -359,6 +362,12 @@ class _MainScaffoldState extends State<MainScaffold>
     }
   }
 
+  void _onReviewSimulationChanged() {
+    if (!mounted) return;
+    setState(() {});
+    _showReviewNoticeIfNeeded();
+  }
+
   void _showReviewNoticeIfNeeded() {
     if (!_serviceManager.consumeReviewNotice()) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -369,6 +378,9 @@ class _MainScaffoldState extends State<MainScaffold>
 
   @override
   void dispose() {
+    _serviceManager.reviewSimulationListenable.removeListener(
+      _onReviewSimulationChanged,
+    );
     mainBottomTabRequest.removeListener(_onMainBottomTabRequested);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();

@@ -139,6 +139,38 @@ class ReviewRouterOs {
     return rates;
   }
 
+  /// Sum of every online lease, including devices the list has not polled yet.
+  AggregateLiveTrafficRate networkLiveRate() {
+    ensureSeeded();
+    final now = DateTime.now();
+    final wobble = (now.second % 7) * 180000;
+    final banned = _bannedIps();
+    var rx = 0;
+    var tx = 0;
+    var count = 0;
+    for (final lease in _tables['/ip/dhcp-server/lease'] ?? const []) {
+      if (lease['status'] != 'bound') {
+        continue;
+      }
+      if (lease['block-access'] == 'yes') {
+        continue;
+      }
+      final ip = lease['address']?.trim();
+      if (ip == null || ip.isEmpty || banned.contains(ip)) {
+        continue;
+      }
+      rx += 1800000 + wobble + (ip.hashCode.abs() % 400000);
+      tx += 320000 + (wobble ~/ 5);
+      count++;
+    }
+    return AggregateLiveTrafficRate(
+      rxBps: rx,
+      txBps: tx,
+      deviceCount: count,
+      measured: true,
+    );
+  }
+
   void _seed() {
     _tables['/system/resource'] = [
       {

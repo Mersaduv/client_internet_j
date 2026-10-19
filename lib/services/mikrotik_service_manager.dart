@@ -42,8 +42,17 @@ class MikroTikServiceManager {
   bool _reviewNoticePending = false;
   bool _reviewNoticeShown = false;
 
+  /// خانه با این گوش می‌دهد تا نوار شبیه‌ساز همان لحظهٔ فعال شدن رسم شود.
+  final ValueNotifier<bool> reviewSimulationListenable = ValueNotifier(false);
+
   /// True only after jb.admin falls back to the in-phone RouterOS simulator.
   bool get reviewSimulation => _reviewSimulation;
+
+  void _setReviewSimulation(bool value) {
+    if (_reviewSimulation == value) return;
+    _reviewSimulation = value;
+    reviewSimulationListenable.value = value;
+  }
 
   /// Home shows the MikroTik warning once when simulation starts from splash.
   bool consumeReviewNotice() {
@@ -153,8 +162,9 @@ class MikroTikServiceManager {
 
   /// اتصال به MikroTik.
   ///
-  /// jb.admin اول با همین یوزر و رمز به RouterOS واقعی وصل می‌شود. شبیه‌ساز فقط
-  /// وقتی باز می‌شود که آن ورود شکست بخورد. ورود موفق، حالت شبیه‌ساز را می‌بندد.
+  /// jb.admin با هر رمزی اول به RouterOS واقعی وصل می‌شود. اگر گیت‌وی، پورت یا
+  /// رمز قبول شود شبیه‌ساز خاموش می‌ماند. هر شکست دیگری همان حساب را وارد
+  /// شبیه‌ساز می‌کند. بقیهٔ کاربران در صورت خطا شبیه‌ساز نمی‌گیرند.
   Future<bool> connect(MikroTikConnection connection) {
     final pending = _connectTask;
     if (pending != null) return pending;
@@ -168,13 +178,9 @@ class MikroTikServiceManager {
   }
 
   Future<bool> _connectBody(MikroTikConnection connection) async {
-    final review = ReviewDemoAccount.matches(
-      connection.username,
-      connection.password,
-    );
+    final review = ReviewDemoAccount.isTester(connection.username);
     final simulatorFallback = ReviewDemoAccount.simulatorFallback(
       connection.username,
-      connection.password,
     );
     final keepReal = !_reviewSimulation && (_service?.isConnected ?? false);
     disconnect();
@@ -193,7 +199,7 @@ class MikroTikServiceManager {
     if (!simulatorFallback || keepReal) {
       _service = null;
       _currentConnection = null;
-      _reviewSimulation = false;
+      _setReviewSimulation(false);
       _lastRouterError = await _explainRouterFailure(connection);
       return false;
     }
@@ -211,13 +217,19 @@ class MikroTikServiceManager {
     required bool review,
   }) async {
     try {
-      final real = await _openRealSession(connection);
+      if (review && !await _reviewRouterLoginOk(connection)) {
+        return false;
+      }
+      final real = await _openRealSession(
+        connection,
+        timeout: review ? const Duration(milliseconds: 1200) : null,
+      );
       if (real) return true;
     } catch (e) {
       if (!review) {
         _service = null;
         _currentConnection = null;
-        _reviewSimulation = false;
+        _setReviewSimulation(false);
         throw Exception('خطا در اتصال: $e');
       }
       debugPrint('[REVIEW_SIM] real RouterOS login failed: $e');
@@ -227,8 +239,27 @@ class MikroTikServiceManager {
     return false;
   }
 
+  /// برای jb.admin ورود واقعی را با یک پروب کوتاه می‌سنجد.
+  /// نبودِ روتر، پورت بسته یا رمز غلط همان‌جا رد می‌شود و شبیه‌ساز باز می‌شود.
+  Future<bool> _reviewRouterLoginOk(MikroTikConnection connection) async {
+    final probe = await probeRouterOsLogin(
+      host: connection.host,
+      port: connection.port,
+      username: connection.username,
+      password: connection.password,
+      connectTimeout: const Duration(milliseconds: 400),
+      replyTimeout: const Duration(milliseconds: 400),
+    );
+    if (probe.accepted || probe.challenge) return true;
+    debugPrint(
+      '[REVIEW_SIM] RouterOS login skipped '
+      '(${probe.detail ?? 'no reply'})',
+    );
+    return false;
+  }
+
   void _clearReviewMode() {
-    _reviewSimulation = false;
+    _setReviewSimulation(false);
     _reviewNoticePending = false;
     _reviewNoticeShown = false;
     ReviewRouterOs.instance.reset();
@@ -264,7 +295,8 @@ class MikroTikServiceManager {
   }
 
   Future<bool> _openReviewSimulation(MikroTikConnection connection) async {
-    _reviewSimulation = true;
+    _lastRouterError = null;
+    _setReviewSimulation(true);
     _service = ReviewSimulatedMikroTikService();
     _currentConnection = MikroTikConnection(
       host: '192.168.88.1',
@@ -320,7 +352,7 @@ class MikroTikServiceManager {
     _routerInfo = null;
     _routerInfoCacheTime = null;
     _progressiveLoadActive = false;
-    _reviewSimulation = false;
+    _setReviewSimulation(false);
   }
 
   bool get isProgressiveLoadActive => _progressiveLoadActive;
@@ -767,8 +799,12 @@ class MikroTikServiceManager {
   AggregateTrafficVolume get networkAggregateVolume =>
       _trafficMonitor.networkAggregateVolume;
 
-  AggregateLiveTrafficRate get networkAggregateLiveRate =>
-      _trafficMonitor.networkAggregateLiveRate;
+  AggregateLiveTrafficRate get networkAggregateLiveRate {
+    if (_reviewSimulation) {
+      return ReviewRouterOs.instance.networkLiveRate();
+    }
+    return _trafficMonitor.networkAggregateLiveRate;
+  }
 
   Future<void> disconnectTrafficMonitor() async {
     await _trafficMonitor.disconnect();

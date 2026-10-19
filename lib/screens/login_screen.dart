@@ -147,7 +147,12 @@ class _LoginScreenState extends State<LoginScreen> {
         discoveredHost = await hostFuture;
       } catch (_) {}
       final settings = await settingsFuture;
-      final saved = await savedFuture;
+      Map<String, String>? saved;
+      try {
+        saved = await savedFuture;
+      } catch (e) {
+        debugPrint('[LOGIN] saved credentials unreadable: $e');
+      }
       var routerPass = redeemed.routerPassword ?? '';
       if (routerPass.isEmpty &&
           saved != null &&
@@ -172,7 +177,11 @@ class _LoginScreenState extends State<LoginScreen> {
             password: redeemed.routerPassword!,
           ),
       ];
-      await Future.wait(saves);
+      try {
+        await Future.wait(saves);
+      } catch (e) {
+        debugPrint('[LOGIN] local save failed, continuing: $e');
+      }
       if (!mounted) return;
 
       if (routerPass.isNotEmpty) {

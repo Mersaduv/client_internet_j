@@ -12,7 +12,11 @@ import 'traffic_monitor_queue_sync.dart';
 
 /// Adaptive live traffic sampler for home and company RouterOS boards.
 ///
-/// Never writes queues or changes router config. Reads whatever already exists:
+/// The network banner is not the sum of on-screen devices. Each sample reads
+/// one router total: a parent/subnet queue rate, otherwise every host queue
+/// in the same print, otherwise `/interface/monitor-traffic` on the WAN.
+///
+/// Per-device badges stay on the scroll window and read whatever already exists:
 /// 1. Dedicated host Simple Queue (`ip/32`) instant `rate` when non-zero
 /// 2. `/ip/kid-control/device/print` — RouterOS v7+ per-MAC counters
 /// 3. `/ip/accounting/snapshot` — if accounting is already enabled
@@ -36,8 +40,15 @@ class LiveTrafficEngine {
   /// Absolute volumes for all discovered hosts (not limited to viewport).
   final Map<String, ({int rxBytes, int txBytes, LiveTrafficSource source})>
       _networkVolumes = {};
-  /// Live bps for discovered host queues (prefer instant queue `rate`).
-  final Map<String, ({int rxBps, int txBps})> _networkLiveRates = {};
+
+  /// Full-network live rate. Never the sum of viewport device streams.
+  AggregateLiveTrafficRate _networkLive = const AggregateLiveTrafficRate(
+    rxBps: 0,
+    txBps: 0,
+    deviceCount: 0,
+  );
+  List<Map<String, String>>? _queueRowsThisSample;
+  List<String>? _wanInterfaces;
   final TrafficMonitorQueueSync _queueSync = TrafficMonitorQueueSync();
 
   LiveTrafficCapabilities get capabilities => _caps;
@@ -63,21 +74,11 @@ class LiveTrafficEngine {
   }
 
   /// Network-wide live download/upload rate (bits/s).
-  AggregateLiveTrafficRate get networkAggregateLiveRate {
-    var rx = 0;
-    var tx = 0;
-    var count = 0;
-    for (final entry in _networkLiveRates.values) {
-      rx += entry.rxBps;
-      tx += entry.txBps;
-      count++;
-    }
-    return AggregateLiveTrafficRate(
-      rxBps: rx,
-      txBps: tx,
-      deviceCount: count,
-    );
-  }
+  ///
+  /// Parent/subnet queue `rate`, otherwise every dedicated host queue in the
+  /// same print, otherwise one WAN `monitor-traffic` sample. Viewport polls
+  /// do not contribute.
+  AggregateLiveTrafficRate get networkAggregateLiveRate => _networkLive;
 
   Future<void> connect(MikroTikConnection connection) async {
     if (_connection == connection && (_client?.isConnected ?? false)) {
@@ -115,14 +116,19 @@ class LiveTrafficEngine {
     required Set<String> trackedIps,
     required Map<String, String> macToIp,
   }) async {
-    _dropBaselinesNotIn(trackedIps);
+    _queueRowsThisSample = null;
+    if (trackedIps.isNotEmpty) {
+      _dropBaselinesNotIn(trackedIps);
+    }
 
     final client = _client;
-    if (client == null || !client.isConnected || trackedIps.isEmpty) {
+    if (client == null || !client.isConnected) {
       return {};
     }
 
-    final pollTimeout = MikrotikTimeouts.trafficPollForClients(trackedIps.length);
+    final pollTimeout = MikrotikTimeouts.trafficPollForClients(
+      trackedIps.isEmpty ? 1 : trackedIps.length,
+    );
 
     if (!_capsProbed) {
       _caps = await _probeCapabilities(client, pollTimeout);
@@ -134,7 +140,7 @@ class LiveTrafficEngine {
     final elapsed = _lastSampleAt == null ? null : now.difference(_lastSampleAt!);
     _lastSampleAt = now;
 
-    if (_warmupPending) {
+    if (_warmupPending && trackedIps.isNotEmpty) {
       await _captureBaselines(
         client,
         trackedIps,
@@ -146,6 +152,16 @@ class LiveTrafficEngine {
     }
 
     if (elapsed != null && elapsed.inMilliseconds < 200) {
+      return {};
+    }
+
+    try {
+      await _refreshNetworkLiveTotal(client, pollTimeout);
+    } catch (e) {
+      debugPrint('[LIVE_TRAFFIC] network total failed: $e');
+    }
+
+    if (trackedIps.isEmpty) {
       return {};
     }
 
@@ -229,16 +245,192 @@ class LiveTrafficEngine {
 
     // Attach absolute counters already cached for delta math — no extra API.
     _attachKnownVolumes(rates, trackedIps, sampledAt);
-    _mergeTrackedRatesIntoNetwork(rates);
     return rates;
   }
 
-  void _mergeTrackedRatesIntoNetwork(Map<String, ClientTrafficRate> rates) {
-    for (final entry in rates.entries) {
-      _networkLiveRates[entry.key] = (
-        rxBps: entry.value.rxBps,
-        txBps: entry.value.txBps,
+  /// One counter for every connected device, independent of the scroll window.
+  Future<void> _refreshNetworkLiveTotal(
+    RouterOSClientV2 client,
+    Duration pollTimeout,
+  ) async {
+    List<Map<String, String>> rows = const [];
+    try {
+      rows = await _fetchQueueStats(client, pollTimeout);
+    } catch (e) {
+      debugPrint('[LIVE_TRAFFIC] queue total unavailable: $e');
+    }
+
+    final fromQueues = TrafficRateParser.liveTotalFromQueueRows(rows);
+    if (fromQueues != null && fromQueues.hasTraffic) {
+      _networkLive = AggregateLiveTrafficRate(
+        rxBps: fromQueues.rxBps,
+        txBps: fromQueues.txBps,
+        deviceCount: fromQueues.queueCount,
+        measured: true,
       );
+      return;
+    }
+
+    final wan = await _sampleWanThroughput(client, pollTimeout);
+    if (wan != null) {
+      _networkLive = wan;
+      return;
+    }
+
+    if (fromQueues != null && fromQueues.authoritative) {
+      _networkLive = AggregateLiveTrafficRate(
+        rxBps: fromQueues.rxBps,
+        txBps: fromQueues.txBps,
+        deviceCount: fromQueues.queueCount,
+        measured: true,
+      );
+    }
+  }
+
+  Future<AggregateLiveTrafficRate?> _sampleWanThroughput(
+    RouterOSClientV2 client,
+    Duration pollTimeout,
+  ) async {
+    final interfaces = await _resolveWanInterfaces(client, pollTimeout);
+    if (interfaces.isEmpty) {
+      return null;
+    }
+
+    var rx = 0;
+    var tx = 0;
+    var sampled = 0;
+    for (final name in interfaces) {
+      try {
+        final rows = await client.talk(
+          [
+            '/interface/monitor-traffic',
+            '=interface=$name',
+            '=once=',
+          ],
+          timeout: pollTimeout,
+        );
+        if (rows.isEmpty) {
+          continue;
+        }
+        final parsed = TrafficRateParser.fromInterfaceMonitor(rows.first);
+        if (parsed == null) {
+          continue;
+        }
+        rx += parsed.rxBps;
+        tx += parsed.txBps;
+        sampled++;
+      } catch (e) {
+        debugPrint('[LIVE_TRAFFIC] monitor $name failed: $e');
+        _wanInterfaces = null;
+      }
+    }
+    if (sampled == 0) {
+      return null;
+    }
+    return AggregateLiveTrafficRate(
+      rxBps: rx,
+      txBps: tx,
+      deviceCount: sampled,
+      measured: true,
+    );
+  }
+
+  Future<List<String>> _resolveWanInterfaces(
+    RouterOSClientV2 client,
+    Duration pollTimeout,
+  ) async {
+    final cached = _wanInterfaces;
+    if (cached != null) {
+      return cached;
+    }
+
+    final names = <String>{};
+    var lookupSucceeded = false;
+    try {
+      final routes = await client.talk(
+        [
+          '/ip/route/print',
+          '=.proplist=dst-address,gateway,immediate-gw,gateway-status,active',
+        ],
+        timeout: pollTimeout,
+      );
+      lookupSucceeded = true;
+      for (final row in routes) {
+        final name = TrafficRateParser.wanInterfaceFromRoute(row);
+        if (name != null && name.isNotEmpty) {
+          names.add(name);
+        }
+      }
+    } catch (e) {
+      debugPrint('[LIVE_TRAFFIC] default route lookup failed: $e');
+      try {
+        final routes = await client.talk(
+          [
+            '/ip/route/print',
+            '=.proplist=dst-address,gateway,active',
+          ],
+          timeout: pollTimeout,
+        );
+        lookupSucceeded = true;
+        for (final row in routes) {
+          final name = TrafficRateParser.wanInterfaceFromRoute(row);
+          if (name != null && name.isNotEmpty) {
+            names.add(name);
+          }
+        }
+      } catch (fallbackError) {
+        debugPrint('[LIVE_TRAFFIC] route fallback failed: $fallbackError');
+      }
+    }
+
+    if (lookupSucceeded && names.isEmpty) {
+      names.addAll(await _fallbackWanInterfaces(client, pollTimeout));
+    }
+
+    if (!lookupSucceeded) {
+      return const [];
+    }
+    _wanInterfaces = names.toList(growable: false);
+    return _wanInterfaces!;
+  }
+
+  Future<Set<String>> _fallbackWanInterfaces(
+    RouterOSClientV2 client,
+    Duration pollTimeout,
+  ) async {
+    try {
+      final rows = await client.talk(
+        [
+          '/interface/print',
+          '=.proplist=name,type,running',
+        ],
+        timeout: pollTimeout,
+      );
+      final names = <String>{};
+      for (final row in rows) {
+        final running = row['running']?.trim().toLowerCase();
+        if (running != 'true' && running != 'yes') {
+          continue;
+        }
+        final name = row['name']?.trim();
+        if (name == null || name.isEmpty) {
+          continue;
+        }
+        final type = row['type']?.trim().toLowerCase() ?? '';
+        final lowerName = name.toLowerCase();
+        final uplink = type.contains('pppoe') ||
+            type == 'lte' ||
+            lowerName.startsWith('pppoe') ||
+            lowerName.startsWith('lte') ||
+            lowerName == 'wan';
+        if (uplink) {
+          names.add(name);
+        }
+      }
+      return names;
+    } catch (e) {
+      debugPrint('[LIVE_TRAFFIC] interface fallback failed: $e');
+      return const {};
     }
   }
 
@@ -841,15 +1033,21 @@ class LiveTrafficEngine {
   Future<List<Map<String, String>>> _fetchQueueStats(
     RouterOSClientV2 client,
     Duration pollTimeout,
-  ) {
-    return client.talk(
+  ) async {
+    final cached = _queueRowsThisSample;
+    if (cached != null) {
+      return cached;
+    }
+    final rows = await client.talk(
       [
         '/queue/simple/print',
         '=stats=',
-        '=.proplist=target,rate,rx-rate,tx-rate,bytes',
+        '=.proplist=target,parent,rate,rx-rate,tx-rate,bytes',
       ],
       timeout: pollTimeout,
     );
+    _queueRowsThisSample = rows;
+    return rows;
   }
 
   Future<List<Map<String, String>>> _fetchKidControlDevices(
@@ -977,13 +1175,6 @@ class LiveTrafficEngine {
           );
         }
       }
-      final parsed = TrafficRateParser.fromQueueStatsRow(row);
-      if (parsed != null) {
-        _networkLiveRates[ip] = (
-          rxBps: parsed.rxBps,
-          txBps: parsed.txBps,
-        );
-      }
     }
   }
 
@@ -1105,7 +1296,13 @@ class LiveTrafficEngine {
     _prevHotspotBytes.clear();
     _prevConnectionBytes.clear();
     _networkVolumes.clear();
-    _networkLiveRates.clear();
+    _networkLive = const AggregateLiveTrafficRate(
+      rxBps: 0,
+      txBps: 0,
+      deviceCount: 0,
+    );
+    _queueRowsThisSample = null;
+    _wanInterfaces = null;
   }
 
   String? _normalizeMac(String? mac) => mac?.trim().toUpperCase();

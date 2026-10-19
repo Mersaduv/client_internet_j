@@ -33,7 +33,7 @@ Future<bool> routerApiReachable(String host) async {
   try {
     final socket = await Socket.connect(
       host,
-      2752,
+      8728,
       timeout: const Duration(milliseconds: 1500),
     );
     socket.destroy();
@@ -65,9 +65,20 @@ List<int> _routerOsSentence(List<String> words) {
 }
 
 class RouterOsLoginProbe {
-  const RouterOsLoginProbe({required this.accepted, this.detail});
+  const RouterOsLoginProbe({
+    required this.accepted,
+    this.reachable = false,
+    this.challenge = false,
+    this.detail,
+  });
 
   final bool accepted;
+
+  /// پورت API جواب داده، حتی اگر رمز رد شده باشد.
+  final bool reachable;
+
+  /// RouterOS قدیمی چالش برگردانده و ورود واقعی هنوز تمام نشده.
+  final bool challenge;
   final String? detail;
 }
 
@@ -76,6 +87,8 @@ Future<RouterOsLoginProbe> probeRouterOsLogin({
   required int port,
   required String username,
   required String password,
+  Duration connectTimeout = const Duration(milliseconds: 1200),
+  Duration replyTimeout = const Duration(milliseconds: 1200),
 }) async {
   if (kIsWeb || host.isEmpty) {
     return const RouterOsLoginProbe(accepted: false);
@@ -85,7 +98,7 @@ Future<RouterOsLoginProbe> probeRouterOsLogin({
     socket = await Socket.connect(
       host,
       port,
-      timeout: const Duration(milliseconds: 1200),
+      timeout: connectTimeout,
     );
     final bytes = <int>[];
     final done = Completer<void>();
@@ -109,17 +122,25 @@ Future<RouterOsLoginProbe> probeRouterOsLogin({
         '=password=$password',
       ]),
     );
-    await done.future.timeout(
-      const Duration(milliseconds: 1200),
-      onTimeout: () {},
-    );
+    await done.future.timeout(replyTimeout, onTimeout: () {});
     await sub.cancel();
     final text = utf8.decode(bytes, allowMalformed: true);
-    if (text.contains('!done')) {
-      return const RouterOsLoginProbe(accepted: true);
-    }
     final message = RegExp(r'message=([^\x00]+)').firstMatch(text)?.group(1);
-    return RouterOsLoginProbe(accepted: false, detail: message);
+    if (text.contains('!done') && !text.contains('=ret=')) {
+      return const RouterOsLoginProbe(accepted: true, reachable: true);
+    }
+    if (text.contains('!done') && text.contains('=ret=')) {
+      return const RouterOsLoginProbe(
+        accepted: false,
+        reachable: true,
+        challenge: true,
+      );
+    }
+    return RouterOsLoginProbe(
+      accepted: false,
+      reachable: text.isNotEmpty,
+      detail: message,
+    );
   } catch (_) {
     return const RouterOsLoginProbe(accepted: false);
   } finally {

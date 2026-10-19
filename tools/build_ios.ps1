@@ -46,7 +46,7 @@ function Get-AppVersion {
   if ($line) {
     return ($line -replace '^\s*version:\s*', '').Trim()
   }
-  return '1.2.0+1'
+  return '2.0.0+1'
 }
 
 function Get-GitSha {

@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 
+import 'app_secure_storage.dart';
 import 'sib_http.dart';
 
 /// نام کاربری مشترک روی همین گوشی.
@@ -20,10 +21,7 @@ class DeltaSibAuthService {
   static const String defaultOrigin =
       'https://jb-herat.mersadkarimi001.workers.dev';
 
-  static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
+  static final _storage = AppSecureStorage.instance;
 
   static const _keyToken = 'sib_token';
   static const _keyUsername = 'sib_username';
@@ -79,8 +77,12 @@ class DeltaSibAuthService {
     if (session == null || session.isEmpty || username == null || username.isEmpty) {
       throw DeltaSibAuthException('نشست حجم ساخته نشد.');
     }
-    await _storage.write(key: _keySession, value: session);
-    await _storage.write(key: _keyUsername, value: username);
+    try {
+      await _storage.write(key: _keySession, value: session);
+      await _storage.write(key: _keyUsername, value: username);
+    } catch (e) {
+      debugPrint('[SIB] session persist failed: $e');
+    }
     return RedeemedAccess(
       username: username,
       routerPassword: routerPassword != null && routerPassword.isNotEmpty
@@ -106,12 +108,12 @@ class DeltaSibAuthService {
       throw DeltaSibAuthException('نام کاربری مشترک خالی است.');
     }
     final previous = (await _storage.read(key: _keyUsername))?.trim();
-    await Future.wait<void>([
-      _storage.write(key: _keyUsername, value: name),
-      _storage.delete(key: _keyToken),
-      _storage.delete(key: _keyPassword),
-      if (previous != null && previous != name) _storage.delete(key: _keySession),
-    ]);
+    await _storage.write(key: _keyUsername, value: name);
+    await _storage.delete(key: _keyToken);
+    await _storage.delete(key: _keyPassword);
+    if (previous != null && previous != name) {
+      await _storage.delete(key: _keySession);
+    }
   }
 
   Future<void> clear() async {

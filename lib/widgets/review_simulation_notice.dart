@@ -32,12 +32,12 @@ class _ReviewSimulationDialog extends StatelessWidget {
     return AlertDialog(
       backgroundColor: isDark ? AppTheme.darkScaffold : null,
       title: const Text('Not connected to MikroTik\nبه میکروتیک وصل نیستید'),
-      content: const SingleChildScrollView(
+      content: SingleChildScrollView(
         child: Text(
-          'This phone is not on a MikroTik LAN, so the router API '
-          '(Winbox / port 2752) did not answer.\n'
-          'این گوشی روی شبکهٔ محلی میکروتیک نیست و API روتر '
-          '(Winbox / پورت ۸۷۲۸) پاسخ نداد.\n\n'
+          'The review account jb.admin could not sign in to RouterOS. '
+          'The gateway, API port 8728, or the password did not succeed.\n'
+          'حساب jb.admin به RouterOS وارد نشد. گیت‌وی، پورت API ۸۷۲۸، '
+          'یا رمز قبول نشد.\n\n'
           'You are using the review account. Connected devices, banned '
           'devices, ban / unban, speed limit, lock new connections, and '
           'Wi-Fi will run on a simulator on this phone. Each action sends '
@@ -49,10 +49,7 @@ class _ReviewSimulationDialog extends StatelessWidget {
           'می‌کند. روتر هیچ مشترکی تغییر نمی‌کند.\n\n'
           'DeltaSIB package data still loads when that service responds.\n'
           'اطلاعات بستهٔ دلتاسیب اگر سرویس جواب بدهد نشان داده می‌شود.\n\n'
-          'Continue to use the simulator, or stay here and sign in with a '
-          'router account that is on this LAN.\n'
-          'برای کار با شبیه‌ساز ادامه دهید، یا همین‌جا بمانید و با یوزر '
-          'واقعی روتر همین شبکه وارد شوید.',
+          '${allowStayOnLogin ? 'Continue to use the simulator, or stay here and sign in with a router account that is on this LAN.\nبرای کار با شبیه‌ساز ادامه دهید، یا همین‌جا بمانید و با یوزر واقعی روتر همین شبکه وارد شوید.' : 'The simulator is already on. A successful RouterOS login would have stayed on the real router.\nشبیه‌ساز روشن است. اگر ورود به RouterOS موفق بود، اتصال واقعی می‌ماند.'}',
         ),
       ),
       actions: [

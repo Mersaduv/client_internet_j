@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/mikrotik_connection.dart';
 import '../utils/webview_host_allowlist.dart';
+import 'app_secure_storage.dart';
 
 /// سرویس برای مدیریت تنظیمات اتصال MikroTik
 class SettingsService {
@@ -25,10 +25,7 @@ class SettingsService {
   final ValueNotifier<String?> packageProvinceListenable =
       ValueNotifier<String?>(null);
 
-  static const _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
+  static final _secureStorage = AppSecureStorage.instance;
 
   static const _keyUsername = 'secure_username';
   static const _keyPassword = 'secure_password';
@@ -86,12 +83,12 @@ class SettingsService {
     }
   }
 
-  /// دریافت Port — همیشه پورت API پروژه (2752)
+  /// دریافت Port — همیشه پورت API پروژه (8728)
   Future<int> getPort() async {
     return _cachedPort ??= MikroTikConnection.apiPort;
   }
 
-  /// ذخیره Port — پورت API همیشه 2752 است
+  /// ذخیره Port — پورت API همیشه 8728 است
   Future<void> setPort(int port) async {
     _cachedPort = MikroTikConnection.apiPort;
     try {
@@ -274,12 +271,8 @@ class SettingsService {
 
   /// بازیابی اعتبارنامه ذخیره‌شده
   Future<Map<String, String>?> getSavedCredentials() async {
-    final stored = await Future.wait<String?>([
-      _secureStorage.read(key: _keyUsername),
-      _secureStorage.read(key: _keyPassword),
-    ]);
-    final username = stored[0];
-    final password = stored[1];
+    final username = await _secureStorage.read(key: _keyUsername);
+    final password = await _secureStorage.read(key: _keyPassword);
     if (username == null || password == null) {
       return null;
     }

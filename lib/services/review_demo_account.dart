@@ -1,11 +1,12 @@
-/// Store-review login. Simulator mode never applies to any other username.
+/// Store-review login. Only [username] `jb.admin` can enter the simulator.
 ///
-/// The tester is identified by [username]. The password they type is kept for
-/// a real router attempt and is not compared to a fixed review secret.
+/// Any password is sent to RouterOS first. The simulator is allowed only when
+/// that login fails. A successful gateway, port, and password login stays real.
 abstract final class ReviewDemoAccount {
   static const String username = 'jb.admin';
 
-  /// فقط وقتی رمز Winbox از سرور نیامده. با رمز واقعی روتر شبیه‌ساز باز نمی‌شود.
+  /// رمز جایگزین وقتی سرور رمز Winbox نفرستاده تا تلاش واقعی انجام شود.
+  /// قبول شدن همین رمز توسط روتر شبیه‌ساز را باز نمی‌کند؛ شکست آن باز می‌کند.
   static const String simulatorPassword = 'review-sign-in';
 
   static bool isTester(String username) {
@@ -16,7 +17,8 @@ abstract final class ReviewDemoAccount {
     return isTester(username) && password.isNotEmpty;
   }
 
-  static bool simulatorFallback(String username, String password) {
-    return isTester(username) && password == simulatorPassword;
+  /// رمز مهم نیست؛ فقط نام کاربری حساب بازبینی مجوز شبیه‌ساز است.
+  static bool simulatorFallback(String username) {
+    return isTester(username);
   }
 }

@@ -19,6 +19,10 @@ void main() {
     expect(ReviewDemoAccount.matches('JB.admin', 'admin123'), isFalse);
     expect(ReviewDemoAccount.matches('jb.admin', ''), isFalse);
     expect(ReviewDemoAccount.matches('subscriber', 'admin123'), isFalse);
+    expect(ReviewDemoAccount.simulatorFallback('jb.admin'), isTrue);
+    expect(ReviewDemoAccount.simulatorFallback('jb.admin '), isTrue);
+    expect(ReviewDemoAccount.simulatorFallback('JB.admin'), isFalse);
+    expect(ReviewDemoAccount.simulatorFallback('subscriber'), isFalse);
   });
 
   test('simulator lease print, ban, speed, and lock use RouterOS sentences', () async {

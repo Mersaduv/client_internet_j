@@ -85,6 +85,9 @@ class ClientsProvider extends ChangeNotifier {
   Timer? _trafficPlaceholderTimer;
   Timer? _trafficDisplayTimer;
   final Set<String> _pinnedTrafficIps = {};
+  int? _publishedNetworkRx;
+  int? _publishedNetworkTx;
+  bool _publishedNetworkMeasured = false;
 
   static const Duration _trafficViewportSyncDelay = Duration(milliseconds: 200);
   static const int _trafficViewportIndexPad = 2;
@@ -1730,14 +1733,13 @@ class ClientsProvider extends ChangeNotifier {
     _trafficPollInProgress = true;
     try {
       final tracking = _trafficTrackingContext();
-      if (tracking.ips.isEmpty) {
-        return {};
-      }
       _configureTrafficStream(trackedCount: tracking.ips.length);
-      return await _serviceManager.pollTrafficRates(
+      final rates = await _serviceManager.pollTrafficRates(
         trackedIps: tracking.ips,
         macToIp: tracking.macToIp,
       );
+      _publishNetworkAggregate();
+      return rates;
     } catch (e) {
       debugPrint('[TRAFFIC] stream sample failed: $e');
       return {};
@@ -1811,15 +1813,30 @@ class ClientsProvider extends ChangeNotifier {
     );
   }
 
-  /// Network-wide live per-second rate (prefer engine-wide queue rates).
-  AggregateLiveTrafficRate get aggregateLiveTrafficRate {
-    final fromEngine = _serviceManager.networkAggregateLiveRate;
-    if (fromEngine.hasData) {
-      return fromEngine;
+  /// Live total from the router (parent queue or WAN), never a viewport sum.
+  AggregateLiveTrafficRate get aggregateLiveTrafficRate =>
+      _serviceManager.networkAggregateLiveRate;
+
+  void _publishNetworkAggregate() {
+    final aggregate = _serviceManager.networkAggregateLiveRate;
+    if (!aggregate.measured) {
+      return;
     }
-    return _trafficStore.aggregateLiveRateFor(
-      clientsForDisplay.map((c) => c.ipAddress),
-    );
+    if (_publishedNetworkMeasured &&
+        _publishedNetworkRx == aggregate.rxBps &&
+        _publishedNetworkTx == aggregate.txBps) {
+      return;
+    }
+    _publishedNetworkMeasured = true;
+    _publishedNetworkRx = aggregate.rxBps;
+    _publishedNetworkTx = aggregate.txBps;
+    notifyListeners();
+  }
+
+  void _resetNetworkAggregatePublish() {
+    _publishedNetworkMeasured = false;
+    _publishedNetworkRx = null;
+    _publishedNetworkTx = null;
   }
 
   bool _trafficRateChanged(int? previous, int? next) {
@@ -1992,6 +2009,7 @@ class ClientsProvider extends ChangeNotifier {
 
     _stopTrafficStream();
     _trafficStore.reset();
+    _resetNetworkAggregatePublish();
     _sequentialHomeLoadActive = true;
     _serviceManager.beginProgressiveLoad();
     try {
@@ -2931,6 +2949,7 @@ class ClientsProvider extends ChangeNotifier {
     _stopTrafficStream();
     unawaited(_serviceManager.disconnectTrafficMonitor());
     _trafficStore.reset();
+    _resetNetworkAggregatePublish();
     _suppressNotifications = false;
     _pendingNotifications = 0;
     _apiOperationInProgress = false;
@@ -3018,6 +3037,7 @@ class ClientsProvider extends ChangeNotifier {
     _stopTrafficStream();
     unawaited(_serviceManager.disconnectTrafficMonitor());
     _trafficStore.reset();
+    _resetNetworkAggregatePublish();
     super.dispose();
   }
 }

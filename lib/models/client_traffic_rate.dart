@@ -78,17 +78,24 @@ class AggregateTrafficVolume {
   int get totalBytes => rxBytes + txBytes;
 }
 
-/// Sum of live per-second rates across devices.
+/// Instantaneous network total from one router counter.
+///
+/// [measured] means the sample came from a parent queue or the WAN interface,
+/// not from summing per-device viewport streams.
 class AggregateLiveTrafficRate {
   const AggregateLiveTrafficRate({
     required this.rxBps,
     required this.txBps,
     required this.deviceCount,
+    this.measured = false,
   });
 
   final int rxBps;
   final int txBps;
   final int deviceCount;
 
-  bool get hasData => deviceCount > 0;
+  /// True after a full-network sample, including a real zero.
+  final bool measured;
+
+  bool get hasData => measured;
 }

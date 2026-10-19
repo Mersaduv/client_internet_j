@@ -11,7 +11,7 @@
 [Setup]
 AppId={{9D14829D-5B3D-4208-BFCA-0A1A2B95C7F1}
 AppName=Jahan Bit
-AppVersion=1.2.0
+AppVersion=2.0.0
 AppPublisher=Jahan Bit
 AppPublisherURL=https://github.com
 AppSupportURL=https://github.com
@@ -29,7 +29,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 SetupIconFile=windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\Jahan_Bit.exe
 UninstallDisplayName=Jahan Bit
-VersionInfoVersion=1.2.0.0
+VersionInfoVersion=2.0.0.0
 VersionInfoCompany=Jahan Bit
 VersionInfoDescription=Jahan Bit Setup
 VersionInfoProductName=Jahan Bit
