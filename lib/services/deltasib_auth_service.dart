@@ -3,20 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'sib_http.dart';
 
-/// کلاینت REST دلتاسیب (WebService 1.0).
+/// نام کاربری مشترک روی همین گوشی.
 ///
-  /// ورود واقعی روی پنل هرات (همان صفحهٔ تست که از ورکر جواب می‌دهد):
-/// POST {origin}/test/webservice/api/restfull/test.login.php
-/// فیلدها: Api_Username و Api_Password
-/// پاسخ HTML شامل JSON با token و SessionTimeout است.
-/// مسیر /1.0/auth/ روی پورت 1043 از اینجا 521 می‌دهد و استفاده نمی‌شود.
-///
-/// توکن در اپ منقضی نمی‌شود. اگر سرور SessionTimeout بدهد، قبل از پایان
-/// با همان یوزر/رمز تمدید می‌شود تا از دید کاربر همیشگی بماند.
+/// توکن ریسلر Api روی گوشی نیست. حجم را ورکر با یوزر Api سرور و
+/// Filter=Username همان مشترک می‌گیرد.
 class DeltaSibAuthService {
   DeltaSibAuthService._();
   static final DeltaSibAuthService instance = DeltaSibAuthService._();
@@ -34,12 +28,11 @@ class DeltaSibAuthService {
   static const _keyToken = 'sib_token';
   static const _keyUsername = 'sib_username';
   static const _keyPassword = 'sib_password';
+  static const _keySession = 'sib_session';
 
-  Timer? _renewTimer;
-  String? _cachedToken;
-  Future<String>? _pending;
+  Future<void>? _pending;
 
-  /// تمام می‌شود وقتی ورودِ در حال اجرا، اگر باشد، تمام شود.
+  /// تمام می‌شود وقتی ذخیرهٔ نام مشترک، اگر در جریان باشد، تمام شود.
   Future<void> get ready => _pending ?? Future<void>.value();
 
   static String apiKeyForPassword(String password) {
@@ -48,137 +41,95 @@ class DeltaSibAuthService {
 
   Future<String?> savedUsername() => _storage.read(key: _keyUsername);
 
-  Future<String?> currentToken() async {
-    if (_cachedToken != null && _cachedToken!.isNotEmpty) return _cachedToken;
-    _cachedToken = await _storage.read(key: _keyToken);
-    return _cachedToken;
+  Future<String?> savedSession() => _storage.read(key: _keySession);
+
+  /// کد ۱۰ رقمی را با نام مشترکِ ذخیره‌شده روی سرور عوض می‌کند.
+  /// کد یک‌بارمصرف می‌سوزد و رمز Winbox را فقط همین یک بار برمی‌گرداند.
+  /// کد همیشگی دوباره قابل استفاده است و رمز روتر ندارد.
+  Future<RedeemedAccess> redeemAccessCode({
+    required String code,
+    required String origin,
+  }) async {
+    final digits = code.replaceAll(RegExp(r'\D'), '');
+    if (digits.length != 10) {
+      throw DeltaSibAuthException('کد باید ۱۰ رقم باشد.');
+    }
+    final base = origin.endsWith('/') ? origin.substring(0, origin.length - 1) : origin;
+    final uri = Uri.parse('$base/jahanbit/sib/redeem');
+    final request = await SibHttp.client
+        .postUrl(uri)
+        .timeout(const Duration(seconds: 12));
+    request.headers.contentType = ContentType(
+      'application',
+      'json',
+      charset: 'utf-8',
+    );
+    request.write(jsonEncode({'code': digits}));
+    final response = await request.close().timeout(const Duration(seconds: 20));
+    final text = await response.transform(utf8.decoder).join();
+    if (response.statusCode != 200) {
+      throw DeltaSibAuthException(_redeemError(text, response.statusCode));
+    }
+    final decoded = jsonDecode(text);
+    final session = decoded is Map ? decoded['session']?.toString() : null;
+    final username = decoded is Map ? decoded['username']?.toString().trim() : null;
+    final routerPassword = decoded is Map
+        ? decoded['routerPassword']?.toString()
+        : null;
+    if (session == null || session.isEmpty || username == null || username.isEmpty) {
+      throw DeltaSibAuthException('نشست حجم ساخته نشد.');
+    }
+    await _storage.write(key: _keySession, value: session);
+    await _storage.write(key: _keyUsername, value: username);
+    return RedeemedAccess(
+      username: username,
+      routerPassword: routerPassword != null && routerPassword.isNotEmpty
+          ? routerPassword
+          : null,
+    );
   }
 
-  /// دریافت توکن و ذخیرهٔ دائمی. خطا را throw می‌کند.
-  Future<String> login({
-    required String username,
-    required String password,
-    String origin = defaultOrigin,
-  }) {
-    late final Future<String> run;
-    run = _login(
-      username: username,
-      password: password,
-      origin: origin,
-    ).whenComplete(() {
+  /// نام مشترک را نگه می‌دارد و توکن/رمز Api ذخیره‌شدهٔ قبلی را پاک می‌کند.
+  /// رمز روتر به دلتاسیب فرستاده نمی‌شود.
+  Future<void> rememberSubscriber(String username) {
+    late final Future<void> run;
+    run = _remember(username).whenComplete(() {
       if (identical(_pending, run)) _pending = null;
     });
     _pending = run;
     return run;
   }
 
-  Future<String> _login({
-    required String username,
-    required String password,
-    required String origin,
-  }) async {
-    final session = await _requestToken(
-      username: username,
-      password: password,
-      origin: origin,
-    );
-    await Future.wait<void>([
-      _storage.write(key: _keyToken, value: session.token),
-      _storage.write(key: _keyUsername, value: username),
-      _storage.write(key: _keyPassword, value: password),
-    ]);
-    _cachedToken = session.token;
-    _scheduleRenew(session.sessionTimeoutSeconds, origin);
-    return session.token;
-  }
-
-  /// اگر توکن ذخیره شده باشد همان را برمی‌گرداند؛ وگرنه با اعتبار ذخیره تمدید می‌کند.
-  Future<String?> ensureToken({String origin = defaultOrigin}) async {
-    final existing = await currentToken();
-    if (existing != null && existing.isNotEmpty) {
-      _scheduleRenew(null, origin);
-      return existing;
+  Future<void> _remember(String username) async {
+    final name = username.trim();
+    if (name.isEmpty) {
+      throw DeltaSibAuthException('نام کاربری مشترک خالی است.');
     }
-    final username = await _storage.read(key: _keyUsername);
-    final password = await _storage.read(key: _keyPassword);
-    if (username == null || password == null) return null;
-    return login(username: username, password: password, origin: origin);
+    final previous = (await _storage.read(key: _keyUsername))?.trim();
+    await Future.wait<void>([
+      _storage.write(key: _keyUsername, value: name),
+      _storage.delete(key: _keyToken),
+      _storage.delete(key: _keyPassword),
+      if (previous != null && previous != name) _storage.delete(key: _keySession),
+    ]);
   }
 
   Future<void> clear() async {
-    _renewTimer?.cancel();
-    _renewTimer = null;
-    _cachedToken = null;
+    _pending = null;
     await _storage.delete(key: _keyToken);
     await _storage.delete(key: _keyUsername);
     await _storage.delete(key: _keyPassword);
+    await _storage.delete(key: _keySession);
   }
 
-  void _scheduleRenew(int? timeoutSeconds, String origin) {
-    _renewTimer?.cancel();
-    // بدون SessionTimeout یا مقدار صفر = توکن سرور همیشگی است.
-    if (timeoutSeconds == null || timeoutSeconds <= 0) return;
-    final wait = Duration(
-      seconds: timeoutSeconds > 120 ? timeoutSeconds - 60 : (timeoutSeconds * 0.8).floor(),
-    );
-    if (wait.inSeconds < 5) return;
-    _renewTimer = Timer(wait, () async {
-      try {
-        final username = await _storage.read(key: _keyUsername);
-        final password = await _storage.read(key: _keyPassword);
-        if (username == null || password == null) return;
-        await login(username: username, password: password, origin: origin);
-      } catch (e) {
-        debugPrint('[SIB] renew failed: $e');
-      }
-    });
-  }
-
-  Future<_SibSession> _requestToken({
-    required String username,
-    required String password,
-    required String origin,
-  }) async {
-    final base = origin.endsWith('/') ? origin.substring(0, origin.length - 1) : origin;
-    final uri = Uri.parse(
-      '$base/test/webservice/api/restfull/test.login.php',
-    );
-    final body = {
-      'Api_Username': username,
-      'Api_Password': password,
-      'submit': 'Submit',
-    };
-
+  static String _redeemError(String text, int status) {
     try {
-      final request = await SibHttp.client
-          .postUrl(uri)
-          .timeout(const Duration(seconds: 12));
-      request.headers.contentType = ContentType(
-        'application',
-        'x-www-form-urlencoded',
-        charset: 'utf-8',
-      );
-      request.write(Uri(queryParameters: body).query);
-      final response = await request.close().timeout(const Duration(seconds: 20));
-      final text = await response.transform(utf8.decoder).join();
-      if (response.statusCode != 200 || text.contains('error code: 521')) {
-        throw DeltaSibAuthException(
-          'دلتاسیب HTTP ${response.statusCode}',
-        );
+      final decoded = jsonDecode(text);
+      if (decoded is Map && decoded['error'] != null) {
+        return decoded['error'].toString();
       }
-      final parsed = parseLoginPage(text);
-      if (parsed == null) {
-        throw DeltaSibAuthException('توکن دلتاسیب در پاسخ پیدا نشد');
-      }
-      return _SibSession(
-        token: parsed.token,
-        sessionTimeoutSeconds: parsed.sessionTimeoutSeconds,
-      );
-    } on DeltaSibAuthException {
-      rethrow;
-    } catch (e) {
-      throw DeltaSibAuthException('اتصال به دلتاسیب برقرار نشد: $e');
-    }
+    } catch (_) {}
+    return 'کد ورود پذیرفته نشد (HTTP $status)';
   }
 
   /// HTML صفحهٔ test.login.php یا JSON خام را به توکن تبدیل می‌کند.
@@ -208,16 +159,6 @@ class DeltaSibAuthService {
     } catch (_) {}
     return null;
   }
-
-  String? _errorText(Map<String, dynamic> json) {
-    final code = json['ErrorCode'];
-    final desc = json['ErrorDesc']?.toString();
-    if (code == null && (desc == null || desc.isEmpty)) return null;
-    if (desc != null && desc.isNotEmpty) {
-      return code == null ? desc : '$desc ($code)';
-    }
-    return 'خطای دلتاسیب $code';
-  }
 }
 
 class SibLoginResult {
@@ -226,15 +167,16 @@ class SibLoginResult {
   final int? sessionTimeoutSeconds;
 }
 
+class RedeemedAccess {
+  const RedeemedAccess({required this.username, this.routerPassword});
+
+  final String username;
+  final String? routerPassword;
+}
+
 class DeltaSibAuthException implements Exception {
   DeltaSibAuthException(this.message);
   final String message;
   @override
   String toString() => message;
-}
-
-class _SibSession {
-  _SibSession({required this.token, this.sessionTimeoutSeconds});
-  final String token;
-  final int? sessionTimeoutSeconds;
 }

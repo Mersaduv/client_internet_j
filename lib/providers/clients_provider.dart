@@ -1170,13 +1170,17 @@ class ClientsProvider extends ChangeNotifier {
     bool notifyChanges = true,
   }) async {
     if (!_serviceManager.isConnected) {
-      _errorMessage = '????? ?????? ???? ???. ???? ?????? ???? ????.';
-      _isLoading = false;
-      _isDataComplete = false;
-      if (notifyChanges) {
-        notifyListeners();
+      final restored = await _serviceManager.ensureSession();
+      if (!restored || !_serviceManager.isConnected) {
+        _errorMessage = _serviceManager.lastRouterError ??
+            'اتصال برقرار نشده است. لطفاً دوباره وارد شوید.';
+        _isLoading = false;
+        _isDataComplete = false;
+        if (notifyChanges) {
+          notifyListeners();
+        }
+        return;
       }
-      return;
     }
 
     if (showLoading) {
@@ -1962,18 +1966,13 @@ class ClientsProvider extends ChangeNotifier {
   }
 
   Future<void> _runProgressiveLoad() async {
-    if (_serviceManager.service == null) {
-      _errorMessage = 'اتصال برقرار نشده است. لطفاً دوباره وارد شوید.';
-      _isLoading = false;
-      _isDataComplete = false;
-      notifyListeners();
-      return;
-    }
-
-    if (!_serviceManager.isConnected) {
+    if (_serviceManager.service == null || !_serviceManager.isConnected) {
       final restored = await _serviceManager.ensureSession();
-      if (!restored) {
-        _errorMessage = 'اتصال برقرار نشده است. لطفاً دوباره وارد شوید.';
+      if (!restored ||
+          _serviceManager.service == null ||
+          !_serviceManager.isConnected) {
+        _errorMessage = _serviceManager.lastRouterError ??
+            'اتصال برقرار نشده است. لطفاً دوباره وارد شوید.';
         _isLoading = false;
         _isDataComplete = false;
         notifyListeners();
@@ -1996,11 +1995,7 @@ class ClientsProvider extends ChangeNotifier {
     _sequentialHomeLoadActive = true;
     _serviceManager.beginProgressiveLoad();
     try {
-      await _resolveDeviceIdentityEarly();
-
-      // One ban-rules fetch before phase1 so connected list filtering is correct
-      // and we avoid duplicate firewall/raw API calls queued behind heavy enrich.
-      await prefetchTabCounts();
+      unawaited(_resolveDeviceIdentityEarly());
       await _loadPhase1DeviceList();
 
       _phase1Complete = true;
@@ -2008,6 +2003,7 @@ class ClientsProvider extends ChangeNotifier {
       _currentPhase = LoadingPhase.phase2;
       notifyListeners();
 
+      unawaited(prefetchTabCounts());
       _startTrafficStream();
       _serviceManager.endProgressiveLoad();
 
@@ -2094,11 +2090,11 @@ class ClientsProvider extends ChangeNotifier {
     _phase2Complete = false;
     notifyListeners();
     try {
-      await prefetchTabCounts();
       await _loadPhase1DeviceList(preserveVisibleWindow: true);
       _phase1Complete = true;
       _isLoading = false;
       _currentPhase = LoadingPhase.phase2;
+      unawaited(prefetchTabCounts());
       _startTrafficStream();
       notifyListeners();
       unawaited(_loadPhase2AndFinish());

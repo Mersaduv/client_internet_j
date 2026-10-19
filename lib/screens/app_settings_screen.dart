@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../services/deltasib_auth_service.dart';
 import '../services/mikrotik_service_manager.dart';
 import '../services/settings_service.dart';
+import '../services/sib_package_store.dart';
 import '../providers/clients_provider.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
@@ -504,6 +506,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     final provider = Provider.of<ClientsProvider>(context, listen: false);
     provider.clear();
     _serviceManager.disconnect();
+    await DeltaSibAuthService().clear();
+    await SibPackageStore.clear();
     await _settingsService.clearAllLocalData();
 
     if (!mounted) return;

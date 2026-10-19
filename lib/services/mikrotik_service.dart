@@ -12,6 +12,10 @@ import '../models/client_traffic_rate.dart';
 import '../models/traffic_rates_snapshot.dart';
 import '../utils/client_display_name.dart';
 import '../utils/traffic_rate_parser.dart';
+import 'review_router_log.dart';
+import 'review_router_os.dart';
+
+part 'review_simulated_mikrotik.dart';
 
 /// سرویس برای مدیریت اتصال و عملیات MikroTik RouterOS
 /// مشابه endpointهای /api/clients/* در پروژه Python
@@ -489,7 +493,7 @@ class MikroTikService {
     } else if (normalizedMac != null) {
       command.add('=src-mac-address=$normalizedMac');
     }
-    await _client!.talk(command);
+    await _talk(command);
   }
 
   Future<List<Map<String, String>>> _accessListForMac(String macAddress) async {
@@ -536,7 +540,7 @@ class MikroTikService {
     ];
 
     try {
-      await _client!.talk(command);
+      await _talk(command);
     } catch (_) {
       await _talk([
         '/interface/wireless/access-list/add',
@@ -3619,18 +3623,30 @@ class MikroTikService {
         : ['/system/script/run', '=number=0'];
 
     unawaited(
+      _dispatchWifiScript(runCommand: runCommand, scriptSource: scriptSource),
+    );
+
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    debugPrint(
+      '[WIFI_SETTINGS] ✅ All changes dispatched. Wireless will restart.',
+    );
+  }
+
+  /// Runs the uploaded Wi-Fi script. The review simulator overrides this so
+  /// the same script is applied without a live socket.
+  Future<void> _dispatchWifiScript({
+    required List<String> runCommand,
+    required String scriptSource,
+  }) async {
+    unawaited(
       _client!.talk(runCommand).timeout(const Duration(seconds: 3)).catchError((
         Object e,
       ) {
         debugPrint(
           '[WIFI_SETTINGS] ℹ️ Script triggered, connection may drop (expected): $e',
         );
+        return <Map<String, String>>[];
       }),
-    );
-
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    debugPrint(
-      '[WIFI_SETTINGS] ✅ All changes dispatched. Wireless will restart.',
     );
   }
 

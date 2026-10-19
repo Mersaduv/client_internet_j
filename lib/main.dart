@@ -27,6 +27,7 @@ import 'utils/app_theme.dart';
 import 'widgets/client_live_traffic_badge.dart';
 import 'widgets/cosmic_background.dart';
 import 'widgets/home_subscriber_panel.dart';
+import 'widgets/review_simulation_notice.dart';
 import 'widgets/traffic_list_item_visibility.dart';
 import 'utils/main_navigation.dart';
 
@@ -291,7 +292,7 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    if (success && manager.isConnected) {
+    if (success) {
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
       if (success && !manager.isConnected) {
@@ -344,7 +345,26 @@ class _MainScaffoldState extends State<MainScaffold>
     WidgetsBinding.instance.addObserver(this);
     mainBottomTabRequest.addListener(_onMainBottomTabRequested);
     _checkLoginExpiration();
-    _loadNetworkInfo();
+    if (kDebugMode) {
+      unawaited(_loadNetworkInfo());
+    }
+    final pendingConnect = _serviceManager.connectInFlight;
+    if (pendingConnect != null) {
+      unawaited(pendingConnect.whenComplete(() {
+        if (!mounted) return;
+        _showReviewNoticeIfNeeded();
+      }));
+    } else {
+      _showReviewNoticeIfNeeded();
+    }
+  }
+
+  void _showReviewNoticeIfNeeded() {
+    if (!_serviceManager.consumeReviewNotice()) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showReviewSimulationDialog(context, allowStayOnLogin: false);
+    });
   }
 
   @override
@@ -454,12 +474,19 @@ class _MainScaffoldState extends State<MainScaffold>
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkScaffold : colorScheme.surface,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          HomePage(),
-          InternetPackagesScreen(),
-          AppSettingsScreen(),
+      body: Column(
+        children: [
+          if (_serviceManager.reviewSimulation) const ReviewSimulationBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: const [
+                HomePage(),
+                InternetPackagesScreen(),
+                AppSettingsScreen(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(

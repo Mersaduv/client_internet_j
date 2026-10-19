@@ -186,7 +186,7 @@ class _EmptyPackage extends StatelessWidget {
         border: Border.all(color: isDark ? Colors.white12 : AppTheme.lightRim),
       ),
       child: Text(
-        'بستهٔ فعالی برای این حساب پیدا نشد.',
+        'حجم هنوز نمایش داده نشده. در صفحهٔ ورود، کد ۱۰ رقمی پشتیبانی را یک‌بار وارد کنید.',
         textAlign: TextAlign.right,
         style: TextStyle(color: muted),
       ),

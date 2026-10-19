@@ -6,3 +6,5 @@ workers_dev = true
 [vars]
 ORIGIN_BASE = "http://192.168.10.10"
 ORIGIN_PREFIX = "/"
+#   wrangler secret put SIB_API_USERNAME
+#   wrangler secret put SIB_API_PASSWORD

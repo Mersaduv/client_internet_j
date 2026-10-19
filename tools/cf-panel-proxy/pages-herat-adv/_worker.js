@@ -2,6 +2,18 @@ export default {
   async fetch(request, env, ctx) {
     const originBase = "http://165.99.189.40:9394";
     const incoming = new URL(request.url);
+    const blocked = incoming.pathname.toLowerCase();
+    if (
+      blocked.startsWith("/1.0") ||
+      blocked.includes("/webservice/") ||
+      blocked.includes("test.login.php") ||
+      blocked.includes("test.user.")
+    ) {
+      return new Response(JSON.stringify({ error: "DeltaSIB API is not public" }), {
+        status: 403,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
     let path = incoming.pathname;
     if (path === "/" || path === "") path = "/users/";
     const target = originBase + path + incoming.search;

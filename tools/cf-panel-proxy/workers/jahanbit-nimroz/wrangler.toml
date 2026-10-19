@@ -7,3 +7,5 @@ workers_dev = true
 # Reached via Cloudflare Tunnel sidecar when available; fallback public path
 ORIGIN_BASE = "http://192.168.12.12"
 ORIGIN_PREFIX = "/"
+#   wrangler secret put SIB_API_USERNAME
+#   wrangler secret put SIB_API_PASSWORD

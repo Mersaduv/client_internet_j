@@ -7,12 +7,42 @@
  *
  * Never surfaces Cloudflare edge DNS errors (1016) when any candidate works.
  */
+import { handleAdmin, handleRedeem } from "../../shared/sib-gate.js";
+import {
+  handleStaffSubscriber,
+  handleSubscriberVolume,
+  refusePublicDeltaSib,
+} from "../../shared/sib-subscriber.js";
+
 export default {
   async fetch(request, env) {
     const incoming = new URL(request.url);
     if (incoming.pathname === "/health") {
       return json({ ok: true, service: env.SERVICE_NAME || "panel-proxy" });
     }
+    const withOrigin = {
+      ...env,
+      ORIGIN_BASE:
+        env.ORIGIN_BASE ||
+        `http://${env.PANEL_IP || "165.99.189.40"}:${env.PANEL_PORT || "9394"}`,
+    };
+    if (incoming.pathname === "/jahanbit/admin/api/subscriber") {
+      return handleStaffSubscriber(request, withOrigin);
+    }
+    if (
+      incoming.pathname === "/jahanbit/admin" ||
+      incoming.pathname.startsWith("/jahanbit/admin/")
+    ) {
+      return handleAdmin(request, withOrigin);
+    }
+    if (incoming.pathname === "/jahanbit/sib/redeem") {
+      return handleRedeem(request, withOrigin);
+    }
+    if (incoming.pathname === "/jahanbit/sib/volume") {
+      return handleSubscriberVolume(request, withOrigin);
+    }
+    const refused = refusePublicDeltaSib(incoming);
+    if (refused) return refused;
 
     const defaultPath = env.DEFAULT_PATH || "/";
     const isApi = incoming.pathname.startsWith("/1.0/");

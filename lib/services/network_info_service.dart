@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -25,6 +27,106 @@ class DeviceGatewayDiscovery {
   bool get found => ip != null && ip!.isNotEmpty;
 }
 
+/// پورت API روتر در چند ثانیه باز است یا نه.
+Future<bool> routerApiReachable(String host) async {
+  if (kIsWeb) return false;
+  try {
+    final socket = await Socket.connect(
+      host,
+      2752,
+      timeout: const Duration(milliseconds: 1500),
+    );
+    socket.destroy();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+List<int> _routerOsSentence(List<String> words) {
+  final out = <int>[];
+  for (final word in words) {
+    final bytes = utf8.encode(word);
+    final n = bytes.length;
+    if (n < 0x80) {
+      out.add(n);
+    } else if (n < 0x4000) {
+      out.add((n >> 8) | 0x80);
+      out.add(n & 0xff);
+    } else {
+      out.add((n >> 16) | 0xC0);
+      out.add((n >> 8) & 0xff);
+      out.add(n & 0xff);
+    }
+    out.addAll(bytes);
+  }
+  out.add(0);
+  return out;
+}
+
+class RouterOsLoginProbe {
+  const RouterOsLoginProbe({required this.accepted, this.detail});
+
+  final bool accepted;
+  final String? detail;
+}
+
+Future<RouterOsLoginProbe> probeRouterOsLogin({
+  required String host,
+  required int port,
+  required String username,
+  required String password,
+}) async {
+  if (kIsWeb || host.isEmpty) {
+    return const RouterOsLoginProbe(accepted: false);
+  }
+  Socket? socket;
+  try {
+    socket = await Socket.connect(
+      host,
+      port,
+      timeout: const Duration(milliseconds: 1200),
+    );
+    final bytes = <int>[];
+    final done = Completer<void>();
+    final sub = socket.listen(
+      (data) {
+        bytes.addAll(data);
+        if (!done.isCompleted && bytes.contains(0)) done.complete();
+      },
+      onError: (_) {
+        if (!done.isCompleted) done.complete();
+      },
+      onDone: () {
+        if (!done.isCompleted) done.complete();
+      },
+      cancelOnError: true,
+    );
+    socket.add(
+      _routerOsSentence([
+        '/login',
+        '=name=$username',
+        '=password=$password',
+      ]),
+    );
+    await done.future.timeout(
+      const Duration(milliseconds: 1200),
+      onTimeout: () {},
+    );
+    await sub.cancel();
+    final text = utf8.decode(bytes, allowMalformed: true);
+    if (text.contains('!done')) {
+      return const RouterOsLoginProbe(accepted: true);
+    }
+    final message = RegExp(r'message=([^\x00]+)').firstMatch(text)?.group(1);
+    return RouterOsLoginProbe(accepted: false, detail: message);
+  } catch (_) {
+    return const RouterOsLoginProbe(accepted: false);
+  } finally {
+    socket?.destroy();
+  }
+}
+
 /// سرویس برای دریافت اطلاعات شبکه دستگاه (IPv4 Address و Default Gateway)
 class NetworkInfoService {
   static final NetworkInfoService _instance = NetworkInfoService._internal();
@@ -35,7 +137,11 @@ class NetworkInfoService {
 
   WindowsDefaultRoute? _windowsRouteCache;
   DateTime? _windowsRouteCacheAt;
-  static const Duration _windowsRouteCacheTtl = Duration(seconds: 5);
+  static const Duration _windowsRouteCacheTtl = Duration(seconds: 20);
+  DeviceGatewayDiscovery? _gatewayMemory;
+  DateTime? _gatewayMemoryAt;
+  Future<DeviceGatewayDiscovery>? _gatewayInFlight;
+  static const Duration _gatewayMemoryTtl = Duration(seconds: 30);
 
   static final RegExp _ipv4Regex = RegExp(
     r'^(?:\d{1,3}\.){3}\d{1,3}$',
@@ -76,37 +182,71 @@ class NetworkInfoService {
 
   /// Default Gateway واقعی اینترنت دستگاه از OS
   /// (نه حدس subnet و نه route WAN روتر MikroTik)
-  Future<DeviceGatewayDiscovery> discoverDeviceDefaultGateway() async {
+  Future<DeviceGatewayDiscovery> discoverDeviceDefaultGateway() {
+    final cachedAt = _gatewayMemoryAt;
+    if (_gatewayMemory != null &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _gatewayMemoryTtl) {
+      return Future.value(_gatewayMemory);
+    }
+    final inFlight = _gatewayInFlight;
+    if (inFlight != null) return inFlight;
+    final run = _loadDeviceDefaultGateway();
+    _gatewayInFlight = run;
+    return run.whenComplete(() {
+      if (identical(_gatewayInFlight, run)) {
+        _gatewayInFlight = null;
+      }
+    });
+  }
+
+  Future<DeviceGatewayDiscovery> _loadDeviceDefaultGateway() async {
     if (kIsWeb) {
       return const DeviceGatewayDiscovery(
         source: DeviceGatewaySource.unavailable,
       );
     }
 
-    try {
-      final gateway = normalizeIpv4(await _networkInfo.getWifiGatewayIP());
-      if (gateway != null) {
-        return DeviceGatewayDiscovery(
-          ip: gateway,
-          source: DeviceGatewaySource.system,
-        );
-      }
-    } catch (_) {
-      // روی ویندوز Ethernet معمولاً از WLAN API خالی برمی‌گردد
+    final wifiFuture = _wifiGateway();
+    final routeFuture = _isWindows
+        ? _windowsDefaultRoute()
+        : Future<WindowsDefaultRoute?>.value(null);
+
+    final wifi = await wifiFuture;
+    if (wifi != null &&
+        WindowsDefaultGatewayParser.isPrivateIpv4(wifi) &&
+        !WindowsDefaultGatewayParser.looksLikeVpnIpv4(wifi)) {
+      return _rememberGateway(wifi);
     }
 
-    if (_isWindows) {
-      final windowsRoute = await _windowsDefaultRoute();
-      final gateway = normalizeIpv4(windowsRoute?.gateway);
-      if (gateway != null) {
-        return DeviceGatewayDiscovery(
-          ip: gateway,
-          source: DeviceGatewaySource.system,
-        );
-      }
+    final windowsRoute = await routeFuture;
+    final gateway = normalizeIpv4(windowsRoute?.gateway);
+    if (gateway != null) {
+      return _rememberGateway(gateway);
     }
 
     return const DeviceGatewayDiscovery(source: DeviceGatewaySource.unavailable);
+  }
+
+  DeviceGatewayDiscovery _rememberGateway(String gateway) {
+    final found = DeviceGatewayDiscovery(
+      ip: gateway,
+      source: DeviceGatewaySource.system,
+    );
+    _gatewayMemory = found;
+    _gatewayMemoryAt = DateTime.now();
+    return found;
+  }
+
+  Future<String?> _wifiGateway() async {
+    try {
+      final raw = await _networkInfo
+          .getWifiGatewayIP()
+          .timeout(const Duration(milliseconds: 700));
+      return normalizeIpv4(raw);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// دریافت IPv4 Address دستگاه از NetworkInterface
@@ -181,9 +321,9 @@ class NetworkInfoService {
     try {
       final routePrint = await Process.run(
         'route',
-        const ['print', '-4'],
+        const ['print', '0.0.0.0'],
         runInShell: true,
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(milliseconds: 1200));
       final stdoutText = '${routePrint.stdout}';
       final routes = WindowsDefaultGatewayParser.parseRoutePrint(stdoutText);
       final best = WindowsDefaultGatewayParser.selectBestRoute(
@@ -204,7 +344,7 @@ class NetworkInfoService {
         'ipconfig',
         const [],
         runInShell: true,
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(milliseconds: 1200));
       final gateway = WindowsDefaultGatewayParser.parseIpconfig(
         '${ipconfig.stdout}',
       );
@@ -247,6 +387,11 @@ class NetworkInfoService {
   Future<String?> getDefaultGatewayOrRouterIp() async {
     final discovery = await discoverDeviceDefaultGateway();
     return discovery.ip;
+  }
+
+  /// آدرس روتر همان Default Gateway سیستم‌عامل است. شبکه برای پیدا کردن روتر اسکن نمی‌شود.
+  Future<String?> discoverRouterApiHost() async {
+    return (await discoverDeviceDefaultGateway()).ip;
   }
 
   /// برچسب فارسی منبع gateway برای لاگ

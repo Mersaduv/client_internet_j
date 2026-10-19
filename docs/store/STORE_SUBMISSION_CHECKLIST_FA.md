@@ -32,16 +32,42 @@ Data deletion: کاربر می‌تواند «پاک‌سازی داده‌ها�
 ## App Review Notes (نمونه)
 
 ```
-Jahan Bit is a LAN utility for ISP subscribers.
-It connects to the customer's MikroTik RouterOS API on the local network
-(default gateway / port 8728) to list devices, ban/unban, shape speed, and
-change Wi-Fi. The Internet Service tab loads only allowlisted ISP panel hosts.
-No cloud account is created by the app; credentials stay on-device.
-No VPN / Packet Tunnel / advertising SDKs.
+Sign-in required.
+Username: jb.admin
+Password: jb@admin120
 
-Demo: connect a phone to a MikroTik LAN and use router API user credentials.
-Privacy Policy and Terms are available under Settings.
-Local Network permission is required to discover the gateway and talk to the router.
+Jahan Bit is a LAN utility for ISP subscribers in Afghanistan (Herat, Nimroz,
+Farah). A normal account connects to that subscriber's MikroTik RouterOS API
+on the phone's local network (default gateway, TCP port 8728). After that
+login succeeds, the app asks only for that subscriber's username and shows
+their own package volume. The subscriber password is not sent to DeltaSIB.
+The app does not create router users. No VPN, no in-app purchase, no
+advertising SDK.
+
+The tester is the username jb.admin. Please sign in with the password above
+from any network — a MikroTik router is not required. After sign-in the app
+loads that account's live DeltaSIB package. Every other username still needs
+a live router.
+
+What you will see:
+1. The app tries the local router for a few seconds.
+2. If no RouterOS API answers, a bilingual dialog explains that this phone is
+   not connected to MikroTik.
+3. Continue opens the full app on an in-phone simulator (clearly labeled).
+   Connected devices, banned devices, ban/unban, speed limit, lock new
+   connections, and Wi-Fi all work and change the on-screen lists.
+4. Every action runs the same RouterOS API sentence the live app sends
+   (for example /ip/firewall/raw/add, /ip/dhcp-server/set,
+   /ip/dhcp-server/lease/set). Open "API log" on the yellow banner to read
+   the command and the simulated reply. Nothing is sent to a customer router.
+
+Why: reviewers are not on an Afghan subscriber LAN, so a normal router
+password cannot open the app. This one account lets you exercise every
+MikroTik screen without that hardware. All other users still need their own
+router on the local network.
+
+Privacy Policy and Terms are under Settings.
+Local Network permission is used only when a real router is on the LAN.
 ```
 
 ## Signing Android

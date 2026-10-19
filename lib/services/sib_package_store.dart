@@ -13,6 +13,8 @@ class SibPackageStore {
 
   static const _prefsKey = 'sib_package_credit_v1';
   static const _nameKey = 'sib_customer_name_v1';
+  static const _ownerKey = 'sib_package_owner_v1';
+  static String? _boundUsername;
   static final ValueNotifier<SibPackageInsight?> listenable = ValueNotifier(null);
   static SibPackageInsight? snapshot;
   static String? displayName;
@@ -23,9 +25,62 @@ class SibPackageStore {
     return _hydrateOnce ??= _readDisk();
   }
 
+  /// حجم کش‌شدهٔ مشترک قبلی را کنار می‌گذارد تا صفحهٔ خانه مال همین نام کاربری باشد.
+  static void prepareFor(String username) {
+    final name = username.trim();
+    if (name.isEmpty || name == _boundUsername) return;
+    _boundUsername = name;
+    snapshot = null;
+    displayName = null;
+    listenable.value = null;
+    _hydrateOnce = null;
+  }
+
+  static Future<void> clear() async {
+    _boundUsername = null;
+    snapshot = null;
+    displayName = null;
+    listenable.value = null;
+    _hydrateOnce = null;
+    _refreshing = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_prefsKey);
+      await prefs.remove(_nameKey);
+      await prefs.remove(_ownerKey);
+    } catch (e) {
+      debugPrint('[SIB_PACKAGE] clear failed: $e');
+    }
+  }
+
   /// اگر نسخه‌ای هست همان را فوری برمی‌گرداند و در پس‌زمینه تازه می‌کند.
-  static Future<void> refresh() {
-    return _refreshing ??= _refreshBody().whenComplete(() => _refreshing = null);
+  ///
+  /// [force] waits for any in-flight refresh, then always hits DeltaSIB again.
+  static Future<void> refresh({bool force = false}) {
+    if (!force) {
+      final existing = _refreshing;
+      if (existing != null) return existing;
+      late final Future<void> tracked;
+      tracked = _refreshBody().whenComplete(() {
+        if (identical(_refreshing, tracked)) _refreshing = null;
+      });
+      _refreshing = tracked;
+      return tracked;
+    }
+    return _refreshForced();
+  }
+
+  static Future<void> _refreshForced() async {
+    final current = _refreshing;
+    if (current != null) {
+      await current;
+    }
+    late final Future<void> tracked;
+    tracked = _refreshBody().whenComplete(() {
+      if (identical(_refreshing, tracked)) _refreshing = null;
+    });
+    _refreshing = tracked;
+    await tracked;
   }
 
   static Future<void> _refreshBody() async {
@@ -52,7 +107,12 @@ class SibPackageStore {
       return;
     }
     if (credit == null && (name == null || name.isEmpty)) return;
+    final owner = (await DeltaSibAuthService().savedUsername())?.trim();
+    if (owner == null || owner.isEmpty) return;
+    if (_boundUsername != null && _boundUsername != owner) return;
+    _boundUsername = owner;
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_ownerKey, owner);
     if (name != null && name.isNotEmpty) {
       displayName = name;
       await prefs.setString(_nameKey, name);
@@ -78,7 +138,13 @@ class SibPackageStore {
   static Future<void> _readDisk() async {
     if (snapshot != null) return;
     try {
+      await DeltaSibAuthService().ready;
+      final saved = (await DeltaSibAuthService().savedUsername())?.trim();
       final prefs = await SharedPreferences.getInstance();
+      final owner = prefs.getString(_ownerKey)?.trim();
+      if (saved == null || saved.isEmpty || owner != saved) return;
+      if (_boundUsername != null && _boundUsername != saved) return;
+      _boundUsername = saved;
       displayName ??= prefs.getString(_nameKey);
       final raw = prefs.getString(_prefsKey);
       if (raw == null || raw.isEmpty) return;

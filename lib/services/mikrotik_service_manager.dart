@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../data/internet_packages_data.dart';
 import '../models/mikrotik_connection.dart';
 import 'connection_heartbeat.dart';
 import 'deltasib_auth_service.dart';
 import 'mikrotik_service.dart';
 import 'mikrotik_timeouts.dart';
+import 'review_demo_account.dart';
+import 'review_router_log.dart';
+import 'review_router_os.dart';
+import 'network_info_service.dart';
 import 'settings_service.dart';
 import 'sib_package_store.dart';
 import 'traffic_monitor_service.dart';
@@ -22,11 +25,48 @@ class MikroTikServiceManager {
 
   MikroTikService? _service;
   MikroTikConnection? _currentConnection;
+  String? _lastRouterError;
+  Future<bool>? _connectTask;
+
+  /// آخرین دلیل رد شدن ورود به RouterOS، برای نمایش در لیست دستگاه‌ها.
+  String? get lastRouterError => _lastRouterError;
+
+  /// ورود در جریان، تا صفحهٔ خانه همان را ادامه دهد و دوباره لاگین نکند.
+  Future<bool>? get connectInFlight => _connectTask;
   Map<String, dynamic>? _routerInfo;
   DateTime? _routerInfoCacheTime;
   ConnectionHeartbeat? _heartbeat;
   final TrafficMonitorService _trafficMonitor = TrafficMonitorService();
   bool _progressiveLoadActive = false;
+  bool _reviewSimulation = false;
+  bool _reviewNoticePending = false;
+  bool _reviewNoticeShown = false;
+
+  /// True only after jb.admin falls back to the in-phone RouterOS simulator.
+  bool get reviewSimulation => _reviewSimulation;
+
+  /// Home shows the MikroTik warning once when simulation starts from splash.
+  bool consumeReviewNotice() {
+    if (!_reviewNoticePending || _reviewNoticeShown) {
+      return false;
+    }
+    _reviewNoticePending = false;
+    _reviewNoticeShown = true;
+    return true;
+  }
+
+  void markReviewNoticeShown() {
+    _reviewNoticePending = false;
+    _reviewNoticeShown = true;
+  }
+
+  void abandonReviewSimulation() {
+    disconnect();
+    ReviewRouterOs.instance.reset();
+    ReviewRouterLog.instance.clear();
+    _reviewNoticePending = false;
+    _reviewNoticeShown = false;
+  }
 
   static const Duration _routerInfoCacheTtl = Duration(minutes: 5);
 
@@ -43,104 +83,230 @@ class MikroTikServiceManager {
   Map<String, dynamic>? get routerInfo => _routerInfo;
 
   /// تلاش برای auto-login با اعتبارنامه و تنظیمات ذخیره‌شده.
-  /// هرگز throw نمی‌کند.
+  /// هرگز throw نمی‌کند. اگر نشست حجم باشد، خانه فوری باز می‌شود و روتر در پس‌زمینه وصل می‌شود.
   Future<bool> autoConnect() async {
     try {
       final settingsService = SettingsService();
+      final auth = DeltaSibAuthService();
+      final sessionFuture = settingsService.hasValidSession();
+      final userFuture = auth.savedUsername();
+      final sibSessionFuture = auth.savedSession();
+      final credentialsFuture = settingsService.getSavedCredentials();
+      final settingsFuture = settingsService.getAllSettings();
 
-      if (!await settingsService.hasValidSession()) {
+      if (!await sessionFuture) {
         await settingsService.clearLoginTimestamp();
-        if (!await settingsService.getRememberMe()) {
-          await settingsService.clearCredentials();
-        }
         return false;
       }
 
-      final credentials = await settingsService.getSavedCredentials();
-      if (credentials == null) {
-        return false;
+      final sibUser = (await userFuture)?.trim();
+      final sibSession = await sibSessionFuture;
+      final hasSib = sibUser != null &&
+          sibUser.isNotEmpty &&
+          sibSession != null &&
+          sibSession.isNotEmpty;
+      final credentials = await credentialsFuture;
+      var routerUser = credentials?['username'];
+      var routerPass = credentials?['password'];
+      if ((routerUser == null || routerPass == null || routerPass.isEmpty) &&
+          hasSib &&
+          ReviewDemoAccount.isTester(sibUser)) {
+        routerUser = sibUser;
+        routerPass = ReviewDemoAccount.simulatorPassword;
       }
 
-      final settings = await settingsService.getAllSettings();
+      if (hasSib) {
+        SibPackageStore.prepareFor(sibUser);
+        unawaited(SibPackageStore.hydrate());
+      }
+      if (routerUser == null || routerPass == null || routerPass.isEmpty) {
+        return hasSib;
+      }
+
+      final settings = await settingsFuture;
       final connection = MikroTikConnection(
         host: settings['host'] as String? ?? '192.168.88.1',
         port: MikroTikConnection.apiPort,
-        username: credentials['username']!,
-        password: credentials['password']!,
+        username: routerUser,
+        password: routerPass,
         useSsl: settings['useSsl'] as bool? ?? false,
       );
 
-      unawaited(SibPackageStore.hydrate());
-      final province = PackageProvinceX.tryParse(
-        await settingsService.getPackageProvinceId(),
+      if (!hasSib) {
+        SibPackageStore.prepareFor(routerUser);
+        unawaited(SibPackageStore.hydrate());
+      }
+      final connecting = connect(connection);
+      if (hasSib) {
+        unawaited(connecting);
+        return true;
+      }
+      return await connecting.timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => false,
       );
-      final sibOrigin =
-          province?.sibApiOrigin ?? DeltaSibAuthService.defaultOrigin;
-      unawaited(() async {
-        try {
-          await DeltaSibAuthService().login(
-            username: credentials['username']!,
-            password: credentials['password']!,
-            origin: sibOrigin,
-          );
-          await SibPackageStore.refresh();
-        } catch (_) {}
-      }());
-      return await connect(connection).timeout(const Duration(seconds: 12));
     } catch (e) {
       debugPrint('[AUTO_LOGIN] Failed: $e');
       return false;
     }
   }
 
-  /// اتصال به MikroTik
-  Future<bool> connect(MikroTikConnection connection) async {
-    try {
-      // بستن اتصال قبلی اگر وجود دارد
-      disconnect();
-
-      // ایجاد سرویس جدید
-      _service = MikroTikService();
-      _currentConnection = connection;
-
-      final success = await _service!.connect(connection);
-      if (!success) {
-        _service = null;
-        _currentConnection = null;
-        _routerInfo = null;
-        _routerInfoCacheTime = null;
-      } else {
-        _heartbeat?.stop();
-        _heartbeat = ConnectionHeartbeat(
-          healthCheck: () async {
-            if (_progressiveLoadActive) {
-              return true;
-            }
-            final service = _service;
-            if (service == null) {
-              return false;
-            }
-            return service.isConnected &&
-                await service.ensureConnected(forceHealthCheck: true);
-          },
-          reconnect: () async {
-            final connection = _currentConnection;
-            if (connection == null) {
-              return false;
-            }
-            debugPrint('[HEARTBEAT] full reconnect');
-            disconnect();
-            return connect(connection);
-          },
-        );
-        _heartbeat!.start();
+  /// اتصال به MikroTik.
+  ///
+  /// jb.admin اول با همین یوزر و رمز به RouterOS واقعی وصل می‌شود. شبیه‌ساز فقط
+  /// وقتی باز می‌شود که آن ورود شکست بخورد. ورود موفق، حالت شبیه‌ساز را می‌بندد.
+  Future<bool> connect(MikroTikConnection connection) {
+    final pending = _connectTask;
+    if (pending != null) return pending;
+    final task = _connectBody(connection);
+    _connectTask = task;
+    return task.whenComplete(() {
+      if (identical(_connectTask, task)) {
+        _connectTask = null;
       }
-      return success;
-    } catch (e) {
+    });
+  }
+
+  Future<bool> _connectBody(MikroTikConnection connection) async {
+    final review = ReviewDemoAccount.matches(
+      connection.username,
+      connection.password,
+    );
+    final simulatorFallback = ReviewDemoAccount.simulatorFallback(
+      connection.username,
+      connection.password,
+    );
+    final keepReal = !_reviewSimulation && (_service?.isConnected ?? false);
+    disconnect();
+    _currentConnection = connection;
+
+    if (!review) {
+      _clearReviewMode();
+    }
+
+    if (await _tryRealRouter(connection, review: review)) {
+      _clearReviewMode();
+      _lastRouterError = null;
+      return true;
+    }
+
+    if (!simulatorFallback || keepReal) {
       _service = null;
       _currentConnection = null;
-      throw Exception('خطا در اتصال: $e');
+      _reviewSimulation = false;
+      _lastRouterError = await _explainRouterFailure(connection);
+      return false;
     }
+
+    _service?.disconnect();
+    _service = null;
+    ReviewRouterOs.instance.reset();
+    ReviewRouterLog.instance.clear();
+    _reviewNoticeShown = false;
+    return _openReviewSimulation(connection);
+  }
+
+  Future<bool> _tryRealRouter(
+    MikroTikConnection connection, {
+    required bool review,
+  }) async {
+    try {
+      final real = await _openRealSession(connection);
+      if (real) return true;
+    } catch (e) {
+      if (!review) {
+        _service = null;
+        _currentConnection = null;
+        _reviewSimulation = false;
+        throw Exception('خطا در اتصال: $e');
+      }
+      debugPrint('[REVIEW_SIM] real RouterOS login failed: $e');
+    }
+    _service?.disconnect();
+    _service = null;
+    return false;
+  }
+
+  void _clearReviewMode() {
+    _reviewSimulation = false;
+    _reviewNoticePending = false;
+    _reviewNoticeShown = false;
+    ReviewRouterOs.instance.reset();
+    ReviewRouterLog.instance.clear();
+  }
+
+  Future<bool> _openRealSession(
+    MikroTikConnection connection, {
+    Duration? timeout,
+  }) async {
+    _service = MikroTikService();
+    _currentConnection = connection;
+    final attempt = _service!.connect(connection);
+    final bool success;
+    if (timeout == null) {
+      success = await attempt;
+    } else {
+      success = await attempt.timeout(timeout, onTimeout: () {
+        debugPrint('[REVIEW_SIM] real RouterOS login timed out');
+        _service?.disconnect();
+        return false;
+      });
+    }
+    if (!success || !(_service?.isConnected ?? false)) {
+      _service?.disconnect();
+      _service = null;
+      _routerInfo = null;
+      _routerInfoCacheTime = null;
+      return false;
+    }
+    _startHeartbeat();
+    return true;
+  }
+
+  Future<bool> _openReviewSimulation(MikroTikConnection connection) async {
+    _reviewSimulation = true;
+    _service = ReviewSimulatedMikroTikService();
+    _currentConnection = MikroTikConnection(
+      host: '192.168.88.1',
+      port: MikroTikConnection.apiPort,
+      username: connection.username,
+      password: connection.password,
+      useSsl: false,
+    );
+    _routerInfo = null;
+    _routerInfoCacheTime = null;
+    await _service!.connect(_currentConnection!);
+    if (!_reviewNoticeShown) {
+      _reviewNoticePending = true;
+    }
+    _startHeartbeat();
+    return _service?.isConnected ?? false;
+  }
+
+  void _startHeartbeat() {
+    _heartbeat?.stop();
+    _heartbeat = ConnectionHeartbeat(
+      healthCheck: () async {
+        if (_progressiveLoadActive || _reviewSimulation) {
+          return _service?.isConnected ?? false;
+        }
+        final service = _service;
+        if (service == null) {
+          return false;
+        }
+        return service.isConnected &&
+            await service.ensureConnected(forceHealthCheck: true);
+      },
+      reconnect: () async {
+        final connection = _currentConnection;
+        if (connection == null) {
+          return false;
+        }
+        debugPrint('[HEARTBEAT] full reconnect');
+        return connect(connection);
+      },
+    );
+    _heartbeat!.start();
   }
 
   /// بستن اتصال
@@ -154,6 +320,7 @@ class MikroTikServiceManager {
     _routerInfo = null;
     _routerInfoCacheTime = null;
     _progressiveLoadActive = false;
+    _reviewSimulation = false;
   }
 
   bool get isProgressiveLoadActive => _progressiveLoadActive;
@@ -174,14 +341,66 @@ class MikroTikServiceManager {
 
   /// Ensures the API session is usable (reconnects if the socket was dropped).
   Future<bool> ensureSession() async {
+    final pending = _connectTask;
+    if (pending != null) {
+      final ok = await pending;
+      if (ok && (_service?.isConnected ?? false)) return true;
+    }
     final service = _service;
-    if (service == null) {
+    if (service != null && service.isConnected) return true;
+    if (service != null) {
+      final healthy = await service.ensureConnected(forceHealthCheck: true);
+      if (healthy) return true;
+    }
+    return reconnectSaved();
+  }
+
+  /// ورود دوباره با یوزر ذخیره‌شده، روی Default Gateway همین دستگاه.
+  Future<bool> reconnectSaved() async {
+    if (isConnected && _service != null) return true;
+    final creds = await SettingsService().getSavedCredentials();
+    final username = creds?['username'] ?? '';
+    final password = creds?['password'] ?? '';
+    if (username.isEmpty || password.isEmpty) {
+      _lastRouterError = 'اتصال برقرار نشده است. لطفاً دوباره وارد شوید.';
       return false;
     }
-    if (service.isConnected) {
-      return true;
+    final settings = await SettingsService().getAllSettings();
+    final discovered = await NetworkInfoService().discoverRouterApiHost();
+    final host = (discovered != null && discovered.isNotEmpty)
+        ? discovered
+        : settings['host'] as String;
+    if (discovered != null && discovered.isNotEmpty) {
+      await SettingsService().setHost(discovered);
     }
-    return service.ensureConnected(forceHealthCheck: true);
+    final port = settings['port'];
+    return connect(
+      MikroTikConnection(
+        host: host,
+        port: port is int ? port : MikroTikConnection.apiPort,
+        username: username,
+        password: password,
+        useSsl: settings['useSsl'] == true,
+      ),
+    );
+  }
+
+  Future<String> _explainRouterFailure(MikroTikConnection connection) async {
+    final probe = await probeRouterOsLogin(
+      host: connection.host,
+      port: connection.port,
+      username: connection.username,
+      password: connection.password,
+    );
+    final detail = (probe.detail ?? '').toLowerCase();
+    if (detail.contains('invalid user')) {
+      return 'روتر ${connection.host} این یوزر را برای API قبول نکرد. '
+          'در Winbox برای همین یوزر دسترسی api را فعال کنید.';
+    }
+    if (probe.detail != null && probe.detail!.isNotEmpty) {
+      return 'روتر ${connection.host}: ${probe.detail}';
+    }
+    return 'به روتر ${connection.host} روی پورت API وصل نشد.';
   }
 
   /// Ping the main API socket and reconnect if it died (common after extra logins).
@@ -225,6 +444,32 @@ class MikroTikServiceManager {
     final connection = _currentConnection;
     if (connection == null) {
       return {};
+    }
+
+    if (_reviewSimulation && _service != null) {
+      try {
+        final routerInfoFuture = hasValidCachedRouterInfo()
+            ? Future<Map<String, dynamic>?>.value(_routerInfo)
+            : _service!.getRouterInfoSecondary();
+        final results = await Future.wait<dynamic>([
+          _service!.getDeviceIp(),
+          routerInfoFuture,
+          _service!.isNewConnectionsLocked(),
+        ]);
+        final routerInfo = results[1] as Map<String, dynamic>?;
+        if (routerInfo != null && !hasValidCachedRouterInfo()) {
+          _routerInfo = routerInfo;
+          _routerInfoCacheTime = DateTime.now();
+        }
+        return {
+          'deviceIp': results[0] as String?,
+          'routerInfo': routerInfo ?? _routerInfo,
+          'isNewConnectionsLocked': results[2] as bool? ?? false,
+        };
+      } catch (e) {
+        debugPrint('[REVIEW_SIM] secondary load failed: $e');
+        return {};
+      }
     }
 
     final isolated = MikroTikService();
@@ -454,6 +699,10 @@ class MikroTikServiceManager {
       throw Exception('Connection is not established');
     }
 
+    if (_reviewSimulation && _service != null) {
+      return _service!.getClientSpeed(target);
+    }
+
     final speedService = MikroTikService();
     try {
       final connected = await speedService
@@ -479,6 +728,26 @@ class MikroTikServiceManager {
     final connection = _currentConnection;
     if (connection == null || !isConnected) {
       return {};
+    }
+
+    if (_reviewSimulation) {
+      final rates = ReviewRouterOs.instance.sampleTraffic(trackedIps);
+      ReviewRouterLog.instance.record(
+        command: const ['/queue/simple/print', '=stats='],
+        rows: rates.entries
+            .map(
+              (entry) => <String, String>{
+                'target': '${entry.key}/32',
+                'rx-rate': '${entry.value.rxBps}',
+                'tx-rate': '${entry.value.txBps}',
+              },
+            )
+            .toList(),
+        note: 'simulated queue stats for live traffic badges',
+        throttle: const Duration(seconds: 20),
+        throttleKey: 'queue-stats',
+      );
+      return rates;
     }
 
     try {

@@ -6,3 +6,6 @@ workers_dev = true
 [vars]
 ORIGIN_BASE = "http://165.99.189.40:9394"
 ORIGIN_PREFIX = "/users"
+# API reseller stays on the worker, never in the app:
+#   wrangler secret put SIB_API_USERNAME
+#   wrangler secret put SIB_API_PASSWORD

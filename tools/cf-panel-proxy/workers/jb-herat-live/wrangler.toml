@@ -9,3 +9,8 @@ DEFAULT_PATH = "/users/"
 PANEL_IP = "165.99.189.40"
 PANEL_PORT = "9394"
 API_PORT = "1043"
+
+[[d1_databases]]
+binding = "SIB_DB"
+database_name = "jahanbit-sib"
+database_id = "4a553de7-45ab-462e-a718-ef25c9ee50b7"

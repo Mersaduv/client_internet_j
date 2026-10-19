@@ -2,13 +2,24 @@
  * Free HTTPS front for Herat ISP panel (workers.dev).
  * Proxies https://<worker>.workers.dev/* → http://165.99.189.40:9394/*
  */
+import {
+  handleSubscriberVolume,
+  refusePublicDeltaSib,
+} from "../../shared/sib-subscriber.js";
+
 export default {
   async fetch(request, env) {
+    const incoming = new URL(request.url);
+    if (incoming.pathname === "/jahanbit/sib/volume") {
+      return handleSubscriberVolume(request, env);
+    }
+    const refused = refusePublicDeltaSib(incoming);
+    if (refused) return refused;
+
     const originBase = (env.ORIGIN_BASE || "http://165.99.189.40:9394").replace(
       /\/$/,
       "",
     );
-    const incoming = new URL(request.url);
 
     // Default landing → /users/
     let path = incoming.pathname;

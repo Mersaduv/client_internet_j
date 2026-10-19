@@ -1,11 +1,21 @@
+import {
+  handleSubscriberVolume,
+  refusePublicDeltaSib,
+} from "./sib-subscriber.js";
+
 export default {
   async fetch(request, env) {
     const originBase = (env.ORIGIN_BASE || "").replace(/\/$/, "");
     const defaultPath = env.DEFAULT_PATH || "/";
     const incoming = new URL(request.url);
+    if (incoming.pathname === "/health") return new Response("ok");
+    if (incoming.pathname === "/jahanbit/sib/volume") {
+      return handleSubscriberVolume(request, env);
+    }
+    const refused = refusePublicDeltaSib(incoming);
+    if (refused) return refused;
     let path = incoming.pathname;
     if (path === "/" || path === "") path = defaultPath;
-    if (path === "/health") return new Response("ok");
     if (!originBase) {
       return new Response("ORIGIN_BASE missing", { status: 500 });
     }

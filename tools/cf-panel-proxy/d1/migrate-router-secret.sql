@@ -1,0 +1,7 @@
+ALTER TABLE access_codes ADD COLUMN router_secret TEXT;
+
+CREATE TABLE IF NOT EXISTS redeem_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip TEXT NOT NULL,
+  at INTEGER NOT NULL
+);

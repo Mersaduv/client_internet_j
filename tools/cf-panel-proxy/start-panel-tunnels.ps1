@@ -9,6 +9,7 @@
 $ErrorActionPreference = "Continue"
 $acct = "44b7611a56bcec74bdd22356e05ec271"
 $jsPath = Join-Path $PSScriptRoot "workers\shared\panel-proxy.js"
+$sibPath = Join-Path $PSScriptRoot "workers\shared\sib-subscriber.js"
 $cfgPath = Join-Path $env:APPDATA "xdg.config\.wrangler\config\default.toml"
 $cfg = Get-Content $cfgPath -Raw
 if ($cfg -notmatch 'oauth_token\s*=\s*"([^"]+)"') {
@@ -31,7 +32,8 @@ function Deploy-Worker([string]$name, [string]$origin, [string]$defaultPath) {
   $up = curl.exe -s -X PUT "https://api.cloudflare.com/client/v4/accounts/$acct/workers/scripts/$name" `
     -H "Authorization: Bearer $tok" `
     -F "metadata=@${metaFile};type=application/json" `
-    -F "worker.js=@${jsPath};filename=worker.js;type=application/javascript+module"
+    -F "worker.js=@${jsPath};filename=worker.js;type=application/javascript+module" `
+    -F "sib-subscriber.js=@${sibPath};filename=sib-subscriber.js;type=application/javascript+module"
   $enFile = Join-Path $tmp "$name-en.json"
   [System.IO.File]::WriteAllText($enFile, '{"enabled":true}')
   curl.exe -s -X POST "https://api.cloudflare.com/client/v4/accounts/$acct/workers/scripts/$name/subdomain" `

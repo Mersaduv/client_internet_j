@@ -86,27 +86,12 @@ class SettingsService {
     }
   }
 
-  /// دریافت Port — همیشه پورت API پروژه (8728)
+  /// دریافت Port — همیشه پورت API پروژه (2752)
   Future<int> getPort() async {
-    if (_cachedPort == MikroTikConnection.apiPort) {
-      return MikroTikConnection.apiPort;
-    }
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getInt(_keyPort);
-      if (stored != MikroTikConnection.apiPort) {
-        await prefs.setInt(_keyPort, MikroTikConnection.apiPort);
-      }
-    } catch (_) {
-      // اگر shared_preferences کار نکرد، همان پورت ثابت را برگردان
-    }
-
-    _cachedPort = MikroTikConnection.apiPort;
-    return MikroTikConnection.apiPort;
+    return _cachedPort ??= MikroTikConnection.apiPort;
   }
 
-  /// ذخیره Port — پورت API همیشه 8728 است
+  /// ذخیره Port — پورت API همیشه 2752 است
   Future<void> setPort(int port) async {
     _cachedPort = MikroTikConnection.apiPort;
     try {
@@ -289,8 +274,12 @@ class SettingsService {
 
   /// بازیابی اعتبارنامه ذخیره‌شده
   Future<Map<String, String>?> getSavedCredentials() async {
-    final username = await _secureStorage.read(key: _keyUsername);
-    final password = await _secureStorage.read(key: _keyPassword);
+    final stored = await Future.wait<String?>([
+      _secureStorage.read(key: _keyUsername),
+      _secureStorage.read(key: _keyPassword),
+    ]);
+    final username = stored[0];
+    final password = stored[1];
     if (username == null || password == null) {
       return null;
     }

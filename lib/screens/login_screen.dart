@@ -6,6 +6,7 @@ import '../data/internet_packages_data.dart';
 import '../data/support_contacts.dart';
 import '../models/mikrotik_connection.dart';
 import '../services/deltasib_auth_service.dart';
+import '../services/review_demo_account.dart';
 import '../services/sib_package_store.dart';
 import '../services/mikrotik_service_manager.dart';
 import '../services/settings_service.dart';
@@ -25,53 +26,30 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _accessCodeController = TextEditingController();
 
   bool _isConnecting = false;
-  bool _obscurePassword = true;
-  bool _rememberMe = false;
   PackageProvince? _province;
   bool _provinceDialogOpen = false;
   String? _errorMessage;
-  final FocusNode _usernameFocusNode = FocusNode();
-  final FocusNode _passwordFocusNode = FocusNode();
   final SettingsService _settingsService = SettingsService();
 
   @override
   void initState() {
     super.initState();
     _checkLoginExpiration();
-    _loadRememberedCredentials();
+    _loadProvince();
     _autoSetRouterHostFromGateway();
   }
 
-  /// بارگذاری وضعیت «مرا به خاطر بسپار» و پر کردن فیلدها پس از خروج یا انقضا
-  Future<void> _loadRememberedCredentials() async {
-    var rememberMe = await _settingsService.getRememberMe();
-    final credentials = await _settingsService.getSavedCredentials();
-
-    // سازگاری با نسخه قبلی که همیشه اعتبارنامه را ذخیره می‌کرد
-    if (credentials != null && !rememberMe) {
-      rememberMe = true;
-      await _settingsService.setRememberMe(true);
-    }
-
-    if (!mounted) {
-      return;
-    }
-
+  Future<void> _loadProvince() async {
+    if (!mounted) return;
     final savedProvince = PackageProvinceX.tryParse(
       await _settingsService.getPackageProvinceId(),
     );
-
+    if (!mounted) return;
     setState(() {
-      _rememberMe = rememberMe;
       _province = savedProvince;
-      if (rememberMe && credentials != null) {
-        _usernameController.text = credentials['username']!;
-        _passwordController.text = credentials['password']!;
-      }
     });
     if (savedProvince == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -119,10 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _usernameFocusNode.dispose();
-    _passwordFocusNode.dispose();
+    _accessCodeController.dispose();
     super.dispose();
   }
 
@@ -152,77 +127,76 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
+    final province = _province!;
+    final serviceManager = MikroTikServiceManager();
     try {
-      // دریافت تنظیمات از SettingsService
-      final settings = await _settingsService.getAllSettings();
-
-      // ایجاد اتصال با اطلاعات وارد شده و تنظیمات ذخیره شده
-      final connection = MikroTikConnection(
-        host: settings['host'] as String,
-        port: MikroTikConnection.apiPort,
-        username: _usernameController.text.trim(),
-        password: _passwordController.text,
-        useSsl: settings['useSsl'] as bool,
-      );
-
-      // MikroTik و دلتاسیب با همان یوزر/رمز، همزمان
-      final serviceManager = MikroTikServiceManager();
-      final sib = DeltaSibAuthService();
-      final username = _usernameController.text.trim();
-      final password = _passwordController.text;
-      final province = _province!;
       unawaited(_settingsService.setPackageProvinceId(province.id));
-      unawaited(() async {
-        try {
-          await sib.login(
-            username: username,
-            password: password,
-            origin: province.sibApiOrigin,
-          );
-          await SibPackageStore.refresh();
-        } catch (_) {}
-      }());
-      final success = await serviceManager.connect(connection) == true;
+      final hostFuture = NetworkInfoService().discoverRouterApiHost();
+      final settingsFuture = _settingsService.getAllSettings();
+      final savedFuture = _settingsService.getSavedCredentials();
+      final redeemed = await DeltaSibAuthService().redeemAccessCode(
+        code: _accessCodeController.text,
+        origin: DeltaSibAuthService.defaultOrigin,
+      );
+      if (!mounted) return;
+      final username = redeemed.username;
 
-      setState(() {
-        _isConnecting = false;
-      });
-
-      if (success && serviceManager.isConnected) {
-        await Future.wait<void>([
-          _settingsService.setRememberMe(_rememberMe),
-          _settingsService.setLoginTimestamp(),
-          if (_rememberMe)
-            _settingsService.saveCredentials(
-              username: username,
-              password: password,
-            )
-          else
-            _settingsService.clearCredentials(),
-        ]);
-
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/home');
-        }
-      } else if (success && !serviceManager.isConnected) {
-        setState(() {
-          _errorMessage =
-              'اتصال برقرار شد اما session قطع شد. لطفاً دوباره تلاش کنید.';
-        });
-      } else {
-        final l10n = AppLocalizations.of(context);
-        setState(() {
-          _errorMessage =
-              l10n?.invalidUsernameOrPassword ?? 'Invalid username or password';
-        });
+      SibPackageStore.prepareFor(username);
+      String? discoveredHost;
+      try {
+        discoveredHost = await hostFuture;
+      } catch (_) {}
+      final settings = await settingsFuture;
+      final saved = await savedFuture;
+      var routerPass = redeemed.routerPassword ?? '';
+      if (routerPass.isEmpty &&
+          saved != null &&
+          saved['username'] == username) {
+        routerPass = saved['password'] ?? '';
       }
+      if (routerPass.isEmpty && ReviewDemoAccount.isTester(username)) {
+        routerPass = ReviewDemoAccount.simulatorPassword;
+      }
+      final host = (discoveredHost != null && discoveredHost.isNotEmpty)
+          ? discoveredHost
+          : settings['host'] as String;
+      final saves = <Future<void>>[
+        DeltaSibAuthService().rememberSubscriber(username),
+        _settingsService.setLoginTimestamp(),
+        if (discoveredHost != null && discoveredHost.isNotEmpty)
+          _settingsService.setHost(discoveredHost),
+        if (redeemed.routerPassword != null &&
+            redeemed.routerPassword!.isNotEmpty)
+          _settingsService.saveCredentials(
+            username: username,
+            password: redeemed.routerPassword!,
+          ),
+      ];
+      await Future.wait(saves);
+      if (!mounted) return;
+
+      if (routerPass.isNotEmpty) {
+        unawaited(
+          serviceManager.connect(
+            MikroTikConnection(
+              host: host,
+              port: MikroTikConnection.apiPort,
+              username: username,
+              password: routerPass,
+              useSsl: settings['useSsl'] as bool,
+            ),
+          ),
+        );
+      }
+      unawaited(SibPackageStore.refresh(force: true));
+
+      setState(() => _isConnecting = false);
+      Navigator.of(context).pushReplacementNamed('/home');
     } catch (e) {
-      MikroTikServiceManager().disconnect();
+      if (!mounted) return;
       setState(() {
         _isConnecting = false;
-        final l10n = AppLocalizations.of(context);
-        _errorMessage =
-            '${l10n?.error ?? 'Error'} connecting: ${e.toString().replaceAll('Exception: ', '')}';
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     }
   }
@@ -297,21 +271,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // عنوان
                     const SizedBox(height: 8),
-                    Builder(
-                      builder: (context) {
-                        final l10n = AppLocalizations.of(context);
-                        return Text(
-                          l10n?.pleaseEnterRouterInfo ??
-                              'Please enter your router information',
+                    Text(
+                      Localizations.localeOf(context).languageCode == 'en'
+                          ? 'Enter the 10-digit code from support'
+                          : 'کد ۱۰ رقمی پشتیبانی را وارد کنید',
                           style: TextStyle(
                             fontSize: 16,
                             color: isDark
                                 ? AppTheme.darkTextSecondary
                                 : Colors.grey.shade600,
                           ),
-                          textAlign: TextAlign.center,
-                        );
-                      },
+                      textAlign: TextAlign.center,
                     ),
                     if (_province != null) ...[
                       const SizedBox(height: 12),
@@ -329,274 +299,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                     const SizedBox(height: 20),
 
-                    // فیلد نام کاربری
-                    Builder(
-                      builder: (context) {
-                        final l10n = AppLocalizations.of(context);
-                        return TextFormField(
-                          controller: _usernameController,
-                          focusNode: _usernameFocusNode,
-                          decoration: InputDecoration(
-                            labelText: l10n?.username ?? 'Username',
-                            hintText: 'username',
-                            prefixIcon: Icon(
-                              Icons.person_outline,
-                              color: primaryColor,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: isDark
-                                    ? colorScheme.outline.withOpacity(0.2)
-                                    : Colors.grey.shade300,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: isDark
-                                    ? colorScheme.outline.withOpacity(0.2)
-                                    : Colors.grey.shade300,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: primaryColor,
-                                width: 2,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: isDark
-                                ? colorScheme.surfaceContainerHighest
-                                : Colors.grey.shade50,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            labelStyle: TextStyle(
-                              color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.7)
-                                  : Colors.grey.shade700,
-                            ),
-                            hintStyle: TextStyle(
-                              color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.5)
-                                  : Colors.grey.shade400,
-                            ),
-                          ),
-                          textDirection: TextDirection.ltr,
-                          textInputAction: TextInputAction.next,
-                          onFieldSubmitted: (_) {
-                            FocusScope.of(
-                              context,
-                            ).requestFocus(_passwordFocusNode);
-                          },
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return l10n?.pleaseEnterUsername ??
-                                  'Please enter username';
-                            }
-                            return null;
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // فیلد رمز عبور
-                    Builder(
-                      builder: (context) {
-                        final l10n = AppLocalizations.of(context);
-                        return TextFormField(
-                          controller: _passwordController,
-                          focusNode: _passwordFocusNode,
-                          decoration: InputDecoration(
-                            labelText: l10n?.password ?? 'Password',
-                            hintText:
-                                l10n?.enterPassword ?? 'Enter your password',
-                            prefixIcon: Icon(
-                              Icons.lock_outline,
-                              color: primaryColor,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: isDark
-                                    ? colorScheme.onSurface.withOpacity(0.6)
-                                    : Colors.grey.shade600,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: isDark
-                                    ? colorScheme.outline.withOpacity(0.2)
-                                    : Colors.grey.shade300,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: isDark
-                                    ? colorScheme.outline.withOpacity(0.2)
-                                    : Colors.grey.shade300,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: primaryColor,
-                                width: 2,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: isDark
-                                ? colorScheme.surfaceContainerHighest
-                                : Colors.grey.shade50,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            labelStyle: TextStyle(
-                              color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.7)
-                                  : Colors.grey.shade700,
-                            ),
-                            hintStyle: TextStyle(
-                              color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.5)
-                                  : Colors.grey.shade400,
-                            ),
-                          ),
-                          obscureText: _obscurePassword,
-                          textDirection: TextDirection.ltr,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _handleLogin(),
-                          validator: (value) {
-                            final l10n = AppLocalizations.of(context);
-                            if (value == null || value.isEmpty) {
-                              return l10n?.pleaseEnterPassword ??
-                                  'Please enter password';
-                            }
-                            return null;
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // مرا به خاطر بسپار
-                    Builder(
-                      builder: (context) {
-                        final l10n = AppLocalizations.of(context);
-                        return Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _rememberMe = !_rememberMe;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _rememberMe
-                                      ? primaryColor.withOpacity(0.45)
-                                      : (isDark
-                                            ? colorScheme.outline.withOpacity(
-                                                0.2,
-                                              )
-                                            : Colors.grey.shade200),
-                                ),
-                                color: _rememberMe
-                                    ? primaryColor.withOpacity(
-                                        isDark ? 0.12 : 0.06,
-                                      )
-                                    : (isDark
-                                          ? colorScheme.surfaceContainerHighest
-                                                .withOpacity(0.5)
-                                          : Colors.grey.shade50),
-                              ),
-                              child: Row(
-                                children: [
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    width: 24,
-                                    height: 24,
-                                    margin: const EdgeInsetsDirectional.only(
-                                      start: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(6),
-                                      color: _rememberMe
-                                          ? primaryColor
-                                          : Colors.transparent,
-                                      border: Border.all(
-                                        color: _rememberMe
-                                            ? primaryColor
-                                            : (isDark
-                                                  ? colorScheme.onSurface
-                                                        .withOpacity(0.4)
-                                                  : Colors.grey.shade400),
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: _rememberMe
-                                        ? const Icon(
-                                            Icons.check_rounded,
-                                            size: 16,
-                                            color: Colors.white,
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      l10n?.rememberMe ?? 'Remember me',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: _rememberMe
-                                            ? primaryColor
-                                            : (isDark
-                                                  ? colorScheme.onSurface
-                                                        .withOpacity(0.85)
-                                                  : Colors.grey.shade800),
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    _rememberMe
-                                        ? Icons.bookmark_rounded
-                                        : Icons.bookmark_outline_rounded,
-                                    size: 22,
-                                    color: _rememberMe
-                                        ? primaryColor
-                                        : (isDark
-                                              ? colorScheme.onSurface
-                                                    .withOpacity(0.35)
-                                              : Colors.grey.shade400),
-                                  ),
-                                  const SizedBox(width: 12),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
+                    TextFormField(
+                      controller: _accessCodeController,
+                      keyboardType: TextInputType.number,
+                      textDirection: TextDirection.ltr,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleLogin(),
+                      decoration: InputDecoration(
+                        labelText: 'کد ۱۰ رقمی',
+                        hintText: 'از پشتیبانی',
+                        prefixIcon: Icon(Icons.pin_outlined, color: primaryColor),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      validator: (value) {
+                        final digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
+                        if (digits.length != 10) return 'کد باید ۱۰ رقم باشد';
+                        return null;
                       },
                     ),
                     const SizedBox(height: 24),
