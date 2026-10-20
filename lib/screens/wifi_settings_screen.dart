@@ -122,44 +122,74 @@ class WifiSettingsRouter extends StatelessWidget {
   }
 }
 
-Map<String, dynamic>? _cachedWifiRouterInfo(ClientsProvider provider) {
-  return provider.routerInfo ?? MikroTikServiceManager().routerInfo;
+Map<String, dynamic>? _bestWifiRouterInfo(ClientsProvider provider) {
+  final fromProvider = provider.routerInfo;
+  final fromManager = MikroTikServiceManager().routerInfo;
+  if (wifiSettingsLaunchExternal(fromProvider) != null) return fromProvider;
+  if (wifiSettingsLaunchExternal(fromManager) != null) return fromManager;
+  return fromProvider ?? fromManager;
 }
 
-/// برد را از کش می‌خواند. اگر کش خالی یا Unknown باشد، همان نشست را دوباره می‌پرسد.
-/// مهلت ۸ثانیه‌ای قبلی جواب دیررس را دور می‌ریخت و صفحهٔ خطا می‌ماند.
+/// اگر کش برد کافی باشد هیچ درخواستی به روتر نمی‌رود.
+/// در غیر این صورت فقط یک دستور کوتاه routerboard، نه resource و identity.
 Future<Map<String, dynamic>?> ensureWifiRouterInfo(ClientsProvider provider) async {
   final manager = MikroTikServiceManager();
-  var info = _cachedWifiRouterInfo(provider);
-  if (WifiSettingsRouter.isWebViewWifiBoard(info) ||
-      WifiSettingsRouter.isMainRouterSession(routerInfo: info)) {
-    return info;
+  final known = _bestWifiRouterInfo(provider);
+  if (wifiSettingsLaunchExternal(known) != null ||
+      manager.cachedWifiOpensExternalBrowser() != null) {
+    return known;
   }
-  try {
-    final fresh = await manager.getRouterInfo(forceRefresh: true);
-    if (fresh != null) {
-      provider.rememberRouterInfo(fresh);
-      info = fresh;
-    }
-  } catch (e) {
-    debugPrint('[WIFI_SETTINGS] board read failed: $e');
+  final fresh = await manager.readWifiBoardFast();
+  if (fresh != null) {
+    provider.rememberRouterInfo(fresh);
   }
-  return _cachedWifiRouterInfo(provider) ?? info;
+  return _bestWifiRouterInfo(provider) ?? fresh;
 }
 
-/// تنظیمات وای‌فای: برد آنتن، یا بردی که خوانده نشد، پنل ۱۰٫۱۰٫۱۰٫۲ را
-/// در مرورگر پیش‌فرض باز می‌کند. فقط روتر اصلیِ شناسایی‌شده داخل اپ می‌ماند.
+/// آنتن شناخته‌شده: مرورگر همان لحظه. روتر اصلی: فرم داخل اپ.
+/// بردِ هنوز نخوانده فقط با یک دستور کوتاه مشخص می‌شود.
 Future<void> openWifiSettings(BuildContext context) async {
+  final manager = MikroTikServiceManager();
   final provider = Provider.of<ClientsProvider>(context, listen: false);
-  final info = await ensureWifiRouterInfo(provider);
-  if (!context.mounted) return;
-  if (WifiSettingsRouter.isMainRouterSession(routerInfo: info)) {
+  final cachedDecision = manager.cachedWifiOpensExternalBrowser();
+  if (cachedDecision == true) {
+    final opened = await openCpeWifiInExternalBrowser();
+    if (opened || !context.mounted) return;
     await Navigator.of(context).pushNamed('/wifi-settings');
     return;
   }
+  if (cachedDecision == false) {
+    if (!context.mounted) return;
+    await Navigator.of(context).pushNamed('/wifi-settings');
+    return;
+  }
+
+  final known = _bestWifiRouterInfo(provider);
+  final decision = wifiSettingsLaunchExternal(known);
+  if (decision == true) {
+    manager.rememberWifiLaunch(external: true);
+    final opened = await openCpeWifiInExternalBrowser();
+    if (opened || !context.mounted) return;
+    await Navigator.of(context).pushNamed('/wifi-settings');
+    return;
+  }
+  if (decision == false) {
+    manager.rememberWifiLaunch(external: false);
+    if (!context.mounted) return;
+    await Navigator.of(context).pushNamed('/wifi-settings');
+    return;
+  }
+
+  final info = await ensureWifiRouterInfo(provider);
+  if (!context.mounted) return;
+  if (wifiSettingsLaunchExternal(info) == false) {
+    manager.rememberWifiLaunch(external: false);
+    await Navigator.of(context).pushNamed('/wifi-settings');
+    return;
+  }
+  manager.rememberWifiLaunch(external: true);
   final opened = await openCpeWifiInExternalBrowser();
   if (opened || !context.mounted) return;
-  if (!context.mounted) return;
   await Navigator.of(context).pushNamed('/wifi-settings');
 }
 
@@ -292,23 +322,19 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
   Future<void> _leaveIfCpeHost() async {
     if (!mounted) return;
     final provider = Provider.of<ClientsProvider>(context, listen: false);
-    await ensureWifiRouterInfo(provider);
+    final info = await ensureWifiRouterInfo(provider);
     if (!mounted) return;
     final live = MikroTikServiceManager().currentConnection?.host;
-    final info = provider.routerInfo ?? MikroTikServiceManager().routerInfo;
-    if (WifiSettingsRouter.shouldOpenExternally(host: live, routerInfo: info)) {
-      _pollTimer?.cancel();
-      setState(() => _openBrowser = true);
-      return;
-    }
-    if (info != null &&
-        WifiSettingsRouter.isMainRouterSession(
-          liveHost: live,
-          routerInfo: info,
-        )) {
+    if (WifiSettingsRouter.isMainRouterSession(
+      liveHost: live,
+      routerInfo: info,
+    )) {
       _pollTimer?.cancel();
       setState(() {});
+      return;
     }
+    _pollTimer?.cancel();
+    setState(() => _openBrowser = true);
   }
 
   @override

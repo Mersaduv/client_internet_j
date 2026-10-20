@@ -209,6 +209,30 @@ void main() {
       );
     });
 
+    test('known board decides without another router read', () {
+      expect(
+        wifiSettingsLaunchExternal({
+          'board-name': 'LHG 5',
+          'model': 'Unknown',
+        }),
+        isTrue,
+      );
+      expect(
+        wifiSettingsLaunchExternal({
+          'board-name': 'hEX',
+          'model': 'RB750Gr3',
+        }),
+        isFalse,
+      );
+      expect(
+        wifiSettingsLaunchExternal({
+          'board-name': 'Unknown',
+          'model': 'Unknown',
+        }),
+        isNull,
+      );
+    });
+
     test('LHG board still opens the antenna page', () {
       expect(
         WifiSettingsRouter.shouldOpenExternally(

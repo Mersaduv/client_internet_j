@@ -54,6 +54,18 @@ bool _wifiFieldMatchesCatalog(String raw) {
   return false;
 }
 
+/// true: پنل آنتن در مرورگر. false: روتر اصلی، فرم داخل اپ. null: برد هنوز معلوم نیست.
+bool? wifiSettingsLaunchExternal(Map<String, dynamic>? routerInfo) {
+  if (routerInfo == null) return null;
+  if (isWifiWebViewBoard(routerInfo)) return true;
+  const keys = ['board-name', 'model', 'board', 'identity'];
+  for (final key in keys) {
+    final norm = normalizeWifiBoardKey(routerInfo[key]?.toString());
+    if (norm.isNotEmpty && norm != 'unknown') return false;
+  }
+  return null;
+}
+
 /// True when [routerInfo] is an antenna whose Wi‑Fi page is http://10.10.10.2/.
 bool isWifiWebViewBoard(Map<String, dynamic>? routerInfo) {
   if (routerInfo == null) return false;

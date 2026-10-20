@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/mikrotik_connection.dart';
+import '../utils/wifi_webview_boards.dart';
 import 'connection_heartbeat.dart';
 import 'deltasib_auth_service.dart';
 import 'mikrotik_service.dart';
@@ -90,6 +91,70 @@ class MikroTikServiceManager {
 
   /// دریافت اطلاعات روتر (کامل - شامل uptime, version, board-name, platform و ...)
   Map<String, dynamic>? get routerInfo => _routerInfo;
+
+  String? _wifiLaunchHost;
+  bool? _wifiLaunchExternal;
+
+  /// تصمیم قبلی همین نشست: true یعنی مرورگر، false یعنی فرم داخل اپ.
+  /// null یعنی هنوز مشخص نشده و نباید برایش از روتر پرسید اگر کش برد کافی است.
+  bool? cachedWifiOpensExternalBrowser() {
+    final host = _currentConnection?.host;
+    if (host == null || host != _wifiLaunchHost) return null;
+    return _wifiLaunchExternal;
+  }
+
+  void rememberWifiLaunch({required bool external}) {
+    _wifiLaunchHost = _currentConnection?.host;
+    _wifiLaunchExternal = external;
+  }
+
+  void _forgetWifiLaunch() {
+    _wifiLaunchHost = null;
+    _wifiLaunchExternal = null;
+  }
+
+  void _syncWifiLaunch(Map<String, dynamic>? info) {
+    final decision = wifiSettingsLaunchExternal(info);
+    if (decision == null) return;
+    _wifiLaunchHost = _currentConnection?.host;
+    _wifiLaunchExternal = decision;
+  }
+
+  /// فقط نام برد. یک دستور، بدون بررسی سلامت اتصال و بدون identity.
+  Future<Map<String, dynamic>?> readWifiBoardFast() async {
+    final cached = _routerInfo;
+    if (wifiSettingsLaunchExternal(cached) != null ||
+        cachedWifiOpensExternalBrowser() != null) {
+      return cached;
+    }
+    final service = _service;
+    if (service == null || !isConnected) return cached;
+    try {
+      final rows = await service.talk(
+        [
+          '/system/routerboard/print',
+          '=.proplist=board-name,model',
+        ],
+        timeout: const Duration(milliseconds: 900),
+        skipHealthCheck: true,
+      );
+      if (rows.isEmpty) return cached;
+      final boardName = rows.first['board-name']?.trim();
+      final model = rows.first['model']?.trim();
+      final info = <String, dynamic>{
+        ...?cached,
+        if (boardName != null && boardName.isNotEmpty) 'board-name': boardName,
+        if (model != null && model.isNotEmpty) 'model': model,
+      };
+      _routerInfo = info;
+      _routerInfoCacheTime = DateTime.now();
+      _syncWifiLaunch(info);
+      return info;
+    } catch (e) {
+      debugPrint('[WIFI_SETTINGS] fast board read failed: $e');
+      return cached;
+    }
+  }
 
   /// تلاش برای auto-login با اعتبارنامه و تنظیمات ذخیره‌شده.
   /// هرگز throw نمی‌کند. اگر نشست حجم باشد، خانه فوری باز می‌شود و روتر در پس‌زمینه وصل می‌شود.
@@ -354,6 +419,7 @@ class MikroTikServiceManager {
     _currentConnection = null;
     _routerInfo = null;
     _routerInfoCacheTime = null;
+    _forgetWifiLaunch();
     _progressiveLoadActive = false;
     _setReviewSimulation(false);
   }
@@ -467,6 +533,7 @@ class MikroTikServiceManager {
     try {
       _routerInfo = await _service!.getRouterInfo();
       _routerInfoCacheTime = DateTime.now();
+      _syncWifiLaunch(_routerInfo);
       return _routerInfo;
     } catch (e) {
       return _routerInfo; // برگرداندن اطلاعات قبلی در صورت خطا
@@ -495,6 +562,9 @@ class MikroTikServiceManager {
         if (routerInfo != null && !hasValidCachedRouterInfo()) {
           _routerInfo = routerInfo;
           _routerInfoCacheTime = DateTime.now();
+          _syncWifiLaunch(routerInfo);
+        } else {
+          _syncWifiLaunch(routerInfo ?? _routerInfo);
         }
         return {
           'deviceIp': results[0] as String?,
@@ -530,6 +600,9 @@ class MikroTikServiceManager {
       if (routerInfo != null && !hasValidCachedRouterInfo()) {
         _routerInfo = routerInfo;
         _routerInfoCacheTime = DateTime.now();
+        _syncWifiLaunch(routerInfo);
+      } else {
+        _syncWifiLaunch(routerInfo ?? _routerInfo);
       }
 
       return {

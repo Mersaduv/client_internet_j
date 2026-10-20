@@ -49,6 +49,7 @@ class ReviewSimulatedMikroTikService extends MikroTikService {
   Future<List<Map<String, String>>> _talk(
     List<String> command, {
     Duration timeout = MikrotikTimeouts.defaultTalk,
+    bool skipHealthCheck = false,
   }) async {
     if (!_simulated) {
       throw Exception('Cannot connect to router');
@@ -59,7 +60,8 @@ class ReviewSimulatedMikroTikService extends MikroTikService {
       rows: rows,
       note:
           'simulated RouterOS reply; no packet was sent; '
-          'timeout=${timeout.inSeconds}s',
+          'timeout=${timeout.inSeconds}s; '
+          'skipHealthCheck=$skipHealthCheck',
     );
     return rows;
   }

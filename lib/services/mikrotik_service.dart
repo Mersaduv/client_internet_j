@@ -351,13 +351,17 @@ class MikroTikService {
   Future<List<Map<String, String>>> talk(
     List<String> command, {
     Duration timeout = _apiTimeout,
-  }) => _talk(command, timeout: timeout);
+    bool skipHealthCheck = false,
+  }) => _talk(command, timeout: timeout, skipHealthCheck: skipHealthCheck);
 
   Future<List<Map<String, String>>> _talk(
     List<String> command, {
     Duration timeout = _apiTimeout,
+    bool skipHealthCheck = false,
   }) async {
-    if (!await ensureConnected()) {
+    final alreadyLive =
+        skipHealthCheck && _client != null && _client!.isConnected;
+    if (!alreadyLive && !await ensureConnected()) {
       throw Exception('Cannot connect to router');
     }
 
