@@ -180,19 +180,9 @@ class ClientsProvider extends ChangeNotifier {
     }
   }
 
-  /// Per-row visibility from [TrafficListItemVisibility] — starts/stops poll IPs.
-  void reportTrafficListItemVisibility(int index, bool visible) {
-    if (index < 0) {
-      return;
-    }
-
-    final changed = visible
-        ? _trafficVisibleListIndices.add(index)
-        : _trafficVisibleListIndices.remove(index);
-    if (changed) {
-      _scheduleTrafficViewportSync();
-    }
-  }
+  /// Scroll no longer starts or stops traffic. Every connected device is in
+  /// the one connection print, so per-row visibility would only rebuild the list.
+  void reportTrafficListItemVisibility(int index, bool visible) {}
 
   void _scheduleTrafficViewportSync() {
     _trafficViewportSyncTimer?.cancel();
@@ -225,9 +215,7 @@ class ClientsProvider extends ChangeNotifier {
   }
 
   /// Called from [TrafficListScrollScope] after the list scrolls.
-  void notifyTrafficListScrolled() {
-    _scheduleTrafficViewportSync();
-  }
+  void notifyTrafficListScrolled() {}
 
   /// Rebuilds the active poll IP set from rows intersecting the scroll viewport.
   void _syncTrafficViewportFromVisibleRows() {
@@ -284,9 +272,7 @@ class ClientsProvider extends ChangeNotifier {
   void updateTrafficViewportFromScroll({
     required double scrollOffset,
     required double viewportHeight,
-  }) {
-    _scheduleTrafficViewportSync();
-  }
+  }) {}
 
   void _seedInitialTrafficViewport() {
     _scheduleTrafficViewportSync();
@@ -1694,9 +1680,7 @@ class ClientsProvider extends ChangeNotifier {
   void _startTrafficDisplayTimer() {
     _trafficDisplayTimer?.cancel();
     _trafficDisplayTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_trafficStore.syncDisplayTick()) {
-        notifyListeners();
-      }
+      _trafficStore.syncDisplayTick();
     });
   }
 
@@ -1707,6 +1691,19 @@ class ClientsProvider extends ChangeNotifier {
 
   ({Set<String> ips, Map<String, String> macToIp}) _trafficTrackingContext() {
     return _trafficStore.trackingContext(_trafficTrackedClients);
+  }
+
+  /// Every device on the connected tab, including rows that are not on screen
+  /// and have no live-traffic stream yet.
+  Set<String> _connectedDeviceIps() {
+    final ips = <String>{};
+    for (final client in _displayClientsCache) {
+      final ip = client.ipAddress?.trim();
+      if (ip != null && ip.isNotEmpty) {
+        ips.add(ip);
+      }
+    }
+    return ips;
   }
 
   void _configureTrafficStream({int? trackedCount}) {
@@ -1737,6 +1734,7 @@ class ClientsProvider extends ChangeNotifier {
       final rates = await _serviceManager.pollTrafficRates(
         trackedIps: tracking.ips,
         macToIp: tracking.macToIp,
+        connectedIps: _connectedDeviceIps(),
       );
       _publishNetworkAggregate();
       return rates;
@@ -1752,19 +1750,15 @@ class ClientsProvider extends ChangeNotifier {
     if (rates.isEmpty) {
       return;
     }
-    final tracking = _trafficTrackingContext();
-    if (tracking.ips.isEmpty) {
-      return;
-    }
 
     final isFirstPoll = !_trafficStore.pollReady;
     final firstMeasurement = _trafficStore.applyPoll(
-      trackedIps: tracking.ips,
+      trackedIps: rates.keys.toSet(),
       samples: rates,
       rateChanged: _trafficRateChanged,
     );
     if (firstMeasurement || isFirstPoll) {
-      notifyListeners();
+      _trafficStore.bumpDisplay();
     }
     _armTrafficPlaceholderWatch();
   }
@@ -1813,9 +1807,12 @@ class ClientsProvider extends ChangeNotifier {
     );
   }
 
-  /// Live total from the router (parent queue or WAN), never a viewport sum.
+  /// Live total: WAN `rx-bits-per-second` / `tx-bits-per-second`.
   AggregateLiveTrafficRate get aggregateLiveTrafficRate =>
       _serviceManager.networkAggregateLiveRate;
+
+  /// Badges and the total banner listen here. Device cards do not.
+  ValueListenable<int> get trafficDisplayTick => _trafficStore.displayTick;
 
   void _publishNetworkAggregate() {
     final aggregate = _serviceManager.networkAggregateLiveRate;
@@ -1830,7 +1827,7 @@ class ClientsProvider extends ChangeNotifier {
     _publishedNetworkMeasured = true;
     _publishedNetworkRx = aggregate.rxBps;
     _publishedNetworkTx = aggregate.txBps;
-    notifyListeners();
+    _trafficStore.bumpDisplay();
   }
 
   void _resetNetworkAggregatePublish() {

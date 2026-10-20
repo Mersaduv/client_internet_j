@@ -36,15 +36,23 @@ class TrafficMonitorService {
   Future<Map<String, ClientTrafficRate>> sampleRates({
     required Set<String> trackedIps,
     required Map<String, String> macToIp,
+    Set<String> connectedIps = const {},
   }) async {
     if (!_engine.isReady) {
       return {};
     }
 
     try {
+      final scope = connectedIps.length > trackedIps.length
+          ? connectedIps.length
+          : trackedIps.length;
       final rates = await _engine
-          .sample(trackedIps: trackedIps, macToIp: macToIp)
-          .timeout(MikrotikTimeouts.trafficSampleTimeout(trackedIps.length));
+          .sample(
+            trackedIps: trackedIps,
+            macToIp: macToIp,
+            connectedIps: connectedIps,
+          )
+          .timeout(MikrotikTimeouts.trafficSampleTimeout(scope));
       _failures = 0;
       return rates;
     } on TimeoutException {

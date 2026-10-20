@@ -104,29 +104,27 @@ class ClientLiveTrafficBadge extends StatelessWidget {
       );
     }
 
-    final inPollTarget = provider.isTrafficPollTarget(ip);
     final measured = provider.trafficMeasuredForIp(ip);
     final sample = provider.trafficForIp(ip);
-    final timedOut = provider.trafficAwaitingTimedOut(ip);
-
-    if (!inPollTarget) {
-      return const ClientTrafficUiState(
-        rxBps: null,
-        txBps: null,
+    if (measured) {
+      return ClientTrafficUiState(
+        rxBps: sample?.rxBps ?? 0,
+        txBps: sample?.txBps ?? 0,
+        rxBytesTotal: sample?.rxBytesTotal,
+        txBytesTotal: sample?.txBytesTotal,
         showPlaceholder: false,
-        measured: false,
-        inViewport: false,
+        measured: true,
+        inViewport: true,
       );
     }
 
+    final timedOut = provider.trafficAwaitingTimedOut(ip);
     return ClientTrafficUiState(
-      rxBps: sample?.rxBps,
-      txBps: sample?.txBps,
-      rxBytesTotal: sample?.rxBytesTotal,
-      txBytesTotal: sample?.txBytesTotal,
-      showPlaceholder: inPollTarget && !measured && !timedOut,
-      measured: measured || timedOut,
-      inViewport: inPollTarget,
+      rxBps: timedOut ? 0 : null,
+      txBps: timedOut ? 0 : null,
+      showPlaceholder: !timedOut,
+      measured: timedOut,
+      inViewport: true,
     );
   }
 
@@ -140,10 +138,14 @@ class ClientLiveTrafficBadge extends StatelessWidget {
           : const SizedBox.shrink();
     }
 
-    return Selector<ClientsProvider, ClientTrafficUiState>(
-      selector: (_, provider) => _selectState(provider, ip),
-      shouldRebuild: (previous, next) => previous != next,
-      builder: (context, state, _) {
+    final tick = Provider.of<ClientsProvider>(context, listen: false).trafficDisplayTick;
+    return ListenableBuilder(
+      listenable: tick,
+      builder: (context, _) {
+        final state = _selectState(
+          Provider.of<ClientsProvider>(context, listen: false),
+          ip,
+        );
         if (!state.inViewport && !state.measured) {
           return fixedSlot
               ? const _TrafficSlot(child: SizedBox.shrink())
@@ -420,10 +422,14 @@ class ClientTotalTrafficDetailRow extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final ip = (client?.ipAddress ?? ipAddress).trim();
 
-    return Selector<ClientsProvider, ClientTrafficUiState>(
-      selector: (_, provider) => ClientLiveTrafficBadge._selectState(provider, ip),
-      shouldRebuild: (a, b) => a != b,
-      builder: (context, state, _) {
+    final tick = Provider.of<ClientsProvider>(context, listen: false).trafficDisplayTick;
+    return ListenableBuilder(
+      listenable: tick,
+      builder: (context, _) {
+        final state = ClientLiveTrafficBadge._selectState(
+          Provider.of<ClientsProvider>(context, listen: false),
+          ip,
+        );
         final value = state.hasVolume
             ? TrafficVolumeDisplay.pair(
                 rxBytes: state.rxBytesTotal,
@@ -503,17 +509,17 @@ class NetworkTotalTrafficBanner extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Selector<ClientsProvider, ({int rx, int tx, bool ready})>(
-      selector: (_, p) {
-        final agg = p.aggregateLiveTrafficRate;
-        return (
+    final tick = Provider.of<ClientsProvider>(context, listen: false).trafficDisplayTick;
+    return ListenableBuilder(
+      listenable: tick,
+      builder: (context, _) {
+        final provider = Provider.of<ClientsProvider>(context, listen: false);
+        final agg = provider.aggregateLiveTrafficRate;
+        final data = (
           rx: agg.rxBps,
           tx: agg.txBps,
-          ready: p.trafficUiEnabled,
+          ready: provider.trafficUiEnabled,
         );
-      },
-      shouldRebuild: (a, b) => a != b,
-      builder: (context, data, _) {
         if (!data.ready) {
           return const SizedBox.shrink();
         }

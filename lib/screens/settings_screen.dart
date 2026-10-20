@@ -246,7 +246,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     controller: _portController,
                                     decoration: InputDecoration(
                                       labelText: l10n?.port ?? 'Port',
-                                      hintText: '8728',
+                                      hintText: '2752',
                                       prefixIcon: const Icon(Icons.numbers),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),

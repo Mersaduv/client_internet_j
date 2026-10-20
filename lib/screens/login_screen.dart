@@ -168,6 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final saves = <Future<void>>[
         DeltaSibAuthService().rememberSubscriber(username),
         _settingsService.setLoginTimestamp(),
+        _settingsService.markActivity(),
         if (discoveredHost != null && discoveredHost.isNotEmpty)
           _settingsService.setHost(discoveredHost),
         if (redeemed.routerPassword != null &&

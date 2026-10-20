@@ -95,6 +95,7 @@ class SibPackageStore {
     try {
       final loaded = await Future.wait<Object?>([
         service.loadCredit().then<Object?>((value) => value).catchError((Object e) {
+          if (e is DeltaSibAuthException && e.sessionExpired) throw e;
           debugPrint('[SIB_PACKAGE] credit failed: $e');
           return null;
         }),
@@ -103,6 +104,9 @@ class SibPackageStore {
       credit = loaded[0] as Map<String, dynamic>?;
       name = loaded[1] as String?;
     } catch (e) {
+      if (e is DeltaSibAuthException && e.sessionExpired) {
+        await endSubscriberSession();
+      }
       debugPrint('[SIB_PACKAGE] refresh failed: $e');
       return;
     }

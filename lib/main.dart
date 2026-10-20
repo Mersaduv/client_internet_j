@@ -15,6 +15,7 @@ import 'screens/app_settings_screen.dart';
 import 'screens/wifi_settings_screen.dart';
 import 'screens/subscriber_help_screen.dart';
 import 'screens/legal_document_screen.dart';
+import 'services/deltasib_auth_service.dart';
 import 'services/mikrotik_service_manager.dart';
 import 'services/settings_service.dart';
 import 'services/network_info_service.dart';
@@ -344,6 +345,7 @@ class _MainScaffoldState extends State<MainScaffold>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     mainBottomTabRequest.addListener(_onMainBottomTabRequested);
+    subscriberSessionEnded.addListener(_onSubscriberSessionEnded);
     _serviceManager.reviewSimulationListenable.addListener(
       _onReviewSimulationChanged,
     );
@@ -382,6 +384,7 @@ class _MainScaffoldState extends State<MainScaffold>
       _onReviewSimulationChanged,
     );
     mainBottomTabRequest.removeListener(_onMainBottomTabRequested);
+    subscriberSessionEnded.removeListener(_onSubscriberSessionEnded);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -412,6 +415,7 @@ class _MainScaffoldState extends State<MainScaffold>
     }
 
     if (state == AppLifecycleState.resumed) {
+      unawaited(_settingsService.markActivity());
       if (provider.isConnected && provider.clients.isNotEmpty) {
         provider.startOnlineStatusTimer();
         provider.refreshOnlineStatus();
@@ -438,27 +442,28 @@ class _MainScaffoldState extends State<MainScaffold>
     }
   }
 
-  /// بررسی انقضای لاگین
+  void _onSubscriberSessionEnded() {
+    if (!mounted) return;
+    final provider = Provider.of<ClientsProvider>(context, listen: false);
+    provider.clear();
+    _serviceManager.disconnect();
+    Navigator.of(context).pushReplacementNamed('/login');
+  }
+
+  /// ورود می‌ماند. فقط یک سال بی‌فعالیتی یا نبودن نشست به صفحهٔ ورود برمی‌گردد.
   Future<void> _checkLoginExpiration() async {
+    if (await _settingsService.isInactiveYear()) {
+      await endSubscriberSession();
+      return;
+    }
     final timestamp = await _settingsService.getLoginTimestamp();
     if (timestamp == null && _serviceManager.isConnected) {
       await _settingsService.setLoginTimestamp();
+      await _settingsService.markActivity();
       return;
     }
-
-    final isExpired = await _settingsService.isLoginExpired();
-    if (isExpired && mounted) {
-      // اگر لاگین منقضی شده باشد، به صفحه ورود هدایت کن
-      final provider = Provider.of<ClientsProvider>(context, listen: false);
-      provider.clear();
-      _serviceManager.disconnect();
-      await _settingsService.clearLoginTimestamp();
-      if (!await _settingsService.getRememberMe()) {
-        await _settingsService.clearCredentials();
-      }
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+    if (timestamp == null && mounted) {
+      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 

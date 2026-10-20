@@ -132,4 +132,61 @@ void main() {
       );
     });
   });
+
+  group('main router vs antenna', () {
+    test('hEX stays in the app even when a saved address is the WAN', () {
+      const hex = {
+        'board-name': 'hEX S',
+        'model': 'RB760iGS',
+      };
+      expect(
+        WifiSettingsRouter.shouldOpenExternally(
+          host: '10.10.10.2',
+          routerInfo: hex,
+        ),
+        isFalse,
+      );
+      expect(
+        WifiSettingsRouter.isMainRouterSession(
+          liveHost: '172.16.0.1',
+          routerInfo: hex,
+        ),
+        isTrue,
+      );
+    });
+
+    test('unknown board on the gateway is the main router', () {
+      expect(
+        WifiSettingsRouter.shouldOpenExternally(host: '172.16.0.1'),
+        isFalse,
+      );
+      expect(
+        WifiSettingsRouter.isMainRouterSession(liveHost: '172.16.0.1'),
+        isTrue,
+      );
+    });
+
+    test('LHG board still opens the antenna page', () {
+      expect(
+        WifiSettingsRouter.shouldOpenExternally(
+          host: '172.16.0.1',
+          routerInfo: {
+            'board-name': 'LHG5',
+            'model': 'RBLHG-5nD',
+          },
+        ),
+        isTrue,
+      );
+      expect(
+        WifiSettingsRouter.isMainRouterSession(
+          liveHost: '172.16.0.1',
+          routerInfo: {
+            'board-name': 'LHG5',
+            'model': 'RBLHG-5nD',
+          },
+        ),
+        isFalse,
+      );
+    });
+  });
 }

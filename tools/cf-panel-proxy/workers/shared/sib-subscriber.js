@@ -41,7 +41,13 @@ export async function handleSubscriberVolume(request, env) {
   const sessionUser = await usernameForSession(env, body.session);
   const claimed = String(body.username || "").trim();
   if (!sessionUser) {
-    return json({ error: "ابتدا کد ۱۰ رقمی را وارد کنید." }, 401);
+    return json(
+      {
+        error: "نشست پایان یافته است. کد ۱۰ رقمی را دوباره وارد کنید.",
+        code: "session_expired",
+      },
+      401,
+    );
   }
   if (claimed && claimed.toLowerCase() !== sessionUser.toLowerCase()) {
     return json({ error: "این نشست برای مشترک دیگری است." }, 403);

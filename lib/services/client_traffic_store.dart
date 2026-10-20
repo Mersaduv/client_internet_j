@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../models/client_info.dart';
 import '../models/client_traffic_rate.dart';
 import '../utils/client_display_policy.dart';
@@ -10,12 +12,17 @@ class ClientTrafficStore {
   final Map<String, ClientTrafficRate> _sampleRatesByIp = {};
   final Map<String, ClientTrafficRate> _displayRatesByIp = {};
   final Set<String> _measuredIps = {};
-  final Map<String, int> _zeroSampleStreak = {};
   final Map<String, DateTime> _leftViewportAt = {};
   final Map<String, DateTime> _awaitingFirstAt = {};
   bool _pollReady = false;
 
-  static const int _zeroWarmupPolls = 2;
+  /// Bumps when a badge or the network total should repaint.
+  /// The device list itself does not listen to this.
+  final ValueNotifier<int> displayTick = ValueNotifier(0);
+
+  void bumpDisplay() {
+    displayTick.value++;
+  }
 
   /// Keep last rate after a row leaves the viewport so re-entry is not a skeleton.
   Duration retainAfterLeave = const Duration(seconds: 5);
@@ -111,9 +118,6 @@ class ClientTrafficStore {
         _awaitingFirstAt.putIfAbsent(ip, () => clock);
       }
     }
-    for (final ip in activeIps.difference(_viewportActiveIps)) {
-      _zeroSampleStreak.remove(ip);
-    }
 
     _viewportActiveIps
       ..clear()
@@ -139,18 +143,6 @@ class ClientTrafficStore {
       final sample = samples[ip];
       if (sample == null) {
         continue;
-      }
-
-      final isZero = sample.rxBps == 0 && sample.txBps == 0;
-      // Volume-only samples are still useful; skip zero-rate warmup for them.
-      if (isZero && !sample.hasVolume) {
-        final streak = (_zeroSampleStreak[ip] ?? 0) + 1;
-        _zeroSampleStreak[ip] = streak;
-        if (!_measuredIps.contains(ip) && streak < _zeroWarmupPolls) {
-          continue;
-        }
-      } else if (!isZero) {
-        _zeroSampleStreak.remove(ip);
       }
 
       final wasMeasured = _measuredIps.contains(ip);
@@ -186,6 +178,9 @@ class ClientTrafficStore {
       }
       _displayRatesByIp[ip] = sample;
       changed = true;
+    }
+    if (changed) {
+      bumpDisplay();
     }
     return changed;
   }
@@ -250,7 +245,6 @@ class ClientTrafficStore {
     _sampleRatesByIp.clear();
     _displayRatesByIp.clear();
     _measuredIps.clear();
-    _zeroSampleStreak.clear();
     _viewportActiveIps.clear();
     _leftViewportAt.clear();
     _awaitingFirstAt.clear();
@@ -266,14 +260,6 @@ class ClientTrafficStore {
     }
     for (final ip in expired) {
       _leftViewportAt.remove(ip);
-      if (_viewportActiveIps.contains(ip)) {
-        continue;
-      }
-      _sampleRatesByIp.remove(ip);
-      _displayRatesByIp.remove(ip);
-      _measuredIps.remove(ip);
-      _zeroSampleStreak.remove(ip);
-      _awaitingFirstAt.remove(ip);
     }
   }
 

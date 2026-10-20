@@ -8,7 +8,8 @@
 
 const CODE_TTL_MS = 24 * 60 * 60 * 1000;
 const PERMANENT_EXPIRES_AT = Date.UTC(2099, 0, 1);
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSION_IDLE_MS = 365 * 24 * 60 * 60 * 1000;
+const SESSION_TOUCH_MS = 24 * 60 * 60 * 1000;
 const STAFF_TTL_MS = 12 * 60 * 60 * 1000;
 const STAFF_COOKIE = "jb_staff";
 
@@ -99,9 +100,9 @@ export async function handleRedeem(request, env) {
   }
   const session = randomHex(32);
   await env.SIB_DB.prepare(
-    "INSERT INTO phone_sessions (token_hash, username, created_at, expires_at) VALUES (?, ?, ?, ?)",
+    "INSERT INTO phone_sessions (token_hash, username, created_at, expires_at, last_seen_at) VALUES (?, ?, ?, ?, ?)",
   )
-    .bind(await sha256Hex(session), row.username, now, now + SESSION_TTL_MS)
+    .bind(await sha256Hex(session), row.username, now, PERMANENT_EXPIRES_AT, now)
     .run();
   const payload = { username: row.username, session };
   if (routerPassword) payload.routerPassword = routerPassword;
@@ -111,13 +112,46 @@ export async function handleRedeem(request, env) {
 export async function usernameForSession(env, session) {
   const token = String(session || "").trim();
   if (!env.SIB_DB || token.length < 32) return "";
+  const hash = await sha256Hex(token);
   const row = await env.SIB_DB.prepare(
-    "SELECT username, expires_at FROM phone_sessions WHERE token_hash = ?",
+    "SELECT username, created_at, last_seen_at FROM phone_sessions WHERE token_hash = ?",
   )
-    .bind(await sha256Hex(token))
+    .bind(hash)
     .first();
-  if (!row || Number(row.expires_at) < Date.now()) return "";
+  if (!row) return "";
+  const now = Date.now();
+  const seen = Number(row.last_seen_at || row.created_at || 0);
+  if (!seen || now - seen > SESSION_IDLE_MS) {
+    await env.SIB_DB.prepare("DELETE FROM phone_sessions WHERE token_hash = ?")
+      .bind(hash)
+      .run();
+    return "";
+  }
+  if (now - seen > SESSION_TOUCH_MS) {
+    await env.SIB_DB.prepare(
+      "UPDATE phone_sessions SET last_seen_at = ? WHERE token_hash = ?",
+    )
+      .bind(now, hash)
+      .run();
+  }
   return String(row.username || "");
+}
+
+export async function handleLogout(request, env) {
+  if (request.method !== "POST") return json({ error: "POST required" }, 405);
+  if (!env.SIB_DB) return json({ ok: true });
+  let body = {};
+  try {
+    body = await request.json();
+  } catch (_) {
+    body = {};
+  }
+  const token = String(body.session || "").trim();
+  if (token.length < 32) return json({ ok: true });
+  await env.SIB_DB.prepare("DELETE FROM phone_sessions WHERE token_hash = ?")
+    .bind(await sha256Hex(token))
+    .run();
+  return json({ ok: true });
 }
 
 async function staffLogin(request, env) {

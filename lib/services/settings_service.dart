@@ -16,6 +16,9 @@ class SettingsService {
   static const String _keyUseSsl = 'mikrotik_use_ssl';
   static const String _keyServiceUrl = 'internet_service_url';
   static const String _keyLoginTimestamp = 'login_timestamp';
+  static const String _keyLastActivity = 'last_activity_at';
+  static const Duration inactivityLimit = Duration(days: 365);
+  static const Duration _activityWriteGap = Duration(hours: 12);
   static const String _keyRememberMe = 'remember_me';
   static const String _keyLanguage = 'app_language';
   static const String _keyThemeMode = 'app_theme_mode';
@@ -215,19 +218,48 @@ class SettingsService {
     }
   }
 
-  /// بررسی انقضای لاگین (14 روز)
+  /// ورود ذخیره شده و در یک سال اخیر فعالیت داشته است.
   Future<bool> isLoginExpired() async {
-    final timestamp = await getLoginTimestamp();
-    if (timestamp == null) {
-      return true; // اگر زمان لاگین وجود نداشته باشد، منقضی شده در نظر بگیر
+    return !await hasValidSession();
+  }
+
+  Future<int?> getLastActivity() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getInt(_keyLastActivity);
+    } catch (_) {
+      return null;
     }
-    
-    final loginDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    final now = DateTime.now();
-    final difference = now.difference(loginDate);
-    
-    // اگر 14 روز یا بیشتر گذشته باشد، منقضی شده است
-    return difference.inDays >= 14;
+  }
+
+  /// باز شدن برنامه فعالیت است. نوشتن را تا ۱۲ ساعت یک‌بار انجام می‌دهد.
+  Future<void> markActivity() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final previous = await getLastActivity();
+    if (previous != null && now - previous < _activityWriteGap.inMilliseconds) {
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_keyLastActivity, now);
+    } catch (_) {}
+  }
+
+  Future<void> clearLastActivity() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keyLastActivity);
+    } catch (_) {}
+  }
+
+  /// یک سال بدون باز شدن برنامه.
+  /// نبودن مهر فعالیت یعنی این نسخه هنوز فعالیتی ننوشته؛ همین باز شدن فعالیت است
+  /// و نباید با زمان ورودِ قدیمی اشتباه گرفته شود.
+  Future<bool> isInactiveYear() async {
+    final activity = await getLastActivity();
+    if (activity == null) return false;
+    final seen = DateTime.fromMillisecondsSinceEpoch(activity);
+    return DateTime.now().difference(seen) >= inactivityLimit;
   }
 
   /// پاک کردن زمان لاگین (برای خروج)
@@ -305,6 +337,7 @@ class SettingsService {
       await prefs.remove(_keyUseSsl);
       await prefs.remove(_keyServiceUrl);
       await prefs.remove(_keyLoginTimestamp);
+      await prefs.remove(_keyLastActivity);
       await prefs.remove(_keyRememberMe);
       await prefs.remove(_keyLanguage);
       await prefs.remove(_keyThemeMode);
@@ -325,14 +358,11 @@ class SettingsService {
     }
   }
 
-  /// session معتبر: login_timestamp وجود دارد و کمتر از ۱۴ روز گذشته
+  /// تا خروج معتبر است، مگر یک سال هیچ فعالیتی نباشد.
   Future<bool> hasValidSession() async {
     final timestamp = await getLoginTimestamp();
-    if (timestamp == null) {
-      return false;
-    }
-    final loginTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateTime.now().difference(loginTime).inDays < 14;
+    if (timestamp == null) return false;
+    return !await isInactiveYear();
   }
 
   /// دریافت زبان برنامه

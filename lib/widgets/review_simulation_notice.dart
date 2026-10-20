@@ -35,7 +35,7 @@ class _ReviewSimulationDialog extends StatelessWidget {
       content: SingleChildScrollView(
         child: Text(
           'The review account jb.admin could not sign in to RouterOS. '
-          'The gateway, API port 8728, or the password did not succeed.\n'
+          'The gateway, API port 2752, or the password did not succeed.\n'
           'حساب jb.admin به RouterOS وارد نشد. گیت‌وی، پورت API ۸۷۲۸، '
           'یا رمز قبول نشد.\n\n'
           'You are using the review account. Connected devices, banned '

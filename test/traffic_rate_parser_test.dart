@@ -168,7 +168,7 @@ void main() {
   });
 
   group('network live total', () {
-    test('parent subnet replaces the host queues it contains', () {
+    test('top-level queues are slices and a child inside one is not added', () {
       final total = TrafficRateParser.liveTotalFromQueueRows([
         {
           'target': '192.168.88.0/24',
@@ -187,9 +187,9 @@ void main() {
         },
       ]);
 
-      expect(total?.txBps, 1000000);
-      expect(total?.rxBps, 9000000);
-      expect(total?.queueCount, 1);
+      expect(total?.txBps, 1500000);
+      expect(total?.rxBps, 9500000);
+      expect(total?.queueCount, 2);
     });
 
     test('sums every host queue when no parent is carrying traffic', () {
@@ -255,7 +255,7 @@ void main() {
       expect(total?.queueCount, 2);
     });
 
-    test('broader root queue is not added to the subnet inside it', () {
+    test('overlapping top-level queues are both counted', () {
       final total = TrafficRateParser.liveTotalFromQueueRows([
         {
           'target': '10.0.0.0/8',
@@ -269,9 +269,59 @@ void main() {
         },
       ]);
 
-      expect(total?.txBps, 10);
-      expect(total?.rxBps, 20);
-      expect(total?.queueCount, 1);
+      expect(total?.txBps, 110);
+      expect(total?.rxBps, 220);
+      expect(total?.queueCount, 2);
+    });
+
+    test('an empty-target queue does not replace the subnet total', () {
+      final total = TrafficRateParser.liveTotalFromQueueRows([
+        {
+          'target': '172.16.0.0/24',
+          'parent': 'none',
+          'rate': '1246816/12214768',
+        },
+        {
+          'name': 'Quick Book',
+          'target': '',
+          'parent': 'none',
+          'rate': '240/288',
+        },
+      ]);
+
+      expect(total?.txBps, 1247056);
+      expect(total?.rxBps, 12215056);
+      expect(total?.queueCount, 2);
+    });
+
+    test('connection rates sum only the connected device set', () {
+      final total = TrafficRateParser.liveTotalFromConnectionRates(
+        rows: [
+          {
+            'src-address': '172.16.0.240:51514',
+            'dst-address': '1.1.1.1:443',
+            'orig-rate': '40000',
+            'repl-rate': '1100000',
+          },
+          {
+            'src-address': '172.16.0.13:1200',
+            'dst-address': '8.8.8.8:53',
+            'orig-rate': '500',
+            'repl-rate': '200000',
+          },
+          {
+            'src-address': '10.9.0.4:1',
+            'dst-address': '1.1.1.1:443',
+            'orig-rate': '999999',
+            'repl-rate': '999999',
+          },
+        ],
+        connectedIps: {'172.16.0.240', '172.16.0.13'},
+      );
+
+      expect(total?.txBps, 40500);
+      expect(total?.rxBps, 1300000);
+      expect(total?.deviceCount, 2);
     });
 
     test('all-zero host queues are not a network total', () {
@@ -282,6 +332,44 @@ void main() {
         ]),
         isNull,
       );
+    });
+
+    test('gateway address resolves to the interface that contains it', () {
+      expect(
+        TrafficRateParser.gatewayAddressFromRoute({
+          'dst-address': '0.0.0.0/0',
+          'gateway': '10.10.10.1',
+        }),
+        '10.10.10.1',
+      );
+      expect(
+        TrafficRateParser.interfacesForGateways(
+          gateways: const ['10.10.10.1'],
+          addresses: const [
+            {'address': '10.10.10.2/30', 'interface': 'ether1'},
+            {'address': '172.16.0.1/24', 'interface': 'LAN'},
+          ],
+        ),
+        ['ether1'],
+      );
+    });
+
+    test('connection rates keep an idle connected device at zero', () {
+      final perIp = TrafficRateParser.perIpFromConnectionRates(
+        rows: const [
+          {
+            'src-address': '172.16.0.240:1',
+            'dst-address': '1.1.1.1:443',
+            'orig-rate': '1000',
+            'repl-rate': '8000000',
+          },
+        ],
+        connectedIps: {'172.16.0.240', '172.16.0.13'},
+      );
+      expect(perIp?['172.16.0.240']?.rxBps, 8000000);
+      expect(perIp?['172.16.0.240']?.txBps, 1000);
+      expect(perIp?['172.16.0.13']?.rxBps, 0);
+      expect(perIp?['172.16.0.13']?.txBps, 0);
     });
 
     test('interface monitor maps wan rx to download', () {

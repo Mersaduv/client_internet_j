@@ -238,21 +238,18 @@ abstract final class TrafficRateParser {
 
   /// Live total from one `/queue/simple/print stats` response.
   ///
-  /// Child queues are ignored. A parent/subnet/group queue with a live rate
-  /// replaces the hosts it contains, so those hosts are not added again.
-  /// Hosts outside that parent, and every `/32` when the parent rate is zero,
-  /// are still summed from this same print — not from the on-screen subset.
+  /// RouterOS gives each packet to the first matching top-level queue, so
+  /// those queues are slices and must be added. An empty target is one slice,
+  /// not a substitute for the rest. A child queue is skipped when a live
+  /// top-level queue already covers its addresses.
   static QueueLiveTotal? liveTotalFromQueueRows(
     Iterable<Map<String, String>> rows,
   ) {
-    final aggregates = <_QueueRateTarget>[];
-    final hosts = <_QueueRateTarget>[];
+    final top = <_QueueRateTarget>[];
+    final children = <_QueueRateTarget>[];
 
     for (final row in rows) {
-      final target = row['target']?.trim();
-      if (target == null || target.isEmpty) {
-        continue;
-      }
+      final target = row['target']?.trim() ?? '';
       final parsed = fromQueueStatsRow(row);
       if (parsed == null) {
         continue;
@@ -265,56 +262,165 @@ abstract final class TrafficRateParser {
         rxBps: parsed.rxBps,
         txBps: parsed.txBps,
       );
-      final child = isChildQueue(row['parent']);
-      if (child && !isDedicatedHostQueueTarget(target)) {
-        continue;
-      }
-      if (isDedicatedHostQueueTarget(target)) {
-        hosts.add(entry);
-      } else if (!child) {
-        aggregates.add(entry);
+      if (isChildQueue(row['parent'])) {
+        children.add(entry);
+      } else {
+        top.add(entry);
       }
     }
 
-    final selected = aggregates.isEmpty
-        ? const <_QueueRateTarget>[]
-        : _broadestDisjoint(aggregates);
-    final activeParents = selected
+    final liveTop = top
         .where((queue) => queue.rxBps > 0 || queue.txBps > 0)
         .toList(growable: false);
-    final catchAll = activeParents
-        .where((queue) => queue.cidrs.isEmpty)
-        .toList(growable: false);
-    if (catchAll.isNotEmpty) {
-      final total = _sumQueueTargets(catchAll, authoritative: true);
-      if (total.hasTraffic) {
-        return total;
-      }
-    }
-    final used = <_QueueRateTarget>[...activeParents];
-    for (final host in hosts) {
-      if (host.cidrs.isEmpty) {
-        used.add(host);
-        continue;
-      }
-      final covered = activeParents.any(
-        (parent) => parent.cidrs.any(
-          (outer) => host.cidrs.every((inner) => _cidrContains(outer, inner)),
-        ),
+    if (liveTop.isNotEmpty) {
+      final extra = children.where((child) {
+        if (child.rxBps == 0 && child.txBps == 0) {
+          return false;
+        }
+        return !_coveredBy(liveTop, child);
+      });
+      return _sumQueueTargets(
+        [...liveTop, ...extra],
+        authoritative: true,
       );
-      if (!covered) {
-        used.add(host);
-      }
     }
 
-    final total = _sumQueueTargets(used, authoritative: true);
-    if (total.hasTraffic) {
-      return total;
+    final liveChildren = children
+        .where((queue) => queue.rxBps > 0 || queue.txBps > 0)
+        .toList(growable: false);
+    if (liveChildren.isEmpty) {
+      return null;
     }
-    if (selected.isNotEmpty) {
-      return _sumQueueTargets(selected, authoritative: true);
+    return _sumQueueTargets(liveChildren, authoritative: true);
+  }
+
+  /// Per-device download/upload from one connection print.
+  ///
+  /// `orig-rate` / `repl-rate` are already bits per second, refreshed by
+  /// RouterOS every second. Every connected IP is present, including idle
+  /// zeros, so the list does not depend on which row is on screen.
+  static Map<String, ({int rxBps, int txBps})>? perIpFromConnectionRates({
+    required Iterable<Map<String, String>> rows,
+    required Set<String> connectedIps,
+  }) {
+    if (connectedIps.isEmpty) {
+      return null;
     }
-    return null;
+    var sawRate = false;
+    final totals = <String, ({int rxBps, int txBps})>{
+      for (final ip in connectedIps) ip: (rxBps: 0, txBps: 0),
+    };
+    for (final row in rows) {
+      if (row.containsKey('orig-rate') || row.containsKey('repl-rate')) {
+        sawRate = true;
+      }
+      final orig = _parseBitsPerSecond(row['orig-rate']) ?? 0;
+      final repl = _parseBitsPerSecond(row['repl-rate']) ?? 0;
+      if (orig > maxReasonableBps || repl > maxReasonableBps) {
+        continue;
+      }
+      final src = hostFromEndpoint(row['src-address']);
+      final dst = hostFromEndpoint(row['dst-address']);
+      if (src != null && totals.containsKey(src)) {
+        final prev = totals[src]!;
+        totals[src] = (rxBps: prev.rxBps + repl, txBps: prev.txBps + orig);
+      }
+      if (dst != null && dst != src && totals.containsKey(dst)) {
+        final prev = totals[dst]!;
+        totals[dst] = (rxBps: prev.rxBps + orig, txBps: prev.txBps + repl);
+      }
+    }
+    if (!sawRate) {
+      return null;
+    }
+    return totals;
+  }
+
+  /// Sum of [perIpFromConnectionRates]. Kept for tests of the same direction rules.
+  static ({int rxBps, int txBps, int deviceCount})? liveTotalFromConnectionRates({
+    required Iterable<Map<String, String>> rows,
+    required Set<String> connectedIps,
+  }) {
+    final perIp = perIpFromConnectionRates(rows: rows, connectedIps: connectedIps);
+    if (perIp == null) {
+      return null;
+    }
+    var rx = 0;
+    var tx = 0;
+    var devices = 0;
+    for (final rate in perIp.values) {
+      rx += rate.rxBps;
+      tx += rate.txBps;
+      if (rate.rxBps > 0 || rate.txBps > 0) {
+        devices++;
+      }
+    }
+    return (rxBps: rx, txBps: tx, deviceCount: devices);
+  }
+
+  /// Interface that owns the default-gateway address, such as `10.10.10.2/30`
+  /// on ether1 when the route gateway is `10.10.10.1`.
+  static List<String> interfacesForGateways({
+    required Iterable<String> gateways,
+    required Iterable<Map<String, String>> addresses,
+  }) {
+    final names = <String>[];
+    for (final gateway in gateways) {
+      final host = gateway.split('%').first.trim();
+      if (!_looksLikeIpv4(host)) {
+        continue;
+      }
+      for (final row in addresses) {
+        final disabled = row['disabled']?.trim().toLowerCase();
+        if (disabled == 'true' || disabled == 'yes') {
+          continue;
+        }
+        final iface = row['interface']?.trim();
+        final cidr = row['address']?.trim();
+        if (iface == null || iface.isEmpty || cidr == null || cidr.isEmpty) {
+          continue;
+        }
+        if (!isIpInCidr(host, cidr) || names.contains(iface)) {
+          continue;
+        }
+        names.add(iface);
+      }
+    }
+    return names;
+  }
+
+  /// IPv4 next hop of an active default route, when the gateway is an address.
+  static String? gatewayAddressFromRoute(Map<String, String> row) {
+    if (wanInterfaceFromRoute(row) != null) {
+      return null;
+    }
+    final dst = row['dst-address']?.trim();
+    if (dst != null && dst.isNotEmpty && dst != '0.0.0.0/0') {
+      return null;
+    }
+    final active = row['active']?.trim().toLowerCase();
+    if (active != null &&
+        active.isNotEmpty &&
+        active != 'true' &&
+        active != 'yes') {
+      return null;
+    }
+    final host = (row['gateway'] ?? '').split('%').first.trim();
+    if (!_looksLikeIpv4(host)) {
+      return null;
+    }
+    return host;
+  }
+
+  static bool _coveredBy(List<_QueueRateTarget> parents, _QueueRateTarget child) {
+    if (child.cidrs.isEmpty) {
+      return false;
+    }
+    return parents.any(
+      (parent) => parent.cidrs.any(
+        (outer) => child.cidrs.every((inner) => _cidrContains(outer, inner)),
+      ),
+    );
   }
 
   /// `rx-bits-per-second` on the WAN is client download; `tx` is upload.
@@ -423,26 +529,6 @@ abstract final class TrafficRateParser {
     return (amount * multiplier).round();
   }
 
-  static List<_QueueRateTarget> _broadestDisjoint(List<_QueueRateTarget> rows) {
-    final sorted = [...rows]..sort(
-        (a, b) => a.specificity.compareTo(b.specificity),
-      );
-    final selected = <_QueueRateTarget>[];
-    for (final candidate in sorted) {
-      final covered = candidate.cidrs.isNotEmpty &&
-          candidate.cidrs.every(
-            (cidr) => selected.any(
-              (kept) => kept.cidrs.any((outer) => _cidrContains(outer, cidr)),
-            ),
-          );
-      if (covered) {
-        continue;
-      }
-      selected.add(candidate);
-    }
-    return selected;
-  }
-
   static QueueLiveTotal _sumQueueTargets(
     List<_QueueRateTarget> rows, {
     required bool authoritative,
@@ -547,19 +633,6 @@ class _QueueRateTarget {
   final int rxBps;
   final int txBps;
   final List<_Cidr> cidrs;
-
-  int get specificity {
-    if (cidrs.isEmpty) {
-      return 32;
-    }
-    var prefix = cidrs.first.prefix;
-    for (final cidr in cidrs.skip(1)) {
-      if (cidr.prefix < prefix) {
-        prefix = cidr.prefix;
-      }
-    }
-    return prefix;
-  }
 
   static List<_Cidr> _cidrsOf(String target) {
     final cidrs = <_Cidr>[];

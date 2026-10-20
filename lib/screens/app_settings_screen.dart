@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import '../main.dart';
 import '../utils/app_localizations.dart';
 import '../utils/app_theme.dart';
-import '../utils/wifi_panel_url_resolver.dart';
 import 'wifi_settings_screen.dart';
 
 /// ??????
@@ -268,17 +267,21 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     ),
                     onTap: () async {
                       final live = MikroTikServiceManager().currentConnection?.host;
-                      final saved = await _settingsService.getHost();
                       final info = Provider.of<ClientsProvider>(context, listen: false)
                               .routerInfo ??
                           MikroTikServiceManager().routerInfo;
-                      final openBrowser = info == null ||
-                          WifiSettingsRouter.shouldOpenExternally(
-                            host: live ?? saved,
-                            routerInfo: info,
-                          ) ||
-                          WifiPanelUrlResolver.isCpeHost(saved);
-                      if (openBrowser) {
+                      if (info == null) {
+                        await Provider.of<ClientsProvider>(context, listen: false)
+                            .loadRouterInfo();
+                      }
+                      if (!context.mounted) return;
+                      final resolved = Provider.of<ClientsProvider>(context, listen: false)
+                              .routerInfo ??
+                          MikroTikServiceManager().routerInfo;
+                      if (WifiSettingsRouter.shouldOpenExternally(
+                        host: live,
+                        routerInfo: resolved,
+                      )) {
                         final opened = await openCpeWifiInExternalBrowser();
                         if (opened || !context.mounted) return;
                       }
@@ -506,7 +509,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     final provider = Provider.of<ClientsProvider>(context, listen: false);
     provider.clear();
     _serviceManager.disconnect();
-    await DeltaSibAuthService().clear();
+    await DeltaSibAuthService().logout();
     await SibPackageStore.clear();
     await _settingsService.clearAllLocalData();
 
@@ -556,7 +559,10 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       _serviceManager.disconnect();
 
       final settingsService = SettingsService();
+      await DeltaSibAuthService().logout();
+      await SibPackageStore.clear();
       await settingsService.clearLoginTimestamp();
+      await settingsService.clearLastActivity();
       if (!await settingsService.getRememberMe()) {
         await settingsService.clearCredentials();
       }

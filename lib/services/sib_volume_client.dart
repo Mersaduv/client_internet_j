@@ -80,7 +80,10 @@ class SibVolumeClient {
         );
       }
       if (response.statusCode != 200) {
-        throw DeltaSibAuthException(_errorFromBody(text, response.statusCode));
+        throw DeltaSibAuthException(
+          _errorFromBody(text, response.statusCode),
+          sessionExpired: _sessionExpired(text, response.statusCode),
+        );
       }
       final decoded = jsonDecode(text);
       if (decoded is! Map) {
@@ -126,6 +129,15 @@ class SibVolumeClient {
     } catch (_) {
       return null;
     }
+  }
+
+  static bool _sessionExpired(String text, int status) {
+    if (status != 401) return false;
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is Map && decoded['code'] == 'session_expired') return true;
+    } catch (_) {}
+    return true;
   }
 
   static String _errorFromBody(String text, int status) {

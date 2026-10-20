@@ -60,11 +60,34 @@ class WifiSettingsRouter extends StatelessWidget {
     return matched;
   }
 
+  /// مرورگر آنتن فقط وقتی که خود برد، آنتن CPE باشد.
+  /// آدرس 10.10.10.2 روی این شبکه پورت WAN روتر اصلی است و به‌تنهایی
+  /// دلیل باز کردن مرورگر نیست.
   static bool shouldOpenExternally({
     String? host,
     Map<String, dynamic>? routerInfo,
   }) {
-    return WifiPanelUrlResolver.isCpeHost(host) || isWebViewWifiBoard(routerInfo);
+    if (isWebViewWifiBoard(routerInfo)) {
+      return true;
+    }
+    if (routerInfo != null) {
+      return false;
+    }
+    return WifiPanelUrlResolver.isCpeHost(host);
+  }
+
+  /// نشست زنده روی روتر اصلی است، نه روی پنل آنتن.
+  static bool isMainRouterSession({
+    String? liveHost,
+    Map<String, dynamic>? routerInfo,
+  }) {
+    if (isWebViewWifiBoard(routerInfo)) {
+      return false;
+    }
+    if (routerInfo != null) {
+      return true;
+    }
+    return !WifiPanelUrlResolver.isCpeHost(liveHost);
   }
 
   @override
@@ -74,8 +97,11 @@ class WifiSettingsRouter extends StatelessWidget {
         provider.routerInfo ?? MikroTikServiceManager().routerInfo;
     final liveHost = MikroTikServiceManager().currentConnection?.host;
 
-    if (routerInfo == null ||
-        shouldOpenExternally(host: liveHost, routerInfo: routerInfo)) {
+    if (routerInfo == null && isMainRouterSession(liveHost: liveHost)) {
+      return const _WifiLoadingPlaceholder();
+    }
+
+    if (shouldOpenExternally(host: liveHost, routerInfo: routerInfo)) {
       return const _ExternalWifiPanelRedirect();
     }
 
@@ -172,6 +198,7 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
   int _elapsedMs = 0;
   static const int _maxWaitMs = 10000;
   bool _openBrowser = false;
+  bool _showNative = false;
 
   @override
   void initState() {
@@ -185,21 +212,28 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
       }
       _elapsedMs += 500;
       final provider = Provider.of<ClientsProvider>(context, listen: false);
+      final info = provider.routerInfo ?? MikroTikServiceManager().routerInfo;
       final liveHost = MikroTikServiceManager().currentConnection?.host;
-      if (WifiPanelUrlResolver.isCpeHost(liveHost) ||
-          WifiSettingsRouter.isWebViewWifiBoard(provider.routerInfo)) {
+      if (WifiSettingsRouter.shouldOpenExternally(
+        host: liveHost,
+        routerInfo: info,
+      )) {
         _pollTimer?.cancel();
         setState(() => _openBrowser = true);
         return;
       }
-      if (provider.routerInfo != null) {
+      if (info != null ||
+          WifiSettingsRouter.isMainRouterSession(
+            liveHost: liveHost,
+            routerInfo: info,
+          )) {
         _pollTimer?.cancel();
-        setState(() {});
+        setState(() => _showNative = true);
         return;
       }
       if (_elapsedMs >= _maxWaitMs) {
         _pollTimer?.cancel();
-        setState(() => _openBrowser = true);
+        setState(() => _showNative = true);
       }
     });
   }
@@ -210,16 +244,17 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
     if (provider.routerInfo == null) {
       unawaited(provider.loadRouterInfo());
     }
-    final saved = await SettingsService().getHost();
     final live = MikroTikServiceManager().currentConnection?.host;
+    final info = provider.routerInfo ?? MikroTikServiceManager().routerInfo;
     if (!mounted) return;
-    if (WifiSettingsRouter.shouldOpenExternally(
-      host: saved,
-      routerInfo: provider.routerInfo ?? MikroTikServiceManager().routerInfo,
-    ) ||
-        WifiPanelUrlResolver.isCpeHost(live)) {
+    if (WifiSettingsRouter.shouldOpenExternally(host: live, routerInfo: info)) {
       _pollTimer?.cancel();
       setState(() => _openBrowser = true);
+      return;
+    }
+    if (WifiSettingsRouter.isMainRouterSession(liveHost: live, routerInfo: info)) {
+      _pollTimer?.cancel();
+      setState(() => _showNative = true);
     }
   }
 
@@ -234,16 +269,18 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
     final l10n = AppLocalizations.of(context);
     final provider = Provider.of<ClientsProvider>(context);
 
+    final liveHost = MikroTikServiceManager().currentConnection?.host;
+    final info = provider.routerInfo ?? MikroTikServiceManager().routerInfo;
     if (_openBrowser ||
         WifiSettingsRouter.shouldOpenExternally(
-          host: MikroTikServiceManager().currentConnection?.host,
-          routerInfo: provider.routerInfo,
+          host: liveHost,
+          routerInfo: info,
         )) {
       return const _ExternalWifiPanelRedirect();
     }
 
-    if (provider.routerInfo != null) {
-      return const WifiSettingsRouter();
+    if (_showNative || info != null) {
+      return const WifiNativeSettingsScreen();
     }
 
     final brightness = Theme.of(context).brightness;
@@ -391,7 +428,7 @@ class _WifiNativeSettingsScreenState extends State<WifiNativeSettingsScreen> {
       final message = e.toString().replaceAll('Exception: ', '');
       final noWireless =
           message.contains('هیچ رابط وایرلسی') || message.contains('wireless');
-      if (noWireless) {
+      if (noWireless && WifiSettingsRouter.isWebViewWifiBoard(routerInfo)) {
         final opened = await openCpeWifiInExternalBrowser();
         if (!mounted) return;
         if (opened) {

@@ -12,16 +12,12 @@ import 'traffic_monitor_queue_sync.dart';
 
 /// Adaptive live traffic sampler for home and company RouterOS boards.
 ///
-/// The network banner is not the sum of on-screen devices. Each sample reads
-/// one router total: a parent/subnet queue rate, otherwise every host queue
-/// in the same print, otherwise `/interface/monitor-traffic` on the WAN.
+/// Network banner: one `/interface/monitor-traffic` on the default-route
+/// interface. `rx-bits-per-second` is download and `tx-bits-per-second` is
+/// upload. Fast Path fields are a share of that same sample and are not added.
 ///
-/// Per-device badges stay on the scroll window and read whatever already exists:
-/// 1. Dedicated host Simple Queue (`ip/32`) instant `rate` when non-zero
-/// 2. `/ip/kid-control/device/print` — RouterOS v7+ per-MAC counters
-/// 3. `/ip/accounting/snapshot` — if accounting is already enabled
-/// 4. `/ip/hotspot/active/print` — hotspot byte delta
-/// 5. `/ip/firewall/connection/print` — per-IP byte delta (PCQ/group/pending)
+/// Per-device badges: one `/ip/firewall/connection/print` of `orig-rate` and
+/// `repl-rate` for every connected IP. Scroll does not start or stop a device.
 class LiveTrafficEngine {
   RouterOSClientV2? _client;
   MikroTikConnection? _connection;
@@ -48,13 +44,15 @@ class LiveTrafficEngine {
     deviceCount: 0,
   );
   List<Map<String, String>>? _queueRowsThisSample;
+  List<Map<String, String>>? _connectionRowsThisSample;
   List<String>? _wanInterfaces;
   final TrafficMonitorQueueSync _queueSync = TrafficMonitorQueueSync();
 
   LiveTrafficCapabilities get capabilities => _caps;
   bool get isReady => _client?.isConnected ?? false;
-  bool get usesInstantQueueRates =>
-      _caps.queueStats && _caps.primary == LiveTrafficSource.queueStats;
+  /// Queue prints are not the live path. A short gap after each sample keeps
+  /// a full connection table and one interface monitor from running back to back.
+  bool get usesInstantQueueRates => false;
 
   /// Network-wide cumulative usage from the latest full counter prints.
   AggregateTrafficVolume get networkAggregateVolume {
@@ -75,9 +73,7 @@ class LiveTrafficEngine {
 
   /// Network-wide live download/upload rate (bits/s).
   ///
-  /// Parent/subnet queue `rate`, otherwise every dedicated host queue in the
-  /// same print, otherwise one WAN `monitor-traffic` sample. Viewport polls
-  /// do not contribute.
+  /// WAN receive/send from the router, in bits per second.
   AggregateLiveTrafficRate get networkAggregateLiveRate => _networkLive;
 
   Future<void> connect(MikroTikConnection connection) async {
@@ -115,10 +111,13 @@ class LiveTrafficEngine {
   Future<Map<String, ClientTrafficRate>> sample({
     required Set<String> trackedIps,
     required Map<String, String> macToIp,
+    Set<String> connectedIps = const {},
   }) async {
     _queueRowsThisSample = null;
-    if (trackedIps.isNotEmpty) {
-      _dropBaselinesNotIn(trackedIps);
+    _connectionRowsThisSample = null;
+    final rateIps = connectedIps.isNotEmpty ? connectedIps : trackedIps;
+    if (rateIps.isNotEmpty) {
+      _dropBaselinesNotIn(rateIps);
     }
 
     final client = _client;
@@ -126,8 +125,11 @@ class LiveTrafficEngine {
       return {};
     }
 
+    final scopeCount = rateIps.length > trackedIps.length
+        ? rateIps.length
+        : trackedIps.length;
     final pollTimeout = MikrotikTimeouts.trafficPollForClients(
-      trackedIps.isEmpty ? 1 : trackedIps.length,
+      scopeCount == 0 ? 1 : scopeCount,
     );
 
     if (!_capsProbed) {
@@ -140,17 +142,6 @@ class LiveTrafficEngine {
     final elapsed = _lastSampleAt == null ? null : now.difference(_lastSampleAt!);
     _lastSampleAt = now;
 
-    if (_warmupPending && trackedIps.isNotEmpty) {
-      await _captureBaselines(
-        client,
-        trackedIps,
-        macToIp,
-        pollTimeout,
-      );
-      _touchBaselines(trackedIps, now);
-      _warmupPending = false;
-    }
-
     if (elapsed != null && elapsed.inMilliseconds < 200) {
       return {};
     }
@@ -161,8 +152,36 @@ class LiveTrafficEngine {
       debugPrint('[LIVE_TRAFFIC] network total failed: $e');
     }
 
-    if (trackedIps.isEmpty) {
+    if (rateIps.isEmpty) {
       return {};
+    }
+
+    try {
+      final instant = await _connectionInstantRates(
+        client,
+        rateIps,
+        pollTimeout,
+        now,
+      );
+      if (instant != null) {
+        _sampleFailures = 0;
+        _warmupPending = false;
+        return instant;
+      }
+    } catch (e) {
+      debugPrint('[LIVE_TRAFFIC] connection rates unavailable: $e');
+      _connectionRowsThisSample = null;
+    }
+
+    if (_warmupPending) {
+      await _captureBaselines(
+        client,
+        rateIps,
+        macToIp,
+        pollTimeout,
+      );
+      _touchBaselines(rateIps, now);
+      _warmupPending = false;
     }
 
     final sampledAt = now;
@@ -180,7 +199,7 @@ class LiveTrafficEngine {
           case LiveTrafficSource.queueStats:
             await _mergeQueueStats(
               client,
-              trackedIps,
+              rateIps,
               sampledAt,
               rates,
               pollTimeout,
@@ -195,7 +214,7 @@ class LiveTrafficEngine {
           case LiveTrafficSource.ipAccounting:
             await _mergeAccounting(
               client,
-              trackedIps,
+              rateIps,
               elapsed ?? const Duration(milliseconds: 500),
               sampledAt,
               rates,
@@ -204,14 +223,14 @@ class LiveTrafficEngine {
           case LiveTrafficSource.hotspotActive:
             await _mergeHotspot(
               client,
-              trackedIps,
+              rateIps,
               sampledAt,
               rates,
             );
           case LiveTrafficSource.firewallConnection:
             await _mergeConnectionTracking(
               client,
-              trackedIps,
+              rateIps,
               sampledAt,
               rates,
               pollTimeout: pollTimeout,
@@ -221,7 +240,7 @@ class LiveTrafficEngine {
         }
       }
 
-      final missingIps = trackedIps.where((ip) => _needsFallbackRate(rates, ip));
+      final missingIps = rateIps.where((ip) => _needsFallbackRate(rates, ip));
       if (missingIps.isNotEmpty && allowByteDelta) {
         await _mergeSecondarySources(
           client,
@@ -244,46 +263,45 @@ class LiveTrafficEngine {
     }
 
     // Attach absolute counters already cached for delta math — no extra API.
-    _attachKnownVolumes(rates, trackedIps, sampledAt);
+    _attachKnownVolumes(rates, rateIps, sampledAt);
     return rates;
   }
 
-  /// One counter for every connected device, independent of the scroll window.
+  /// RouterOS `orig-rate` / `repl-rate` for every connected device, or null
+  /// when this RouterOS build does not expose those fields.
+  Future<Map<String, ClientTrafficRate>?> _connectionInstantRates(
+    RouterOSClientV2 client,
+    Set<String> connectedIps,
+    Duration pollTimeout,
+    DateTime sampledAt,
+  ) async {
+    final rows = await _fetchFirewallConnections(client, pollTimeout);
+    final perIp = TrafficRateParser.perIpFromConnectionRates(
+      rows: rows,
+      connectedIps: connectedIps,
+    );
+    if (perIp == null) {
+      return null;
+    }
+    return {
+      for (final entry in perIp.entries)
+        entry.key: ClientTrafficRate(
+          rxBps: entry.value.rxBps,
+          txBps: entry.value.txBps,
+          sampledAt: sampledAt,
+        ),
+    };
+  }
+
+  /// One `/interface/monitor-traffic` sample on the uplink. A failed poll keeps
+  /// the previous total instead of substituting a queue or connection sum.
   Future<void> _refreshNetworkLiveTotal(
     RouterOSClientV2 client,
     Duration pollTimeout,
   ) async {
-    List<Map<String, String>> rows = const [];
-    try {
-      rows = await _fetchQueueStats(client, pollTimeout);
-    } catch (e) {
-      debugPrint('[LIVE_TRAFFIC] queue total unavailable: $e');
-    }
-
-    final fromQueues = TrafficRateParser.liveTotalFromQueueRows(rows);
-    if (fromQueues != null && fromQueues.hasTraffic) {
-      _networkLive = AggregateLiveTrafficRate(
-        rxBps: fromQueues.rxBps,
-        txBps: fromQueues.txBps,
-        deviceCount: fromQueues.queueCount,
-        measured: true,
-      );
-      return;
-    }
-
     final wan = await _sampleWanThroughput(client, pollTimeout);
     if (wan != null) {
       _networkLive = wan;
-      return;
-    }
-
-    if (fromQueues != null && fromQueues.authoritative) {
-      _networkLive = AggregateLiveTrafficRate(
-        rxBps: fromQueues.rxBps,
-        txBps: fromQueues.txBps,
-        deviceCount: fromQueues.queueCount,
-        measured: true,
-      );
     }
   }
 
@@ -345,41 +363,63 @@ class LiveTrafficEngine {
     }
 
     final names = <String>{};
+    final gateways = <String>{};
     var lookupSucceeded = false;
-    try {
-      final routes = await client.talk(
-        [
-          '/ip/route/print',
-          '=.proplist=dst-address,gateway,immediate-gw,gateway-status,active',
-        ],
-        timeout: pollTimeout,
-      );
-      lookupSucceeded = true;
+    void takeRoutes(List<Map<String, String>> routes) {
       for (final row in routes) {
         final name = TrafficRateParser.wanInterfaceFromRoute(row);
         if (name != null && name.isNotEmpty) {
           names.add(name);
         }
+        final gateway = TrafficRateParser.gatewayAddressFromRoute(row);
+        if (gateway != null) {
+          gateways.add(gateway);
+        }
       }
+    }
+
+    try {
+      takeRoutes(await client.talk(
+        [
+          '/ip/route/print',
+          '=.proplist=dst-address,gateway,immediate-gw,gateway-status,active',
+        ],
+        timeout: pollTimeout,
+      ));
+      lookupSucceeded = true;
     } catch (e) {
       debugPrint('[LIVE_TRAFFIC] default route lookup failed: $e');
       try {
-        final routes = await client.talk(
+        takeRoutes(await client.talk(
           [
             '/ip/route/print',
             '=.proplist=dst-address,gateway,active',
           ],
           timeout: pollTimeout,
-        );
+        ));
         lookupSucceeded = true;
-        for (final row in routes) {
-          final name = TrafficRateParser.wanInterfaceFromRoute(row);
-          if (name != null && name.isNotEmpty) {
-            names.add(name);
-          }
-        }
       } catch (fallbackError) {
         debugPrint('[LIVE_TRAFFIC] route fallback failed: $fallbackError');
+      }
+    }
+
+    if (lookupSucceeded && names.isEmpty && gateways.isNotEmpty) {
+      try {
+        final addresses = await client.talk(
+          [
+            '/ip/address/print',
+            '=.proplist=address,interface,disabled',
+          ],
+          timeout: pollTimeout,
+        );
+        names.addAll(
+          TrafficRateParser.interfacesForGateways(
+            gateways: gateways,
+            addresses: addresses,
+          ),
+        );
+      } catch (e) {
+        debugPrint('[LIVE_TRAFFIC] address lookup failed: $e');
       }
     }
 
@@ -387,7 +427,7 @@ class LiveTrafficEngine {
       names.addAll(await _fallbackWanInterfaces(client, pollTimeout));
     }
 
-    if (!lookupSucceeded) {
+    if (!lookupSucceeded || names.isEmpty) {
       return const [];
     }
     _wanInterfaces = names.toList(growable: false);
@@ -1100,14 +1140,33 @@ class LiveTrafficEngine {
   Future<List<Map<String, String>>> _fetchFirewallConnections(
     RouterOSClientV2 client,
     Duration pollTimeout,
-  ) {
-    return client.talk(
-      [
-        '/ip/firewall/connection/print',
-        '=.proplist=src-address,dst-address,orig-bytes,repl-bytes',
-      ],
-      timeout: pollTimeout,
-    );
+  ) async {
+    final cached = _connectionRowsThisSample;
+    if (cached != null) {
+      return cached;
+    }
+    try {
+      final rows = await client.talk(
+        [
+          '/ip/firewall/connection/print',
+          '=.proplist=src-address,dst-address,orig-bytes,repl-bytes,orig-rate,repl-rate',
+        ],
+        timeout: pollTimeout,
+      );
+      _connectionRowsThisSample = rows;
+      return rows;
+    } catch (e) {
+      debugPrint('[LIVE_TRAFFIC] connection rate field unavailable: $e');
+      final rows = await client.talk(
+        [
+          '/ip/firewall/connection/print',
+          '=.proplist=src-address,dst-address,orig-bytes,repl-bytes',
+        ],
+        timeout: pollTimeout,
+      );
+      _connectionRowsThisSample = rows;
+      return rows;
+    }
   }
 
   void _storeQueueBytes(String ip, String? bytesField) {
@@ -1302,6 +1361,7 @@ class LiveTrafficEngine {
       deviceCount: 0,
     );
     _queueRowsThisSample = null;
+    _connectionRowsThisSample = null;
     _wanInterfaces = null;
   }
 

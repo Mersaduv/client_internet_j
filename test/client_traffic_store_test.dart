@@ -43,21 +43,8 @@ void main() {
     expect(store.rateFor('172.16.0.20'), isNull);
   });
 
-  test('applyPoll stores real zero rates after warmup polls', () {
+  test('applyPoll stores an idle zero on the first sample', () {
     final store = ClientTrafficStore();
-    store.applyPoll(
-      trackedIps: {'172.16.0.20'},
-      samples: {
-        '172.16.0.20': ClientTrafficRate(
-          rxBps: 0,
-          txBps: 0,
-          sampledAt: DateTime.now(),
-        ),
-      },
-      rateChanged: (_, __) => true,
-    );
-    expect(store.isMeasured('172.16.0.20'), isFalse);
-
     final changed = store.applyPoll(
       trackedIps: {'172.16.0.20'},
       samples: {
@@ -180,7 +167,7 @@ void main() {
     expect(store.isMeasured('172.16.0.99'), isFalse);
   });
 
-  test('onViewportChanged drops retained rates after retainAfterLeave', () {
+  test('onViewportChanged keeps a measured rate after the row leaves', () {
     final store = ClientTrafficStore()..retainAfterLeave = Duration.zero;
     store.onViewportChanged({'172.16.0.20'});
     store.applyPoll(
@@ -197,8 +184,8 @@ void main() {
 
     store.onViewportChanged({'172.16.0.99'});
 
-    expect(store.isMeasured('172.16.0.20'), isFalse);
-    expect(store.rateFor('172.16.0.20'), isNull);
+    expect(store.isMeasured('172.16.0.20'), isTrue);
+    expect(store.rateFor('172.16.0.20')?.rxBps, 500);
   });
 
   test('awaitingFirstSampleTimedOut after placeholderTimeout', () {

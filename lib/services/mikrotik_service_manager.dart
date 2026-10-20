@@ -103,17 +103,23 @@ class MikroTikServiceManager {
       final credentialsFuture = settingsService.getSavedCredentials();
       final settingsFuture = settingsService.getAllSettings();
 
-      if (!await sessionFuture) {
-        await settingsService.clearLoginTimestamp();
-        return false;
-      }
-
       final sibUser = (await userFuture)?.trim();
       final sibSession = await sibSessionFuture;
       final hasSib = sibUser != null &&
           sibUser.isNotEmpty &&
           sibSession != null &&
           sibSession.isNotEmpty;
+      if (await settingsService.isInactiveYear()) {
+        await endSubscriberSession();
+        return false;
+      }
+      if (!await sessionFuture && !hasSib) {
+        return false;
+      }
+      if (!await sessionFuture && hasSib) {
+        await settingsService.setLoginTimestamp();
+      }
+      await settingsService.markActivity();
       final credentials = await credentialsFuture;
       var routerUser = credentials?['username'];
       var routerPass = credentials?['password'];
@@ -756,6 +762,7 @@ class MikroTikServiceManager {
   Future<Map<String, ClientTrafficRate>> pollTrafficRates({
     required Set<String> trackedIps,
     required Map<String, String> macToIp,
+    Set<String> connectedIps = const {},
   }) async {
     final connection = _currentConnection;
     if (connection == null || !isConnected) {
@@ -787,6 +794,7 @@ class MikroTikServiceManager {
       return await _trafficMonitor.sampleRates(
         trackedIps: trackedIps,
         macToIp: macToIp,
+        connectedIps: connectedIps,
       );
     } catch (e) {
       debugPrint('[TRAFFIC] poll failed: $e');

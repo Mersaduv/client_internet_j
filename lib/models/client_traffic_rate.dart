@@ -80,8 +80,8 @@ class AggregateTrafficVolume {
 
 /// Instantaneous network total from one router counter.
 ///
-/// [measured] means the sample came from a parent queue or the WAN interface,
-/// not from summing per-device viewport streams.
+/// [measured] means the sample covers the connected-device set, not only the
+/// rows whose live stream has started.
 class AggregateLiveTrafficRate {
   const AggregateLiveTrafficRate({
     required this.rxBps,
