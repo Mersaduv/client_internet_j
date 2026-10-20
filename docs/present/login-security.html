@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ورود جهان بیت، بخش به بخش</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #e7e5e4;
+      --paper: #f6f5f4;
+      --card: #fff;
+      --blue: #1d4e89;
+      --orange: #9a3412;
+      --green: #3f6212;
+      --purple: #6b21a8;
+      --red: #9f1239;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      line-height: 1.7;
+    }
+    header.page {
+      padding: 1.4rem 1.2rem 0.6rem;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0 0 0.3rem; font-size: 1.55rem; }
+    header.page p { margin: 0; color: var(--muted); }
+    nav {
+      position: sticky;
+      top: 0;
+      background: rgba(246, 245, 244, 0.96);
+      border-bottom: 1px solid var(--line);
+      z-index: 2;
+    }
+    nav ol {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0.55rem 1rem;
+      display: flex;
+      gap: 0.4rem;
+      overflow-x: auto;
+      list-style: none;
+    }
+    nav a {
+      display: block;
+      text-decoration: none;
+      color: var(--ink);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.15rem 0.65rem;
+      white-space: nowrap;
+      font-size: 0.86rem;
+    }
+    main { max-width: 980px; margin: 0 auto; padding: 0.4rem 1.2rem 3rem; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1rem 1rem 1.1rem;
+      margin: 1rem 0;
+    }
+    .num {
+      display: inline-block;
+      min-width: 1.7rem;
+      height: 1.7rem;
+      line-height: 1.7rem;
+      text-align: center;
+      border-radius: 8px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 0.9rem;
+      margin-left: 0.4rem;
+    }
+    h2 { font-size: 1.15rem; margin: 0 0 0.8rem; }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0.45rem;
+      margin: 0.3rem 0 0.8rem;
+    }
+    .box {
+      flex: 1 1 140px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.65rem 0.7rem;
+      background: #fff;
+      min-width: 140px;
+    }
+    .box b { display: block; margin-bottom: 0.15rem; }
+    .box span { color: var(--muted); font-size: 0.92rem; }
+    .box small { display: block; margin-top: 0.35rem; color: var(--muted); }
+    .blue { border-top: 4px solid var(--blue); }
+    .orange { border-top: 4px solid var(--orange); }
+    .green { border-top: 4px solid var(--green); }
+    .purple { border-top: 4px solid var(--purple); }
+    .red { border-top: 4px solid var(--red); background: #fff7f7; }
+    .arrow {
+      align-self: center;
+      color: var(--muted);
+      font-size: 1.3rem;
+      padding: 0 0.1rem;
+    }
+    .stack { display: grid; gap: 0.45rem; }
+    .stack .box { flex: none; }
+    .down {
+      text-align: center;
+      color: var(--muted);
+      margin: 0.1rem 0;
+    }
+    .note {
+      background: #f5f5f4;
+      border-radius: 12px;
+      padding: 0.7rem 0.85rem;
+      margin-top: 0.7rem;
+    }
+    .note b { color: var(--ink); }
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+    h3 { margin: 0.9rem 0 0.4rem; font-size: 0.95rem; }
+    ul.plain { margin: 0.2rem 0 0; padding-inline-start: 1.1rem; }
+    ul.plain li { margin: 0.25rem 0; }
+    @media (max-width: 720px) {
+      .two { grid-template-columns: 1fr; }
+      .arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>ورود، دوازده بخش به ترتیب</h1>
+    <p>هر بخش یکی از سؤال‌هاست. شکل همان بخش را نشان می‌دهد. زیر شکل، دلیل کوتاه آمده است. از بخش ۱ تا ۱۲ پایین بروید.</p>
+  </header>
+  <nav>
+    <ol>
+      <li><a href="#s1">۱ رمز و توکن</a></li>
+      <li><a href="#s2">۲ ساخت کد</a></li>
+      <li><a href="#s3">۳ زدن ورود</a></li>
+      <li><a href="#s4">۴ ارسال</a></li>
+      <li><a href="#s5">۵ رسیدن به ورکر</a></li>
+      <li><a href="#s6">۶ درگاه</a></li>
+      <li><a href="#s7">۷ چک درخواست</a></li>
+      <li><a href="#s8">۸ اسکریپت‌ها</a></li>
+      <li><a href="#s9">۹ ممنوع‌ها</a></li>
+      <li><a href="#s10">۱۰ نشست</a></li>
+      <li><a href="#s11">۱۱ جواب</a></li>
+      <li><a href="#s12">۱۲ ثبت روی گوشی</a></li>
+    </ol>
+  </nav>
+  <main>
+
+    <section id="s1">
+      <h2><span class="num">۱</span>رمز دلتاسیب کجاست و توکن کجا می‌رود؟</h2>
+      <div class="flow">
+        <div class="box orange"><b>جای رمز</b><span>Secret ورکر ولایت</span><small>SIB_API_USERNAME و SIB_API_PASSWORD</small></div>
+        <div class="arrow">←</div>
+        <div class="box purple"><b>ساخت توکن</b><span>test.login.php</span><small>دلتاسیب token می‌دهد</small></div>
+        <div class="arrow">←</div>
+        <div class="box orange"><b>عمر توکن</b><span>فقط حافظه همین درخواست</span><small>تمام شد، توکن می‌میرد</small></div>
+        <div class="arrow">←</div>
+        <div class="box red"><b>نمی‌رود به</b><span>گوشی و جدول کدها</span><small>در جواب ورود هم نیست</small></div>
+      </div>
+      <div class="note"><b>دلیل:</b> این رمز مال همه مشترکین است. اگر روی گوشی یا در جدول کدها باشد، لو رفتن آن‌ها مساوی ورود به کل دلتاسیب است. توکن همان کلید موقت است و برای همین ذخیره نمی‌شود. رمز پنل کارکنان جداست و نامش SIB_ADMIN_PASSWORD است.</div>
+    </section>
+
+    <section id="s2">
+      <h2><span class="num">۲</span>کد چطور از پنل، با نام و رمز Winbox ساخته می‌شود؟</h2>
+      <div class="flow">
+        <div class="box blue"><b>کارمند</b><span>نام مشترک را می‌نویسد</span></div>
+        <div class="arrow">←</div>
+        <div class="box orange"><b>پنل کد</b><span>/jahanbit/admin</span><small>کوکی ۱۲ ساعته</small></div>
+        <div class="arrow">←</div>
+        <div class="box purple"><b>چک نام</b><span>باید در دلتاسیب باشد</span></div>
+        <div class="arrow">←</div>
+        <div class="box green"><b>ذخیره</b><span>فقط هش کد، نه خود کد به‌عنوان کلید</span></div>
+      </div>
+      <div class="two">
+        <div class="box orange"><b>کد یک‌بارمصرف</b><span>رمز Winbox مهر می‌شود. ۲۴ ساعت عمر دارد. بعد از اولین ورود رمز پاک می‌شود.</span><small>کاربرد: باز کردن روتر محلی، نه دلتاسیب.</small></div>
+        <div class="box green"><b>کد همیشگی</b><span>رمز روتر ندارد. تا سال ۲۰۹۹ معتبر است.</span><small>کاربرد: فقط دیدن حجم همان مشترک.</small></div>
+      </div>
+      <div class="note"><b>دلیل:</b> گوشی نباید رمز ریسلر را بشناسد. کد یک بلیت به نام یک نفر است. رمز Winbox فقط برای روتر خانه مشترک است و نباید همیشه روی سرور بماند.</div>
+    </section>
+
+    <section id="s3">
+      <h2><span class="num">۳</span>کد ۱۰ رقمی وارد می‌شود و ورود زده می‌شود</h2>
+      <div class="flow">
+        <div class="box blue"><b>۱. ولایت</b><span>هرات و فراه یک ورکر</span><small>نیمروز ورکر جدا</small></div>
+        <div class="arrow">←</div>
+        <div class="box blue"><b>۲. کد</b><span>فاصله حذف، حروف بزرگ</span></div>
+        <div class="arrow">←</div>
+        <div class="box blue"><b>۳. دکمه ورود</b><span>فقط اگر ۱۰ حرف یا رقم باشد</span></div>
+      </div>
+      <div class="two">
+        <div class="box red"><b>شکل غلط</b><span>درخواست بیرون نمی‌رود.</span></div>
+        <div class="box green"><b>شکل درست</b><span>می‌رود به بخش ۴.</span></div>
+      </div>
+      <div class="note"><b>دلیل:</b> تا اینجا هنوز با دلتاسیب حرف زده نشده. کاربر فقط بلیت را داده است.</div>
+    </section>
+
+    <section id="s4">
+      <h2><span class="num">۴</span>درخواست چطور ارسال می‌شود و در اپ چه می‌شود؟</h2>
+      <div class="flow">
+        <div class="box blue"><b>اپ</b><span>فقط این را می‌فرستد: code</span></div>
+        <div class="arrow">←</div>
+        <div class="box blue"><b>HTTPS</b><span>۱۲ ثانیه مهلت اتصال</span></div>
+        <div class="arrow">←</div>
+        <div class="box orange"><b>مقصد</b><span>/jahanbit/sib/redeem</span><small>ورکر همان ولایت</small></div>
+      </div>
+      <div class="flow">
+        <div class="box red"><b>فرستاده نمی‌شود</b><span>نام کاربری</span></div>
+        <div class="box red"><b>فرستاده نمی‌شود</b><span>رمز Winbox</span></div>
+        <div class="box red"><b>فرستاده نمی‌شود</b><span>رمز دلتاسیب</span></div>
+      </div>
+      <div class="note"><b>دلیل:</b> اگر گوشی نام را هم بفرستد، می‌تواند خودش را جای شخص دیگری جا بزند. نام را سرور از روی کد پیدا می‌کند. خود کد بعد از ارسال روی گوشی ذخیره نمی‌شود.</div>
+    </section>
+
+    <section id="s5">
+      <h2><span class="num">۵</span>رسید به ورکر. همان لحظه چه می‌شود؟ درگاه کجاست؟</h2>
+      <div class="stack" style="max-width: 280px; margin-bottom: 0.6rem;">
+        <div class="box orange"><b>درگاه</b><span>برنامه جدا نیست. خود ورکر درگاه است.</span></div>
+        <div class="down">↓ اول نگاه می‌کند این آدرس کدام در است</div>
+      </div>
+      <div class="flow">
+        <div class="box green"><b>در کد</b><span>redeem</span><small>همین درخواست ورود</small></div>
+        <div class="box orange"><b>در حجم</b><span>volume</span><small>بعد از ورود</small></div>
+        <div class="box orange"><b>در کارمند</b><span>admin</span><small>فقط با کوکی پنل</small></div>
+        <div class="box red"><b>در بسته</b><span>test.login.php و /1.0</span><small>جواب ۴۰۳</small></div>
+      </div>
+      <div class="note"><b>مثال:</b> اگر کسی آدرس اسکریپت دلتاسیب را روی خود ورکر بزند، ورکر جواب ممنوع می‌دهد و آن را به دلتاسیب نمی‌فرستد. <b>دلیل:</b> درِ دلتاسیب از سمت اینترنت باز نیست. فقط درهای خود ورکر باز است.</div>
+    </section>
+
+    <section id="s6">
+      <h2><span class="num">۶</span>دلیل درگاه و وظیفه‌هایش</h2>
+      <div class="flow">
+        <div class="box orange"><b>۱</b><span>اسکریپت عمومی دلتاسیب را ببندد</span></div>
+        <div class="box orange"><b>۲</b><span>رمز API را بیرون ندهد</span></div>
+        <div class="box orange"><b>۳</b><span>کد را به یک نام تبدیل کند</span></div>
+        <div class="box orange"><b>۴</b><span>فقط خواندن همان یک نفر</span></div>
+        <div class="box orange"><b>۵</b><span>گوشی را با نشست بشناسد، نه با توکن سیب</span></div>
+      </div>
+      <div class="note"><b>دلیل:</b> اگر گوشی مستقیم به دلتاسیب وصل بود، یک رمز یا یک توکن برای دیدن یا عوض کردن همه کافی بود. درگاه وسط می‌ایستد و به گوشی فقط نتیجه یک نفر را می‌دهد.</div>
+    </section>
+
+    <section id="s7">
+      <h2><span class="num">۷</span>درخواست ورود چطور چک می‌شود تا خروج از درگاه؟</h2>
+      <div class="stack">
+        <div class="box orange"><b>گام ۱</b><span>فقط POST قبول است.</span></div>
+        <div class="down">↓</div>
+        <div class="box orange"><b>گام ۲</b><span>اگر این IP در ۱۰ دقیقه ۳۰ بار شکست خورده باشد، توقف. ورود درست شمرده نمی‌شود.</span></div>
+        <div class="down">↓</div>
+        <div class="box green"><b>گام ۳</b><span>هش کد در جدول جستجو می‌شود. ردیف باید باشد، نسوخته باشد، تاریخ‌گذشته نباشد.</span></div>
+        <div class="down">↓</div>
+        <div class="box green"><b>گام ۴</b><span>اگر کد یک‌بارمصرف است، مهر رمز Winbox باز می‌شود و همان ردیف می‌سوزد. دو گوشی هم‌زمان، فقط یکی موفق است.</span></div>
+        <div class="down">↓</div>
+        <div class="box blue"><b>گام ۵، خروج</b><span>جواب: نام مشترک و نشست. اگر یک‌بارمصرف بوده، رمز Winbox هم هست.</span></div>
+      </div>
+      <div class="box red" style="margin-top:0.6rem"><b>دلتاسیب در این پنج گام صدا زده نمی‌شود.</b><span> نام از جدول کد می‌آید. خواندن دلتاسیب دو جای دیگر است: موقع ساخت کد، و بعداً موقع حجم.</span></div>
+      <div class="note"><b>دلیل:</b> قبول کد یعنی «این بلیت مال این نام است». لازم نیست برای همین جمله دوباره به دلتاسیب برویم. توکن ریسلر در این جواب نیست.</div>
+    </section>
+
+    <section id="s8">
+      <h2><span class="num">۸</span>اسکریپت‌ها به ترتیب، و مانع فهرست همه کاربران</h2>
+      <p style="margin-top:0">این اسکریپت‌ها مال درخواست حجم‌اند، بعد از ورود. ورود کد این‌ها را صدا نمی‌زند.</p>
+      <div class="flow">
+        <div class="box purple"><b>اسکریپت ۱</b><span>test.login.php</span><small>فقط ورکر، با Secret. توکن همین‌جا ساخته می‌شود.</small></div>
+        <div class="arrow">←</div>
+        <div class="box purple"><b>اسکریپت ۲</b><span>creditinfo</span><small>فیلتر: فقط همان نام. سقف: ۱ ردیف.</small></div>
+        <div class="arrow">←</div>
+        <div class="box purple"><b>اسکریپت ۳</b><span>list</span><small>فقط نام و شناسه. سقف: ۵ ردیف.</small></div>
+      </div>
+      <div class="flow">
+        <div class="box red"><b>اجرا نمی‌شود</b><span>ساخت، ویرایش، حذف کاربر</span></div>
+        <div class="box red"><b>اجرا نمی‌شود</b><span>فهرست بدون نام یک نفر</span></div>
+        <div class="box red"><b>به گوشی نمی‌رسد</b><span>ردیف شخص دیگر، حتی اگر در جواب باشد</span></div>
+      </div>
+      <div class="note"><b>دلیل:</b> گوشی نوع دستور را انتخاب نمی‌کند. ورکر خودش فقط این دو خواندن را برای همان یک نام می‌نویسد. کسی که یک نشست دارد نمی‌تواند بگوید فهرست همه را بده، یا کاربر را حذف کن. اگر نام شخص دیگری را بفرستد جواب ممنوع است، چون نام داخل نشست مهم‌تر از نام ادعاشده است.</div>
+    </section>
+
+    <section id="s9">
+      <h2><span class="num">۹</span>همه چیزهایی که برای مهاجم بسته است</h2>
+      <div class="flow">
+        <div class="box red"><b>زدن مستقیم اسکریپت</b><span>۴۰۳. به دلتاسیب نمی‌رسد.</span></div>
+        <div class="box red"><b>حدس زدن کد</b><span>بعد از ۳۰ شکست در ۱۰ دقیقه، توقف.</span></div>
+        <div class="box red"><b>دیدن جدول</b><span>خود کد کلید جدول نیست. هش است.</span></div>
+        <div class="box red"><b>مصرف دوباره بلیت</b><span>کد یک‌بارمصرف بار دوم رد می‌شود.</span></div>
+        <div class="box red"><b>حجم بدون نشست</b><span>رد می‌شود.</span></div>
+        <div class="box red"><b>حجم شخص دیگر</b><span>با نشست خودت ممنوع است.</span></div>
+        <div class="box red"><b>عوض کردن مشترک</b><span>دستور نوشتن فرستاده نمی‌شود.</span></div>
+        <div class="box red"><b>فهرست همه</b><span>فیلتر و سقف ردیف جلویش را می‌گیرد.</span></div>
+      </div>
+      <div class="note"><b>دلیل:</b> راه ورود یک نفر، کلید بقیه و کلید تغییر دلتاسیب نیست. این قفل‌ها روی ورکر هستند، نه روی گوشی.</div>
+    </section>
+
+    <section id="s10">
+      <h2><span class="num">۱۰</span>نشست چطور تازه می‌شود؟</h2>
+      <div class="flow">
+        <div class="box blue"><b>دست گوشی</b><span>خود نشست</span><small>sib_session</small></div>
+        <div class="arrow">←</div>
+        <div class="box green"><b>دست سرور</b><span>فقط هش نشست و نام</span></div>
+        <div class="arrow">←</div>
+        <div class="box orange"><b>هر ۲۴ ساعت</b><span>اگر حجم خوانده شود، ساعت آخرین دیدار تازه می‌شود</span></div>
+        <div class="arrow">←</div>
+        <div class="box red"><b>۳۶۵ روز سکوت</b><span>ردیف نشست پاک می‌شود</span></div>
+      </div>
+      <div class="box orange"><b>خروج</b><span>همان هش از جدول حذف می‌شود. گوشی هم اگر یک سال باز نشود به صفحه ورود برمی‌گردد.</span></div>
+      <div class="note"><b>دلیل انسانی:</b> کارت دست کاربر است. دفتر فقط شماره کارت را دارد و اگر یک سال نیاید خطش می‌زند.<br><b>دلیل فنی:</b> دزدیدن پایگاه، نشست آماده نمی‌سازد چون مقدار خام آنجا نیست. هر بار نگاه به حجم هم لازم نیست پایگاه را بنویسد. تاریخ ۲۰۹۹ روی ردیف، قانون خروج نیست. قانون خروج همان ۳۶۵ روز ندیدن است.</div>
+    </section>
+
+    <section id="s11">
+      <h2><span class="num">۱۱</span>چه جوابی به اپ می‌رسد و بعد چه می‌شود؟</h2>
+      <div class="flow">
+        <div class="box green"><b>جواب ۲۰۰</b><span>نام</span><small>username</small></div>
+        <div class="box green"><b>جواب ۲۰۰</b><span>نشست گوشی</span><small>session</small></div>
+        <div class="box green"><b>فقط یک‌بارمصرف</b><span>رمز Winbox</span><small>routerPassword</small></div>
+      </div>
+      <div class="down">↓ اگر خطا باشد، همان صفحه ورود می‌ماند و خانه باز نمی‌شود</div>
+      <div class="flow">
+        <div class="box blue"><b>خانه باز می‌شود</b><span>منتظر روتر نمی‌ماند</span></div>
+        <div class="box blue"><b>روتر محلی</b><span>پورت ۸۷۲۸، خارج از ورکر</span></div>
+        <div class="box purple"><b>حجم، درخواست بعدی</b><span>اینجا توکن دلتاسیب ساخته می‌شود، نه در جواب بالا</span></div>
+      </div>
+      <div class="note"><b>دلیل:</b> جواب ورود فقط می‌گوید این گوشی مال کیست. حجم و توکن ریسلر کار بعدی‌اند و توکن همچنان داخل ورکر می‌ماند. روتر هم ترافیک محلی است و از ورکر رد نمی‌شود.</div>
+    </section>
+
+    <section id="s12">
+      <h2><span class="num">۱۲</span>بعد از تمام شدن ورود، دقیقاً چه چیز ثبت می‌شود؟</h2>
+      <div class="two">
+        <div>
+          <h3>روی گوشی می‌ماند</h3>
+          <div class="stack">
+            <div class="box green"><b>sib_session</b><span>نشست خام</span></div>
+            <div class="box green"><b>sib_username</b><span>نامی که سرور از کد برگرداند</span></div>
+            <div class="box green"><b>ولایت و آدرس ورکر</b><span>تا حجم بعدی همان‌جا برود</span></div>
+            <div class="box green"><b>ساعت ورود و آخرین فعالیت</b><span>برای قانون یک سال</span></div>
+            <div class="box orange"><b>رمز Winbox</b><span>فقط اگر کد یک‌بارمصرف بوده</span></div>
+            <div class="box blue"><b>آدرس دروازه محلی</b><span>اگر پیدا شود. پورت همیشه ۸۷۲۸ است</span></div>
+          </div>
+        </div>
+        <div>
+          <h3>ثبت نمی‌شود</h3>
+          <div class="stack">
+            <div class="box red"><b>کد ۱۰ رقمی</b><span>بلیت بعد از مصرف روی گوشی نمی‌ماند</span></div>
+            <div class="box red"><b>توکن دلتاسیب</b><span>نه روی گوشی، نه در جدول</span></div>
+            <div class="box red"><b>رمز API دلتاسیب</b><span>کلیدهای قدیمی آن هم پاک می‌شوند</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="note"><b>جمع:</b> کد، کلید حجم همان یک نفر است. رمز روتر فقط یک بار و فقط برای روتر محلی برمی‌گردد. رمز ریسلر از ورکر خارج نمی‌شود.</div>
+    </section>
+  </main>
+</body>
+</html>
