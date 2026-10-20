@@ -43,7 +43,7 @@ export async function handleSubscriberVolume(request, env) {
   if (!sessionUser) {
     return json(
       {
-        error: "نشست پایان یافته است. کد ۱۰ رقمی را دوباره وارد کنید.",
+        error: "نشست پایان یافته است. کد ورود را دوباره وارد کنید.",
         code: "session_expired",
       },
       401,
@@ -86,6 +86,14 @@ export async function handleSubscriberVolume(request, env) {
   });
 }
 
+/** Same lookup the staff panel uses. status is ok, not-found, unconfigured, or down. */
+export async function lookupSubscriber(env, username) {
+  const apiUser = String(env.SIB_API_USERNAME || "").trim();
+  const apiPass = String(env.SIB_API_PASSWORD || "");
+  if (!apiUser || !apiPass) return { status: "unconfigured" };
+  return loadSubscriberProfile(env, username, apiUser, apiPass);
+}
+
 /** Staff-only read of one subscriber. The phone cannot call this. */
 export async function handleStaffSubscriber(request, env) {
   if (request.method !== "GET") return json({ error: "GET required" }, 405);
@@ -96,10 +104,8 @@ export async function handleStaffSubscriber(request, env) {
   if (!isSubscriberUsername(username)) {
     return json({ error: "نام کاربری نادرست است." }, 400);
   }
-  const apiUser = String(env.SIB_API_USERNAME || "").trim();
-  const apiPass = String(env.SIB_API_PASSWORD || "");
-  if (!apiUser || !apiPass) return json({ error: "API user is not configured" }, 503);
-  const loaded = await loadSubscriberProfile(env, username, apiUser, apiPass);
+  const loaded = await lookupSubscriber(env, username);
+  if (loaded.status === "unconfigured") return json({ error: "API user is not configured" }, 503);
   if (loaded.status === "not-found") return json({ error: "subscriber not found" }, 404);
   if (loaded.status !== "ok") return json({ error: "DeltaSIB unreachable" }, 502);
   return json({
@@ -171,12 +177,17 @@ function panelOrigins(env) {
   };
   const ip = String(env.PANEL_IP || "").trim();
   const port = String(env.PANEL_PORT || "").trim();
+  const origin = String(env.ORIGIN_BASE || "");
   if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip) && port && !isPrivateLanIp(ip)) {
     const host = port === "80" ? ip : `${ip}:${port}`;
+    if (origin.startsWith("https://")) {
+      push(`https://${ip}.sslip.io:${port}`, host);
+      push(`https://${ip}.nip.io:${port}`, host);
+    }
     push(`http://${ip}.sslip.io:${port}`, host);
     push(`http://${ip}.nip.io:${port}`, host);
   }
-  push(env.ORIGIN_BASE, "");
+  push(origin, "");
   return list;
 }
 

@@ -23,6 +23,7 @@ class SettingsService {
   static const String _keyLanguage = 'app_language';
   static const String _keyThemeMode = 'app_theme_mode';
   static const String _keyPackageProvince = 'package_province';
+  static const String _keySibWorkerOrigin = 'sib_worker_origin';
 
   /// برای همگام‌سازی ولایت بین تب بسته‌ها و سرویس اینترنت
   final ValueNotifier<String?> packageProvinceListenable =
@@ -342,6 +343,7 @@ class SettingsService {
       await prefs.remove(_keyLanguage);
       await prefs.remove(_keyThemeMode);
       await prefs.remove(_keyPackageProvince);
+      await prefs.remove(_keySibWorkerOrigin);
       await prefs.remove('banned_device_fingerprints');
       // اثر انگشت/مسدودسازی محلی دستگاه‌ها اگر با کلیدهای prefs ذخیره شده باشند
       for (final key in prefs.getKeys().toList()) {
@@ -482,6 +484,32 @@ class SettingsService {
     }
   }
 
+  /// ورکری که کد این نشست را ساخته است. خالی یعنی هرات.
+  Future<String?> getSibWorkerOrigin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = prefs.getString(_keySibWorkerOrigin);
+      if (value == null || value.isEmpty) return null;
+      return value;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setSibWorkerOrigin(String origin) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySibWorkerOrigin, origin);
+    } catch (_) {}
+  }
+
+  Future<void> clearSibWorkerOrigin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keySibWorkerOrigin);
+    } catch (_) {}
+  }
+
   /// ذخیره ولایت پیش‌فرض (بسته‌ها + سرویس اینترنت)
   Future<void> setPackageProvinceId(String provinceId) async {
     _cachedPackageProvince = provinceId;
@@ -514,6 +542,7 @@ class SettingsService {
       await prefs.remove(_keyLanguage);
       await prefs.remove(_keyThemeMode);
       await prefs.remove(_keyPackageProvince);
+      await prefs.remove(_keySibWorkerOrigin);
     } catch (e) {
       // اگر shared_preferences کار نکرد، فقط cache را پاک کن
     }

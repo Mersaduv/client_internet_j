@@ -15,7 +15,7 @@ export default {
     const refused = refusePublicDeltaSib(incoming);
     if (refused) return refused;
 
-    const originBase = (env.ORIGIN_BASE || "http://192.168.12.12").replace(
+    const originBase = (env.ORIGIN_BASE || "http://149.54.23.54:9999").replace(
       /\/$/,
       "",
     );

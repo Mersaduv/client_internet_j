@@ -2,9 +2,9 @@
 # App HTTPS fronts (stable):
 #   https://jb-herat.mersadkarimi001.workers.dev/users/
 #   https://jb-nimroz.mersadkarimi001.workers.dev/
-#   https://jb-farah.mersadkarimi001.workers.dev/
+# Farah uses the Herat worker. There is no jb-farah front.
 #
-# Nimroz/Farah tunnels must run on a PC that can reach those LAN panels.
+# The Nimroz tunnel must run on a PC that can reach that LAN panel.
 
 $ErrorActionPreference = "Continue"
 $acct = "44b7611a56bcec74bdd22356e05ec271"
@@ -19,11 +19,16 @@ $tok = $Matches[1]
 
 $panels = @(
   @{ Name = "jb-herat";  OriginTarget = "http://165.99.189.40:9394"; DefaultPath = "/users/" },
-  @{ Name = "jb-nimroz"; OriginTarget = "http://192.168.12.12";      DefaultPath = "/" },
-  @{ Name = "jb-farah";  OriginTarget = "http://192.168.10.10";      DefaultPath = "/" }
+  @{ Name = "jb-nimroz"; OriginTarget = "http://149.54.23.54:9999"; DefaultPath = "/users/" }
 )
 
 function Deploy-Worker([string]$name, [string]$origin, [string]$defaultPath) {
+  # jb-herat and jb-nimroz are full code-panel workers (D1 + admin).
+  # This thin proxy upload would drop those bindings.
+  if ($name -eq "jb-herat" -or $name -eq "jb-nimroz") {
+    Write-Host "[SKIP] $name keeps its code-panel worker (origin $origin)"
+    return
+  }
   $tmp = Join-Path $env:TEMP "cf-panel-sync"
   New-Item -ItemType Directory -Force -Path $tmp | Out-Null
   $meta = '{"main_module":"worker.js","compatibility_date":"2024-09-23","bindings":[{"type":"plain_text","name":"ORIGIN_BASE","text":"'+$origin+'"},{"type":"plain_text","name":"DEFAULT_PATH","text":"'+$defaultPath+'"}]}'
@@ -78,9 +83,8 @@ foreach ($panel in $panels) {
 
 Write-Host ""
 Write-Host "Stable HTTPS fronts:"
-Write-Host "  Herat : https://jb-herat.mersadkarimi001.workers.dev/users/"
+Write-Host "  Herat and Farah: https://jb-herat.mersadkarimi001.workers.dev/users/"
 Write-Host "  Nimroz: https://jb-nimroz.mersadkarimi001.workers.dev/"
-Write-Host "  Farah : https://jb-farah.mersadkarimi001.workers.dev/"
 Write-Host ""
 Write-Host "Keep this window open. Press Ctrl+C to stop tunnels."
 

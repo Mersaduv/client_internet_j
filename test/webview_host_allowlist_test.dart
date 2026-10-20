@@ -15,7 +15,9 @@ void main() {
       isFalse,
     );
     expect(
-      WebViewHostAllowlist.isAllowedUrl('http://192.168.12.12/'),
+      WebViewHostAllowlist.isAllowedUrl(
+        'http://149.54.23.54:9999/users/',
+      ),
       isTrue,
     );
     expect(

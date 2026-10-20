@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
+import '../data/internet_packages_data.dart';
 import 'app_secure_storage.dart';
 import 'settings_service.dart';
 import 'sib_http.dart';
@@ -21,6 +22,14 @@ class DeltaSibAuthService {
   /// پیش‌فرض فقط وقتی ولایت ذخیره نشده باشد (هرات).
   static const String defaultOrigin =
       'https://jb-herat.mersadkarimi001.workers.dev';
+
+  /// کد و نشست نیمروز روی ورکر خودش است. فراه هنوز پنل کد جدا ندارد.
+  static String codeWorkerFor(PackageProvince province) {
+    if (province == PackageProvince.nimroz) {
+      return province.sibApiOrigin;
+    }
+    return defaultOrigin;
+  }
 
   static final _storage = AppSecureStorage.instance;
 
@@ -45,9 +54,11 @@ class DeltaSibAuthService {
   /// خروج: نشست سرور پاک می‌شود و کلید گوشی هم حذف می‌شود.
   Future<void> logout() async {
     final session = await savedSession();
+    final origin = await SettingsService().getSibWorkerOrigin();
+    final base = (origin == null || origin.isEmpty) ? defaultOrigin : origin;
     if (session != null && session.isNotEmpty) {
       try {
-        final uri = Uri.parse('$defaultOrigin/jahanbit/sib/logout');
+        final uri = Uri.parse('$base/jahanbit/sib/logout');
         final request = await SibHttp.client
             .postUrl(uri)
             .timeout(const Duration(seconds: 8));
@@ -63,18 +74,25 @@ class DeltaSibAuthService {
       }
     }
     await clear();
+    await SettingsService().clearSibWorkerOrigin();
   }
 
-  /// کد ۱۰ رقمی را با نام مشترکِ ذخیره‌شده روی سرور عوض می‌کند.
+  /// کد ۱۰ نویسه‌ای (حرف انگلیسی و رقم) را با نام مشترک روی سرور عوض می‌کند.
   /// کد یک‌بارمصرف می‌سوزد و رمز Winbox را فقط همین یک بار برمی‌گرداند.
   /// کد همیشگی دوباره قابل استفاده است و رمز روتر ندارد.
+  static String? normalizeAccessCode(String raw) {
+    final code = raw.replaceAll(RegExp(r'\s'), '').toUpperCase();
+    if (!RegExp(r'^[A-Z0-9]{10}$').hasMatch(code)) return null;
+    return code;
+  }
+
   Future<RedeemedAccess> redeemAccessCode({
     required String code,
     required String origin,
   }) async {
-    final digits = code.replaceAll(RegExp(r'\D'), '');
-    if (digits.length != 10) {
-      throw DeltaSibAuthException('کد باید ۱۰ رقم باشد.');
+    final normalized = normalizeAccessCode(code);
+    if (normalized == null) {
+      throw DeltaSibAuthException('کد باید ۱۰ حرف انگلیسی و رقم باشد.');
     }
     final base = origin.endsWith('/') ? origin.substring(0, origin.length - 1) : origin;
     final uri = Uri.parse('$base/jahanbit/sib/redeem');
@@ -86,7 +104,7 @@ class DeltaSibAuthService {
       'json',
       charset: 'utf-8',
     );
-    request.write(jsonEncode({'code': digits}));
+    request.write(jsonEncode({'code': normalized}));
     final response = await request.close().timeout(const Duration(seconds: 20));
     final text = await response.transform(utf8.decoder).join();
     if (response.statusCode != 200) {

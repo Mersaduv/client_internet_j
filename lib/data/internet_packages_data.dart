@@ -47,15 +47,14 @@ extension PackageProvinceX on PackageProvince {
 
   String title(bool isEnglish) => isEnglish ? titleEn() : titleFa();
 
-  /// مبدأ HTTPS وب‌سرویس دلتاسیب (SIB) همان ولایت. مسیر API: /1.0/auth/
+  /// مبدأ کد و پنل. فراه همان ورکر هرات است. مسیر API: /1.0/auth/
   String get sibApiOrigin {
     switch (this) {
       case PackageProvince.herat:
+      case PackageProvince.farah:
         return 'https://jb-herat.mersadkarimi001.workers.dev';
       case PackageProvince.nimroz:
         return 'https://jb-nimroz.mersadkarimi001.workers.dev';
-      case PackageProvince.farah:
-        return 'https://jb-farah.mersadkarimi001.workers.dev';
     }
   }
 
@@ -63,12 +62,11 @@ extension PackageProvinceX on PackageProvince {
   String get servicePanelUrl {
     switch (this) {
       case PackageProvince.herat:
-        // HTTPS عمومی که به IP واقعی پنل پروکسی می‌شود
+      case PackageProvince.farah:
+        // فراه لینک جدا ندارد؛ همان پنل هرات است.
         return 'https://jb-herat.mersadkarimi001.workers.dev/users/';
       case PackageProvince.nimroz:
-        return 'http://192.168.12.12/';
-      case PackageProvince.farah:
-        return 'http://192.168.10.10/';
+        return 'http://149.54.23.54:9999/users/';
     }
   }
 }

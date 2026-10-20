@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../utils/sib_package_insight.dart';
 import 'deltasib_auth_service.dart';
+import 'settings_service.dart';
 import 'sib_volume_client.dart';
 
 /// خواندن اطلاعات مشترک از صفحه‌های تست وب‌سرویس دلتاسیب (همان میزبان ورکر).
@@ -55,7 +56,8 @@ class SibCustomerService {
   }
 
   Future<String> _origin() async {
-    // کد و نشست فقط روی ورکر هرات است. ولایت فقط کاتالوگ بسته را عوض می‌کند.
+    final saved = await SettingsService().getSibWorkerOrigin();
+    if (saved != null && saved.isNotEmpty) return saved;
     return DeltaSibAuthService.defaultOrigin;
   }
 

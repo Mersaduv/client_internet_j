@@ -14,7 +14,7 @@ class ConnectionTestScreen extends StatefulWidget {
 class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
   final _formKey = GlobalKey<FormState>();
   final _hostController = TextEditingController(text: '192.168.88.1');
-  final _portController = TextEditingController(text: '2752');
+  final _portController = TextEditingController(text: '8728');
   final _usernameController = TextEditingController(text: 'admin');
   final _passwordController = TextEditingController();
 
@@ -208,7 +208,7 @@ class _ConnectionTestScreenState extends State<ConnectionTestScreen> {
                     controller: _portController,
                     decoration: const InputDecoration(
                       labelText: '????',
-                      hintText: '2752',
+                      hintText: '8728',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.numbers),
                     ),

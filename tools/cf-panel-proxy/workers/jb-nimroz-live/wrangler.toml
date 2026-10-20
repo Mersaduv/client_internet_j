@@ -1,0 +1,24 @@
+name = "jb-nimroz"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+
+[vars]
+SERVICE_NAME = "jb-nimroz"
+PROVINCE_FA = "نیمروز"
+DEFAULT_PATH = "/users/"
+# DeltaSIB panel of Nimroz.
+PANEL_IP = "149.54.23.54"
+PANEL_PORT = "9999"
+ORIGIN_BASE = "http://149.54.23.54:9999"
+
+# Own database. Do not point this at the Herat D1 (jahanbit-sib).
+[[d1_databases]]
+binding = "SIB_DB"
+database_name = "jahanbit-sib-nimroz"
+database_id = "bcc9fedc-02db-4b97-b533-b2e19f3ee8cf"
+
+# Province API user is not Herat's. Set only on this worker:
+#   npx wrangler secret put SIB_ADMIN_PASSWORD
+#   npx wrangler secret put SIB_API_USERNAME
+#   npx wrangler secret put SIB_API_PASSWORD

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../data/internet_packages_data.dart';
 import '../data/support_contacts.dart';
 import '../models/mikrotik_connection.dart';
@@ -134,10 +135,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final hostFuture = NetworkInfoService().discoverRouterApiHost();
       final settingsFuture = _settingsService.getAllSettings();
       final savedFuture = _settingsService.getSavedCredentials();
+      final codeOrigin = DeltaSibAuthService.codeWorkerFor(province);
       final redeemed = await DeltaSibAuthService().redeemAccessCode(
         code: _accessCodeController.text,
-        origin: DeltaSibAuthService.defaultOrigin,
+        origin: codeOrigin,
       );
+      await _settingsService.setSibWorkerOrigin(codeOrigin);
       if (!mounted) return;
       final username = redeemed.username;
 
@@ -283,8 +286,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     Text(
                       Localizations.localeOf(context).languageCode == 'en'
-                          ? 'Enter the 10-digit code from support'
-                          : 'کد ۱۰ رقمی پشتیبانی را وارد کنید',
+                          ? 'Enter the 10-character code from support'
+                          : 'کد ۱۰ نویسه‌ای پشتیبانی را وارد کنید',
                           style: TextStyle(
                             fontSize: 16,
                             color: isDark
@@ -311,21 +314,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     TextFormField(
                       controller: _accessCodeController,
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.visiblePassword,
+                      textCapitalization: TextCapitalization.characters,
                       textDirection: TextDirection.ltr,
                       textInputAction: TextInputAction.done,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                        LengthLimitingTextInputFormatter(10),
+                      ],
                       onFieldSubmitted: (_) => _handleLogin(),
                       decoration: InputDecoration(
-                        labelText: 'کد ۱۰ رقمی',
-                        hintText: 'از پشتیبانی',
+                        labelText: 'کد ورود',
+                        hintText: 'حرف و رقم',
                         prefixIcon: Icon(Icons.pin_outlined, color: primaryColor),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       validator: (value) {
-                        final digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
-                        if (digits.length != 10) return 'کد باید ۱۰ رقم باشد';
+                        if (DeltaSibAuthService.normalizeAccessCode(value ?? '') ==
+                            null) {
+                          return 'کد باید ۱۰ حرف انگلیسی و رقم باشد';
+                        }
                         return null;
                       },
                     ),

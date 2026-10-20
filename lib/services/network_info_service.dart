@@ -33,7 +33,7 @@ Future<bool> routerApiReachable(String host) async {
   try {
     final socket = await Socket.connect(
       host,
-      2752,
+      8728,
       timeout: const Duration(milliseconds: 1500),
     );
     socket.destroy();

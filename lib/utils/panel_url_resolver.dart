@@ -17,18 +17,14 @@ class PanelUrlResolver {
   static List<String> candidatesFor(PackageProvince province) {
     switch (province) {
       case PackageProvince.herat:
+      case PackageProvince.farah:
         return const [
           'https://jb-herat.mersadkarimi001.workers.dev/users/',
         ];
       case PackageProvince.nimroz:
         return const [
-          'http://192.168.12.12/',
+          'http://149.54.23.54:9999/users/',
           'https://jb-nimroz.mersadkarimi001.workers.dev/',
-        ];
-      case PackageProvince.farah:
-        return const [
-          'http://192.168.10.10/',
-          'https://jb-farah.mersadkarimi001.workers.dev/',
         ];
     }
   }

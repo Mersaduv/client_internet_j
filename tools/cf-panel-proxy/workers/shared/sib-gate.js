@@ -6,6 +6,8 @@
  * Permanent codes never store a router password.
  */
 
+import { lookupSubscriber } from "./sib-subscriber.js";
+
 const CODE_TTL_MS = 24 * 60 * 60 * 1000;
 const PERMANENT_EXPIRES_AT = Date.UTC(2099, 0, 1);
 const SESSION_IDLE_MS = 365 * 24 * 60 * 60 * 1000;
@@ -32,7 +34,7 @@ export async function handleAdmin(request, env) {
   }
 
   const staff = await readStaff(request, env);
-  if (!staff) return html(loginPage(url.searchParams.get("e") === "1"), 200);
+  if (!staff) return html(loginPage(url.searchParams.get("e") === "1", env), 200);
 
   if (url.pathname === "/jahanbit/admin/api/codes" && request.method === "GET") {
     return listCodes(env, url);
@@ -43,7 +45,7 @@ export async function handleAdmin(request, env) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return text("این درخواست مجاز نیست.", 405);
   }
-  return html(panelShell(), 200);
+  return html(panelShell(env), 200);
 }
 
 export async function handleRedeem(request, env) {
@@ -59,8 +61,8 @@ export async function handleRedeem(request, env) {
     return json({ error: "چند لحظه بعد دوباره تلاش کنید." }, 429);
   }
   const username = String(body.username || "").trim();
-  const code = String(body.code || "").replace(/\D/g, "");
-  if (!/^\d{10}$/.test(code) || (username && !isName(username))) {
+  const code = normalizeAccessCode(body.code);
+  if (!code || (username && !isName(username))) {
     await noteAttempt(env, request);
     return json({ error: "کد یا نام کاربری نادرست است." }, 400);
   }
@@ -186,7 +188,12 @@ async function createCode(request, env) {
     return fail(request, "برای کد یک‌بارمصرف، رمز Winbox همان مشترک لازم است.", 400);
   }
   if (routerPassword.length > 128) return fail(request, "رمز Winbox خیلی بلند است.", 400);
-  const code = randomDigits(10);
+  const found = await lookupSubscriber(env, username);
+  if (found.status === "not-found") return fail(request, "subscriber not found", 404);
+  if (found.status !== "ok") {
+    return fail(request, "DeltaSIB unreachable", found.status === "unconfigured" ? 503 : 502);
+  }
+  const code = randomAccessCode(10);
   const now = Date.now();
   const expiresAt = reusable ? PERMANENT_EXPIRES_AT : now + CODE_TTL_MS;
   const [secret, codeSealed, codeHash] = await Promise.all([
@@ -218,7 +225,7 @@ async function createCode(request, env) {
   if ((request.headers.get("accept") || "").includes("application/json")) {
     return json(payload);
   }
-  return html(panelShell(), 200);
+  return html(panelShell(env), 200);
 }
 
 const PAGE_SIZE = 12;
@@ -272,11 +279,11 @@ async function listCodes(env, url) {
   return json({ page, pages, total, rows });
 }
 
-function panelShell() {
-  return layout("کدهای ورود", `
+function panelShell(env) {
+  return layout(provinceTitle(env, "کدهای ورود"), `
     <header>
       <div>
-        <h1>کد ورود مشترک</h1>
+        <h1>${provinceTitle(env, "کد ورود مشترک")}</h1>
         <p class="hint" id="summary">در حال خواندن فهرست…</p>
       </div>
       <form method="post" action="/jahanbit/admin/logout"><button class="ghost" type="submit">خروج</button></form>
@@ -487,9 +494,14 @@ load();
 `;
 }
 
-function loginPage(failed) {
-  return layout("ورود پنل", `
-    <h1>پنل کد جهان‌بیت</h1>
+function provinceTitle(env, base) {
+  const province = String(env?.PROVINCE_FA || "").trim();
+  return province ? `${base} — ${province}` : base;
+}
+
+function loginPage(failed, env) {
+  return layout(provinceTitle(env, "ورود پنل"), `
+    <h1>${provinceTitle(env, "پنل کد جهان‌بیت")}</h1>
     ${failed ? "<p class='err'>رمز نادرست است.</p>" : ""}
     <form method="post" action="/jahanbit/admin/login">
       <label>رمز پنل</label>
@@ -645,10 +657,25 @@ function isName(value) {
   return /^[\p{L}\p{N}._@-]{1,64}$/u.test(value);
 }
 
-function randomDigits(length) {
-  const bytes = new Uint8Array(length);
+const ACCESS_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function normalizeAccessCode(value) {
+  const code = String(value || "").replace(/\s+/g, "").toUpperCase();
+  return /^[A-Z0-9]{10}$/.test(code) ? code : "";
+}
+
+function randomAccessCode(length) {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const bytes = new Uint8Array(length + 2);
   crypto.getRandomValues(bytes);
-  return [...bytes].map((byte) => String(byte % 10)).join("");
+  const chars = [];
+  for (let i = 0; i < length; i++) {
+    chars.push(ACCESS_CODE_ALPHABET[bytes[i] % ACCESS_CODE_ALPHABET.length]);
+  }
+  if (!chars.some((char) => letters.includes(char))) {
+    chars[bytes[length] % length] = letters[bytes[length + 1] % letters.length];
+  }
+  return chars.join("");
 }
 
 function randomHex(bytesLength) {
