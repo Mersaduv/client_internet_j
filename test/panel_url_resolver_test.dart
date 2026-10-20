@@ -33,11 +33,13 @@ void main() {
     );
   });
 
-  test('nimroz panel is the public users URL', () {
+  test('nimroz panel is the HTTPS worker only', () {
     final list = PanelUrlResolver.candidatesFor(PackageProvince.nimroz);
-    expect(list.first, 'http://149.54.23.54:9999/users/');
+    expect(list, [
+      'https://jb-nimroz.mersadkarimi001.workers.dev/users/',
+    ]);
     expect(PackageProvince.nimroz.servicePanelUrl, list.first);
-    expect(list.any((u) => u.contains('jb-nimroz')), isTrue);
+    expect(list.join(' '), isNot(contains('http://')));
   });
 
   test('farah uses the same Herat panel link', () {
@@ -59,13 +61,10 @@ void main() {
     );
   });
 
-  test('nextAfter walks failover chain for LAN provinces', () {
+  test('a single panel link has no failover', () {
     final first = PanelUrlResolver.primaryFor(PackageProvince.nimroz);
-    final second = PanelUrlResolver.nextAfter(PackageProvince.nimroz, first);
-    expect(second, isNotNull);
-    expect(second, isNot(first));
     expect(
-      PanelUrlResolver.nextAfter(PackageProvince.nimroz, second!),
+      PanelUrlResolver.nextAfter(PackageProvince.nimroz, first),
       isNull,
     );
   });

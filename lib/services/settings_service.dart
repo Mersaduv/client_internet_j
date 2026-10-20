@@ -40,13 +40,6 @@ class SettingsService {
   /// آدرس پیش‌فرض پنل کاربری سرویس اینترنت (عمومی = فقط HTTPS)
   static const String _defaultServiceUrl =
       'https://jb-herat.mersadkarimi001.workers.dev/users/';
-  /// URLهای قدیمی ذخیره‌شده روی بعضی دستگاه‌ها — فقط برای مهاجرت
-  static const String _legacyDefaultServiceUrl = 'http://user.ariyabod.af/users';
-  static const String _legacyHeratHttpServiceUrl =
-      'http://165.99.189.40:9394/users/';
-  static const String _legacyHeratHttpsIpServiceUrl =
-      'https://165.99.189.40:9394/users/';
-  // Keep migrating old public cleartext / IP-TLS away from prefs.
   static const String _defaultLanguage = 'fa';
   static const String _defaultThemeMode = 'dark';
 
@@ -146,9 +139,7 @@ class SettingsService {
       final prefs = await SharedPreferences.getInstance();
       var url = (prefs.getString(_keyServiceUrl) ?? '').trim();
       // لینک خالی، قدیمی یا خارج از allowlist را با پیش‌فرض جایگزین کن
-      if (url.isEmpty ||
-          _isLegacyDefaultServiceUrl(url) ||
-          !WebViewHostAllowlist.isAllowedUrl(url)) {
+      if (url.isEmpty || !WebViewHostAllowlist.isAllowedUrl(url)) {
         url = _defaultServiceUrl;
         await prefs.setString(_keyServiceUrl, url);
       }
@@ -158,19 +149,6 @@ class SettingsService {
       _cachedServiceUrl = _defaultServiceUrl;
       return _defaultServiceUrl;
     }
-  }
-
-  bool _isLegacyDefaultServiceUrl(String url) {
-    final normalized = url.trim().replaceAll(RegExp(r'/+$'), '');
-    final legacy = _legacyDefaultServiceUrl.replaceAll(RegExp(r'/+$'), '');
-    final legacyHeratHttp =
-        _legacyHeratHttpServiceUrl.replaceAll(RegExp(r'/+$'), '');
-    final legacyHeratHttpsIp =
-        _legacyHeratHttpsIpServiceUrl.replaceAll(RegExp(r'/+$'), '');
-    // مسیرهای قدیمی IP عمومی را به HTTPS Worker مهاجرت بده.
-    return normalized == legacy ||
-        normalized == legacyHeratHttp ||
-        normalized == legacyHeratHttpsIp;
   }
 
   /// ذخیره URL سرویس اینترنت — فقط میزبان‌های allowlist

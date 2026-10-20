@@ -62,11 +62,11 @@ class LegalDocuments {
 
 ۳. داده‌هایی که روی دستگاه شما پردازش یا ذخیره می‌شوند
 - اعتبارنامهٔ RouterOS در حافظهٔ امن سیستم (Keystore / Keychain) در صورت «مرا به خاطر بسپار»
-- نام کاربری، رمز و توکن نشست سرویس حسابداری ولایت در همان حافظهٔ امن، فقط برای نمایش بسته و نام مشترک
+- نام مشترک و نشست ورود در حافظهٔ امن، فقط برای نمایش بسته و نام مشترک
 - تنظیمات اتصال: IP/هاست روتر، پورت، SSL، ولایت، زبان، تم
 - شناسه‌های محلی دستگاه‌های LAN (نام/MAC/IP محلی/وضعیت مسدود) برای نمایش و اقدام محلی شما
 - برچسب زمانی نشست محلی در صورت فعال بودن
-اپ به‌طور پیش‌فرض حساب ابری جهان بیت نمی‌سازد و اعتبارنامهٔ روتر را به سرورهای ناشر ارسال نمی‌کند. ترافیک API عمدتاً بین دستگاه شما و روتر روی LAN است.
+کد ورود و نام مشترک با HTTPS به ورکر همان ولایت فرستاده می‌شود. رمز Winbox فقط روی کد یک‌بارمصرف، یک بار و فقط با HTTPS برمی‌گردد و بعد از آن روی سرور نمی‌ماند. رمز Api دلتاسیب روی گوشی نیست. ترافیک روتر بین دستگاه شما و روتر روی شبکهٔ محلی است.
 
 ۴. داده‌هایی که جمع‌آوری نمی‌کنیم
 موقعیت GPS برای ردیابی، Advertising ID، دفترچه تلفن/پیامک/تماس/دوربین/میکروفون، فروش داده به کارگزاران. SDK تبلیغات یا analytics تبلیغاتی نداریم.
@@ -79,7 +79,7 @@ class LegalDocuments {
 
 ۷. امنیت انتقال (TLS / cleartext)
 - هر درخواست اینترنتی خود اپ فقط با HTTPS است.
-- استثنای HTTP ناامن برای IP عمومی یا خصوصی در تنظیمات شبکهٔ اندروید و iOS وجود ندارد.
+- اندروید HTTP بدون رمز را نمی‌پذیرد. iOS فقط شبکهٔ محلی را برای رسیدن به روتر باز می‌گذارد و نشانی HTTP عمومی را بارگذاری نمی‌کند.
 - صفحهٔ وای‌فای بعضی آنتن‌ها را خود اپ بارگذاری نمی‌کند؛ گوشی آن را در مرورگر پیش‌فرض باز می‌کند.
 - گواهی TLS نامعتبر پذیرفته نمی‌شود.
 - اتصال روتر از سوکت API شبکهٔ محلی است، نه از بارگذاری صفحهٔ وب.
@@ -88,7 +88,7 @@ class LegalDocuments {
 اعتبارنامهٔ روتر یا فهرست دستگاه‌های LAN برای تبلیغات فروخته یا ارسال نمی‌شود. ورود حسابداری فقط به نشانی HTTPS همان ولایت می‌رود.
 
 ۹. نگه‌داری و حذف
-خروج، «پاک‌سازی داده‌های محلی»، یا حذف اپ داده‌های محلی را طبق سیستم‌عامل پاک می‌کند. حساب ISP تابع قرارداد همان ارائه‌دهنده است.
+خروج و «پاک‌سازی داده‌های محلی» هم دادهٔ روی دستگاه را پاک می‌کنند و هم نشست ورود را از ورکر همان ولایت حذف می‌کنند. اگر یک سال هیچ فعالیتی نباشد، صفحهٔ ورود نشان داده می‌شود. حذف اپ دادهٔ محلی را طبق سیستم‌عامل پاک می‌کند. حساب ISP جدا است و تابع قرارداد همان ارائه‌دهنده می‌ماند.
 
 ۱۰. کودکان
 ابزار شبکهٔ عمومی است؛ محتوای کودک‌محور ندارد و عمداً دادهٔ کودکان را برای تبلیغات جمع‌آوری نمی‌کند.
@@ -121,11 +121,11 @@ Product brand: Jahan Bit
 
 3. Data Processed or Stored On Your Device
 - RouterOS credentials in OS secure storage when Remember Me / local session is used
-- Accounting username, password, and session token in the same secure storage, used only to show the package and subscriber name
+- Subscriber username and sign-in session in the same secure storage, used only to show the package and subscriber name
 - Connection settings: router host/IP, port, SSL preference, province, language, theme
 - LAN device identifiers (hostname/MAC/local IP/ban state) for listing and local actions you initiate
 - Local session timestamp when enabled
-Jahan Bit does not create its own cloud user account by default and does not upload router credentials to publisher servers. Router API traffic is primarily between your device and your router on the LAN.
+The sign-in code and subscriber username are sent over HTTPS to that province’s worker. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never on the phone. Router API traffic stays between your device and the router on the local network.
 
 4. Data We Do Not Collect
 No GPS tracking, Advertising ID, contacts/SMS/calls/camera/microphone, or sale of personal data to brokers. No advertising or ad-analytics SDKs.
@@ -138,7 +138,7 @@ Volume, time, service name, and the subscriber name are read over HTTPS from tha
 
 7. Transport Security (TLS / Cleartext)
 - Every internet request made by the app uses HTTPS.
-- Android and iOS network settings do not allow insecure HTTP exceptions for public or private addresses.
+- Android blocks cleartext HTTP. iOS allows local networking only so the phone can reach a router on the LAN, and does not load public HTTP addresses.
 - On some antennas the Wi‑Fi page is not loaded by the app; the phone opens it in the default browser.
 - Invalid TLS certificates are not accepted.
 - The router connection is a local API socket, not a web page.
@@ -147,7 +147,7 @@ Volume, time, service name, and the subscriber name are read over HTTPS from tha
 Router credentials and LAN device lists are not sold or sent to advertisers. The accounting login goes only to that province’s HTTPS address.
 
 9. Retention and Deletion
-Logout, Clear local data, or uninstall removes on-device app data per OS behavior. ISP accounts remain subject to the ISP’s contract.
+Logout and Clear local data both remove the data stored on the device and delete the sign-in session from that province’s worker. If there is no activity for one year, the sign-in screen is shown again. Uninstall removes on-device app data per OS behavior. The ISP subscriber account is separate and stays subject to the ISP’s contract.
 
 10. Children
 General network utility; not child-directed; does not knowingly collect children’s data for advertising.

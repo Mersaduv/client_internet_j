@@ -16,8 +16,16 @@ void main() {
     );
     expect(
       WebViewHostAllowlist.isAllowedUrl(
-        'http://149.54.23.54:9999/users/',
+        'https://jb-nimroz.mersadkarimi001.workers.dev/users/',
       ),
+      isTrue,
+    );
+    expect(
+      WebViewHostAllowlist.isAllowedUrl('http://149.54.23.54:9999/users/'),
+      isFalse,
+    );
+    expect(
+      WebViewHostAllowlist.isAllowedUrl('http://192.168.12.12/'),
       isTrue,
     );
     expect(

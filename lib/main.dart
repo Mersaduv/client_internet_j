@@ -28,7 +28,6 @@ import 'utils/app_theme.dart';
 import 'widgets/client_live_traffic_badge.dart';
 import 'widgets/cosmic_background.dart';
 import 'widgets/home_subscriber_panel.dart';
-import 'widgets/review_simulation_notice.dart';
 import 'widgets/traffic_list_item_visibility.dart';
 import 'utils/main_navigation.dart';
 
@@ -346,43 +345,14 @@ class _MainScaffoldState extends State<MainScaffold>
     WidgetsBinding.instance.addObserver(this);
     mainBottomTabRequest.addListener(_onMainBottomTabRequested);
     subscriberSessionEnded.addListener(_onSubscriberSessionEnded);
-    _serviceManager.reviewSimulationListenable.addListener(
-      _onReviewSimulationChanged,
-    );
     _checkLoginExpiration();
     if (kDebugMode) {
       unawaited(_loadNetworkInfo());
     }
-    final pendingConnect = _serviceManager.connectInFlight;
-    if (pendingConnect != null) {
-      unawaited(pendingConnect.whenComplete(() {
-        if (!mounted) return;
-        _showReviewNoticeIfNeeded();
-      }));
-    } else {
-      _showReviewNoticeIfNeeded();
-    }
-  }
-
-  void _onReviewSimulationChanged() {
-    if (!mounted) return;
-    setState(() {});
-    _showReviewNoticeIfNeeded();
-  }
-
-  void _showReviewNoticeIfNeeded() {
-    if (!_serviceManager.consumeReviewNotice()) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showReviewSimulationDialog(context, allowStayOnLogin: false);
-    });
   }
 
   @override
   void dispose() {
-    _serviceManager.reviewSimulationListenable.removeListener(
-      _onReviewSimulationChanged,
-    );
     mainBottomTabRequest.removeListener(_onMainBottomTabRequested);
     subscriberSessionEnded.removeListener(_onSubscriberSessionEnded);
     WidgetsBinding.instance.removeObserver(this);
@@ -493,7 +463,6 @@ class _MainScaffoldState extends State<MainScaffold>
       backgroundColor: isDark ? AppTheme.darkScaffold : colorScheme.surface,
       body: Column(
         children: [
-          if (_serviceManager.reviewSimulation) const ReviewSimulationBanner(),
           Expanded(
             child: IndexedStack(
               index: _currentIndex,

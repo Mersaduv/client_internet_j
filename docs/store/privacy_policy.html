@@ -106,7 +106,7 @@
       <span class="chip" style="background:rgba(0,198,255,.15);color:#e8f7ff;border-color:rgba(0,198,255,.35)">Privacy Policy</span>
       <h1>Privacy Policy — Jahan Bit</h1>
       <p class="meta">
-        Last updated: October 18, 2026<br />
+        Last updated: October 20, 2026<br />
         App Store seller: Muhammad Aref Abdul Hadi<br />
         © 2026 Jahan Bit
       </p>
@@ -139,13 +139,13 @@
       <p>Depending on use, the following may be stored or processed <strong>on your device</strong>:</p>
       <ul>
         <li><strong>Router credentials:</strong> RouterOS username/password in platform secure storage (Android Keystore / iOS Keychain) when Remember Me / local session is used.</li>
-        <li><strong>Accounting login:</strong> the same subscriber username and password, plus the accounting session token, in that secure storage. They are used only to read the package and the subscriber name over HTTPS.</li>
+        <li><strong>Sign-in:</strong> the subscriber username and session token in that secure storage. The 10-character sign-in code and username are sent over HTTPS to that province’s worker so the package and name can be shown. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never stored on the phone.</li>
         <li><strong>Connection settings:</strong> router host/IP, port, SSL preference, selected province, language, theme.</li>
         <li><strong>LAN device information:</strong> hostname, MAC address, local IP, and ban state for listing and local policy actions you initiate.</li>
-        <li><strong>Local session timestamp:</strong> to continue a session for a limited period (for example up to 14 days) when enabled.</li>
+        <li><strong>Local session timestamp:</strong> the session stays until you log out. If the app is unused for one year, the sign-in screen is shown again.</li>
       </ul>
       <p>
-        Jahan Bit does not create its own cloud user account by default and does not upload router credentials to Jahan Bit publisher servers. Router API traffic is primarily between your device and your router on the LAN.
+        Jahan Bit does not create its own cloud user account. The sign-in code is sent only to the province HTTPS worker. Router API traffic stays on the local network. The DeltaSIB API password is not on the phone.
       </p>
 
       <h2>4. Data We Do Not Collect (within app scope)</h2>
@@ -184,7 +184,7 @@
       <ul>
         <li>Credentials are stored in OS secure storage.</li>
         <li>Management traffic typically stays on your LAN; use trusted networks.</li>
-        <li><strong>Internet requests use HTTPS only.</strong> Android and iOS builds do not allow insecure HTTP exceptions for public or private addresses.</li>
+        <li><strong>Internet requests use HTTPS only.</strong> Android blocks cleartext HTTP. iOS allows local networking only so the phone can reach a router on the LAN, and the app does not load public HTTP addresses.</li>
         <li>Invalid TLS certificates are not accepted.</li>
         <li>The router connection is a local API socket, not a web page.</li>
       </ul>
@@ -192,8 +192,8 @@
 
       <h2>10. Retention and Deletion</h2>
       <ul>
-        <li><strong>Logout:</strong> ends the local session; credentials may be cleared depending on settings.</li>
-        <li><strong>Clear local data:</strong> removes stored credentials and preferences from the device via in-app Settings.</li>
+        <li><strong>Logout:</strong> deletes the sign-in session on that province’s worker and removes the credentials and session stored on the device. This is how you delete the app sign-in.</li>
+        <li><strong>Clear local data:</strong> in Settings, does the same deletion of the server session and the data stored on the device.</li>
         <li>Uninstalling the app removes on-device app data according to OS behavior.</li>
         <li>ISP subscriber accounts remain subject to the ISP’s policies and may be managed via their web panel.</li>
       </ul>
@@ -205,12 +205,12 @@
 
       <h2>12. Your Rights</h2>
       <p>
-        Depending on your jurisdiction, you may have rights to access, correct, delete, or restrict processing. Because most data stays on-device, the fastest path is usually Clear local data or uninstall. Contact support for further requests.
+        Depending on your jurisdiction, you may have rights to access, correct, delete, or restrict processing. Logout or Clear local data deletes the app sign-in session and the data stored on the device. Contact support for further requests.
       </p>
 
       <h2>13. International Transfers</h2>
       <p>
-        The app does not, by default, transfer router credentials to a Jahan Bit cloud backend. ISP panel interactions follow that provider’s infrastructure and policies.
+        The sign-in code is sent to the province HTTPS worker. A one-time router password is returned once and then removed from the server. ISP panel pages are opened only over HTTPS.
       </p>
 
       <h2>14. Changes</h2>

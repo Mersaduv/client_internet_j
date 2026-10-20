@@ -297,10 +297,10 @@ function panelShell(env) {
     <p class="hint">رمز یک‌بارمصرف بعد از اولین ورود پاک می‌شود. کد همیشگی رمز روتر نگه نمی‌دارد.</p>
     <section id="fresh" class="result" hidden>
       <p class="who" id="freshUser"></p>
-      <button type="button" id="freshCopy" class="codeBtn big">
-        <span id="freshCode" dir="ltr"></span>
-        <span class="copyHint">کپی</span>
-      </button>
+      <div class="codeLine">
+        <input id="freshCode" class="codeField big" readonly dir="ltr" spellcheck="false" autocomplete="off">
+        <button type="button" id="freshCopy" class="ghost">کپی</button>
+      </div>
     </section>
     <p id="formError" class="err" hidden></p>
     <div class="tools">
@@ -334,13 +334,13 @@ const formError = document.getElementById("formError");
 const labels = { permanent: "همیشگی", used: "مصرف شد", expired: "منقضی", ready: "آماده" };
 function text(value) { return document.createTextNode(value == null ? "" : String(value)); }
 async function copyText(value, hint) {
-  const digits = String(value || "").replace(/\\D/g, "");
-  if (!digits) return;
+  const code = String(value || "").replace(/\\s+/g, "");
+  if (!code) return;
   try {
-    await navigator.clipboard.writeText(digits);
+    await navigator.clipboard.writeText(code);
   } catch (_) {
     const area = document.createElement("textarea");
-    area.value = digits;
+    area.value = code;
     area.setAttribute("readonly", "");
     document.body.appendChild(area);
     area.select();
@@ -353,24 +353,23 @@ async function copyText(value, hint) {
   setTimeout(() => { hint.textContent = previous; }, 1100);
 }
 function codeButton(value) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "codeBtn";
-  button.dir = "ltr";
-  if (!value) {
-    button.disabled = true;
-    button.appendChild(text("ذخیره نشده"));
-    return button;
-  }
-  const digits = document.createElement("span");
-  digits.appendChild(text(value));
-  const hint = document.createElement("span");
-  hint.className = "copyHint";
-  hint.appendChild(text("کپی"));
-  button.appendChild(digits);
-  button.appendChild(hint);
-  button.addEventListener("click", () => copyText(value, hint));
-  return button;
+  const line = document.createElement("div");
+  line.className = "codeLine";
+  const field = document.createElement("input");
+  field.readOnly = true;
+  field.className = "codeField";
+  field.dir = "ltr";
+  field.spellcheck = false;
+  field.value = value || "";
+  const hint = document.createElement("button");
+  hint.type = "button";
+  hint.className = "ghost";
+  hint.textContent = value ? "کپی" : "—";
+  hint.disabled = !value;
+  if (value) hint.addEventListener("click", () => copyText(value, hint));
+  line.appendChild(field);
+  line.appendChild(hint);
+  return line;
 }
 function cell(value) { const td = document.createElement("td"); td.appendChild(text(value)); return td; }
 function when(ms) {
@@ -469,10 +468,11 @@ document.getElementById("make").addEventListener("submit", async (event) => {
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.code) throw new Error(data.error || "ساخته نشد");
     freshUser.textContent = data.username || "";
-    freshCode.textContent = data.code;
+    freshCode.value = data.code;
     fresh.hidden = false;
-    fresh.querySelector(".copyHint").textContent = "کپی";
-    document.getElementById("freshCopy").onclick = () => copyText(data.code, fresh.querySelector(".copyHint"));
+    const freshCopy = document.getElementById("freshCopy");
+    freshCopy.textContent = "کپی";
+    freshCopy.onclick = () => copyText(data.code, freshCopy);
     form.reset();
     state.page = 1;
     await load();
@@ -530,9 +530,9 @@ button:disabled{opacity:.5}
 .err{color:#be123c}
 .result{margin:1rem 0;padding:1rem 1.1rem;background:#fff;border:1px solid #e7e5e4;border-radius:16px}
 .who{margin:0 0 .45rem;color:#78716c}
-.codeBtn{display:inline-flex;align-items:center;gap:.55rem;direction:ltr;background:#f5f5f4;color:#1c1917;border:1px solid #e7e5e4;border-radius:12px;padding:.45rem .7rem;letter-spacing:.12em;font-weight:700}
-.codeBtn.big{width:100%;justify-content:space-between;font-size:1.7rem;padding:.85rem 1rem;background:#0f766e;color:#fff;border:0}
-.copyHint{font-size:.75rem;letter-spacing:0;font-weight:600;opacity:.8}
+.codeLine{display:flex;gap:.5rem;align-items:center}
+.codeField{flex:1;min-width:8rem;border:1px solid #e7e5e4;background:#fff;border-radius:10px;padding:.55rem .7rem;letter-spacing:.08em;font-weight:700;font-family:ui-monospace,Consolas,monospace}
+.codeField.big{font-size:1.35rem;padding:.8rem .9rem}
 .tools{margin:.6rem 0}
 .tools input{width:min(100%,16rem)}
 .tableWrap{overflow:auto;background:#fff;border-radius:12px}

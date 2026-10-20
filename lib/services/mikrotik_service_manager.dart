@@ -314,9 +314,6 @@ class MikroTikServiceManager {
     _routerInfo = null;
     _routerInfoCacheTime = null;
     await _service!.connect(_currentConnection!);
-    if (!_reviewNoticeShown) {
-      _reviewNoticePending = true;
-    }
     _startHeartbeat();
     return _service?.isConnected ?? false;
   }

@@ -63,11 +63,11 @@ class AppLocalizations {
   String get clearLocalData =>
       locale.languageCode == 'en' ? 'Clear local data' : 'پاک‌سازی داده‌های محلی';
   String get clearLocalDataSubtitle => locale.languageCode == 'en'
-      ? 'Remove saved router credentials and app preferences from this device'
-      : 'حذف اعتبارنامهٔ روتر و تنظیمات ذخیره‌شده از این دستگاه';
+      ? 'Delete the sign-in session and the data stored on this device'
+      : 'حذف نشست ورود و داده‌های ذخیره‌شده روی این دستگاه';
   String get clearLocalDataConfirm => locale.languageCode == 'en'
-      ? 'This permanently deletes locally stored credentials and preferences on this device. Continue?'
-      : 'این کار اعتبارنامه‌ها و تنظیمات ذخیره‌شده روی این دستگاه را برای همیشه پاک می‌کند. ادامه می‌دهید؟';
+      ? 'This deletes the sign-in session on the server and the credentials stored on this device. Continue?'
+      : 'این کار نشست ورود را روی سرور و اعتبارنامه‌های ذخیره‌شده روی این دستگاه را پاک می‌کند. ادامه می‌دهید؟';
   String get clearLocalDataDone => locale.languageCode == 'en'
       ? 'Local data cleared'
       : 'داده‌های محلی پاک شد';

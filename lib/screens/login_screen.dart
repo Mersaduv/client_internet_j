@@ -324,8 +324,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                       onFieldSubmitted: (_) => _handleLogin(),
                       decoration: InputDecoration(
-                        labelText: 'کد ورود',
-                        hintText: 'حرف و رقم',
+                        labelText:
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'Sign-in code'
+                                : 'کد ورود',
+                        hintText:
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'Letters and digits'
+                                : 'حرف و رقم',
                         prefixIcon: Icon(Icons.pin_outlined, color: primaryColor),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -334,7 +340,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: (value) {
                         if (DeltaSibAuthService.normalizeAccessCode(value ?? '') ==
                             null) {
-                          return 'کد باید ۱۰ حرف انگلیسی و رقم باشد';
+                          return Localizations.localeOf(context).languageCode ==
+                                  'en'
+                              ? 'Enter 10 English letters and digits'
+                              : 'کد باید ۱۰ حرف انگلیسی و رقم باشد';
                         }
                         return null;
                       },
@@ -521,7 +530,32 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context)
+                              .pushNamed('/privacy-policy'),
+                          child: Text(
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'Privacy Policy'
+                                : 'سیاست حریم خصوصی',
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(context).pushNamed('/terms-of-use'),
+                          child: Text(
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'Terms of Use'
+                                : 'شرایط استفاده',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),

@@ -18,8 +18,7 @@ class WebViewHostAllowlist {
     // HTTPS عمومی پایدار (Cloudflare Workers)
     'jb-herat.mersadkarimi001.workers.dev',
     'jb-nimroz.mersadkarimi001.workers.dev',
-    // پنل‌های LAN ولایتی
-    '149.54.23.54',
+    // فقط شبکهٔ خصوصی؛ هیچ IP عمومی با HTTP در اپ نیست
     '192.168.12.12',
     '192.168.10.10',
   };
@@ -48,10 +47,8 @@ class WebViewHostAllowlist {
     if (host.isEmpty) return false;
     if (!_hosts.contains(host)) return false;
 
-    // Public hosts must use TLS, except the Nimroz panel which is HTTP on 9999.
-    if (scheme == 'http' &&
-        !PrivateNetworkHost.isPrivateOrLocal(host) &&
-        host != '149.54.23.54') {
+    // Public hosts must use TLS. HTTP is only for a private LAN address.
+    if (scheme == 'http' && !PrivateNetworkHost.isPrivateOrLocal(host)) {
       return false;
     }
     return true;

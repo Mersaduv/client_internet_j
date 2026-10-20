@@ -66,7 +66,7 @@ extension PackageProvinceX on PackageProvince {
         // فراه لینک جدا ندارد؛ همان پنل هرات است.
         return 'https://jb-herat.mersadkarimi001.workers.dev/users/';
       case PackageProvince.nimroz:
-        return 'http://149.54.23.54:9999/users/';
+        return 'https://jb-nimroz.mersadkarimi001.workers.dev/users/';
     }
   }
 }
