@@ -155,13 +155,56 @@ void main() {
       );
     });
 
-    test('unknown board on the gateway is the main router', () {
+    test('address alone does not decide antenna or main router', () {
       expect(
         WifiSettingsRouter.shouldOpenExternally(host: '172.16.0.1'),
         isFalse,
       );
       expect(
+        WifiSettingsRouter.shouldOpenExternally(host: '10.10.10.2'),
+        isFalse,
+      );
+      expect(
         WifiSettingsRouter.isMainRouterSession(liveHost: '172.16.0.1'),
+        isFalse,
+      );
+      expect(
+        WifiSettingsRouter.isMainRouterSession(liveHost: '10.10.10.2'),
+        isFalse,
+      );
+    });
+
+    test('unknown board text is not treated as the main router', () {
+      expect(
+        WifiSettingsRouter.isMainRouterSession(
+          liveHost: '172.16.0.1',
+          routerInfo: {
+            'board-name': 'Unknown',
+            'model': 'Unknown',
+          },
+        ),
+        isFalse,
+      );
+    });
+
+    test('LHG identity opens the browser when the model is missing', () {
+      expect(
+        WifiSettingsRouter.isWebViewWifiBoard({
+          'board-name': 'Unknown',
+          'model': 'Unknown',
+          'identity': 'LHG 5',
+        }),
+        isTrue,
+      );
+    });
+
+    test('resource board name still opens the browser', () {
+      expect(
+        WifiSettingsRouter.isWebViewWifiBoard({
+          'board-name': 'Unknown',
+          'model': 'Unknown',
+          'board': 'LHG 5',
+        }),
         isTrue,
       );
     });

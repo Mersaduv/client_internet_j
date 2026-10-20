@@ -64,6 +64,13 @@ class MikroTikService {
     return (value ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
+  /// Blank routerboard fields must not hide the resource board-name.
+  String? _nonEmptyRouterField(Object? value) {
+    final text = value?.toString().trim();
+    if (text == null || text.isEmpty) return null;
+    return text;
+  }
+
   bool _isWirelessUnsupportedRouter(Map<String, dynamic>? routerInfo) {
     if (routerInfo == null) {
       return false;
@@ -72,6 +79,7 @@ class MikroTikService {
     final keys = <String>{
       _normalizeBoardKey(routerInfo['board-name']?.toString()),
       _normalizeBoardKey(routerInfo['model']?.toString()),
+      _normalizeBoardKey(routerInfo['board']?.toString()),
     }..removeWhere((item) => item.isEmpty);
 
     return keys.any(_wirelessUnsupportedBoardKeys.contains);
@@ -2132,8 +2140,8 @@ class MikroTikService {
           _proplist(['board-name', 'model']),
         ], timeout: const Duration(seconds: 4));
         if (routerboard.isNotEmpty) {
-          boardName = routerboard.first['board-name'];
-          model = routerboard.first['model'];
+          boardName = _nonEmptyRouterField(routerboard.first['board-name']);
+          model = _nonEmptyRouterField(routerboard.first['model']);
         }
       } catch (_) {}
 
@@ -2152,8 +2160,12 @@ class MikroTikService {
         'uptime': resourceData['uptime'] ?? 'Unknown',
         'version': resourceData['version'] ?? 'Unknown',
         'build-time': resourceData['build-time'] ?? 'Unknown',
-        'board-name': boardName ?? resourceData['board-name'] ?? 'Unknown',
+        'board-name':
+            boardName ??
+            _nonEmptyRouterField(resourceData['board-name']) ??
+            'Unknown',
         'model': model ?? 'Unknown',
+        'board': _nonEmptyRouterField(resourceData['board-name']),
         'platform': resourceData['platform'] ?? 'Unknown',
         'cpu-load': resourceData['cpu-load'] ?? '0',
         'free-memory': resourceData['free-memory'] ?? '0',
@@ -3286,8 +3298,8 @@ class MikroTikService {
           _proplist(['board-name', 'model']),
         ], timeout: const Duration(seconds: 4));
         if (routerboard.isNotEmpty) {
-          boardName = routerboard[0]['board-name']?.toString();
-          model = routerboard[0]['model']?.toString();
+          boardName = _nonEmptyRouterField(routerboard[0]['board-name']);
+          model = _nonEmptyRouterField(routerboard[0]['model']);
         }
       } catch (e) {
         // ignore - routerboard data optional است
@@ -3329,8 +3341,11 @@ class MikroTikService {
         'architecture-name':
             resourceData['architecture-name']?.toString() ?? 'Unknown',
         'board-name':
-            boardName ?? resourceData['board-name']?.toString() ?? 'Unknown',
+            boardName ??
+            _nonEmptyRouterField(resourceData['board-name']) ??
+            'Unknown',
         'model': model ?? 'Unknown',
+        'board': _nonEmptyRouterField(resourceData['board-name']),
         'platform': resourceData['platform']?.toString() ?? 'Unknown',
         'identity': identity ?? 'Unknown',
       };

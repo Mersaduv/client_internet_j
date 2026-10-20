@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/support_contacts.dart';
+import 'wifi_settings_screen.dart';
 import '../utils/app_localizations.dart';
 import '../utils/app_theme.dart';
 import '../utils/main_navigation.dart';
@@ -17,8 +18,8 @@ class SubscriberHelpScreen extends StatelessWidget {
     mainBottomTabRequest.value = tabIndex;
   }
 
-  Future<void> _openWifiSettings(BuildContext context) async {
-    await Navigator.of(context).pushNamed('/wifi-settings');
+  Future<void> _openWifiSettings(BuildContext context) {
+    return openWifiSettings(context);
   }
 
   Future<void> _copyPhone(BuildContext context, String phone) async {

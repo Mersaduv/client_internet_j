@@ -61,6 +61,7 @@ bool isWifiWebViewBoard(Map<String, dynamic>? routerInfo) {
     routerInfo['board-name'],
     routerInfo['model'],
     routerInfo['board'],
+    routerInfo['identity'],
     routerInfo['platform'],
   ];
   for (final field in fields) {

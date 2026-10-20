@@ -47,6 +47,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>http</string>
+		<string>https</string>
+	</array>
 	<!-- توضیح دسترسی شبکه محلی برای اتصال به روتر MikroTik (الزام iOS) -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Jahan Bit needs local network access to find your default gateway and connect to your MikroTik router so you can manage connected devices and Wi‑Fi. On some antennas the Wi‑Fi page opens in the device browser, not inside the app.</string>

@@ -17,30 +17,40 @@ import '../utils/wifi_panel_url_resolver.dart';
 import '../utils/wifi_webview_boards.dart';
 
 /// صفحهٔ وای‌فای آنتن را در مرورگر پیش‌فرض دستگاه باز می‌کند، نه داخل اپ.
+///
+/// [LaunchMode.platformDefault] برای نشانی http در اندروید و iOS صفحه را
+/// داخل خود اپ باز می‌کند. اینجا فقط خروج از اپ مجاز است.
 Future<bool> openCpeWifiInExternalBrowser() async {
   final uri = Uri.parse(WifiPanelUrlResolver.cpeWifiPanelUrl);
   if (Platform.isWindows) {
-    try {
-      final result = await Process.run(
-        'cmd.exe',
-        ['/c', 'start', '', uri.toString()],
-      );
-      if (result.exitCode == 0) return true;
-    } catch (e) {
-      debugPrint('[WIFI_SETTINGS] windows start failed: $e');
-    }
+    return _openWindowsDefaultBrowser(uri);
   }
   try {
-    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      return true;
-    }
+    return await launchUrl(uri, mode: LaunchMode.externalApplication);
   } catch (e) {
-    debugPrint('[WIFI_SETTINGS] externalApplication failed: $e');
+    debugPrint('[WIFI_SETTINGS] external browser failed: $e');
+    return false;
+  }
+}
+
+/// rundll32 is the Windows handler that opens the registered default browser.
+/// Verified locally: it starts Edge on http://10.10.10.2/.
+Future<bool> _openWindowsDefaultBrowser(Uri uri) async {
+  final url = uri.toString();
+  try {
+    await Process.start(
+      'rundll32.exe',
+      ['url.dll,FileProtocolHandler', url],
+      mode: ProcessStartMode.detached,
+    );
+    return true;
+  } catch (e) {
+    debugPrint('[WIFI_SETTINGS] rundll32 failed: $e');
   }
   try {
-    return await launchUrl(uri, mode: LaunchMode.platformDefault);
+    return await launchUrl(uri, mode: LaunchMode.externalApplication);
   } catch (e) {
-    debugPrint('[WIFI_SETTINGS] platformDefault failed: $e');
+    debugPrint('[WIFI_SETTINGS] windows launchUrl failed: $e');
     return false;
   }
 }
@@ -62,32 +72,34 @@ class WifiSettingsRouter extends StatelessWidget {
 
   /// مرورگر آنتن فقط وقتی که خود برد، آنتن CPE باشد.
   /// آدرس 10.10.10.2 روی این شبکه پورت WAN روتر اصلی است و به‌تنهایی
-  /// دلیل باز کردن مرورگر نیست.
+  /// دلیل باز کردن مرورگر نیست. تا وقتی برد معلوم نشده، روتر اصلی هم نیست.
   static bool shouldOpenExternally({
     String? host,
     Map<String, dynamic>? routerInfo,
   }) {
-    if (isWebViewWifiBoard(routerInfo)) {
-      return true;
-    }
-    if (routerInfo != null) {
-      return false;
-    }
-    return WifiPanelUrlResolver.isCpeHost(host);
+    return isWebViewWifiBoard(routerInfo);
   }
 
   /// نشست زنده روی روتر اصلی است، نه روی پنل آنتن.
+  /// برد ناشناخته هنوز روتر اصلی نیست؛ وگرنه فرم وای‌فای داخل اپ لود می‌شود.
   static bool isMainRouterSession({
     String? liveHost,
     Map<String, dynamic>? routerInfo,
   }) {
-    if (isWebViewWifiBoard(routerInfo)) {
+    if (!_hasKnownBoard(routerInfo) || isWebViewWifiBoard(routerInfo)) {
       return false;
     }
-    if (routerInfo != null) {
-      return true;
+    return true;
+  }
+
+  static bool _hasKnownBoard(Map<String, dynamic>? routerInfo) {
+    if (routerInfo == null) return false;
+    const keys = ['board-name', 'model', 'board', 'identity'];
+    for (final key in keys) {
+      final norm = normalizeWifiBoardKey(routerInfo[key]?.toString());
+      if (norm.isNotEmpty && norm != 'unknown') return true;
     }
-    return !WifiPanelUrlResolver.isCpeHost(liveHost);
+    return false;
   }
 
   @override
@@ -97,16 +109,58 @@ class WifiSettingsRouter extends StatelessWidget {
         provider.routerInfo ?? MikroTikServiceManager().routerInfo;
     final liveHost = MikroTikServiceManager().currentConnection?.host;
 
-    if (routerInfo == null && isMainRouterSession(liveHost: liveHost)) {
-      return const _WifiLoadingPlaceholder();
-    }
-
     if (shouldOpenExternally(host: liveHost, routerInfo: routerInfo)) {
       return const _ExternalWifiPanelRedirect();
     }
 
-    return const WifiNativeSettingsScreen();
+    if (routerInfo != null &&
+        isMainRouterSession(liveHost: liveHost, routerInfo: routerInfo)) {
+      return const WifiNativeSettingsScreen();
+    }
+
+    return const _WifiLoadingPlaceholder();
   }
+}
+
+Map<String, dynamic>? _cachedWifiRouterInfo(ClientsProvider provider) {
+  return provider.routerInfo ?? MikroTikServiceManager().routerInfo;
+}
+
+/// برد را از کش می‌خواند. اگر کش خالی یا Unknown باشد، همان نشست را دوباره می‌پرسد.
+/// مهلت ۸ثانیه‌ای قبلی جواب دیررس را دور می‌ریخت و صفحهٔ خطا می‌ماند.
+Future<Map<String, dynamic>?> ensureWifiRouterInfo(ClientsProvider provider) async {
+  final manager = MikroTikServiceManager();
+  var info = _cachedWifiRouterInfo(provider);
+  if (WifiSettingsRouter.isWebViewWifiBoard(info) ||
+      WifiSettingsRouter.isMainRouterSession(routerInfo: info)) {
+    return info;
+  }
+  try {
+    final fresh = await manager.getRouterInfo(forceRefresh: true);
+    if (fresh != null) {
+      provider.rememberRouterInfo(fresh);
+      info = fresh;
+    }
+  } catch (e) {
+    debugPrint('[WIFI_SETTINGS] board read failed: $e');
+  }
+  return _cachedWifiRouterInfo(provider) ?? info;
+}
+
+/// تنظیمات وای‌فای: برد آنتن، یا بردی که خوانده نشد، پنل ۱۰٫۱۰٫۱۰٫۲ را
+/// در مرورگر پیش‌فرض باز می‌کند. فقط روتر اصلیِ شناسایی‌شده داخل اپ می‌ماند.
+Future<void> openWifiSettings(BuildContext context) async {
+  final provider = Provider.of<ClientsProvider>(context, listen: false);
+  final info = await ensureWifiRouterInfo(provider);
+  if (!context.mounted) return;
+  if (WifiSettingsRouter.isMainRouterSession(routerInfo: info)) {
+    await Navigator.of(context).pushNamed('/wifi-settings');
+    return;
+  }
+  final opened = await openCpeWifiInExternalBrowser();
+  if (opened || !context.mounted) return;
+  if (!context.mounted) return;
+  await Navigator.of(context).pushNamed('/wifi-settings');
 }
 
 /// صفحهٔ وای‌فای این آنتن داخل اپ بارگذاری نمی‌شود؛ مرورگر پیش‌فرض دستگاه آن را باز می‌کند.
@@ -124,13 +178,13 @@ class _ExternalWifiPanelRedirectState extends State<_ExternalWifiPanelRedirect> 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_openBrowser());
-    });
+    unawaited(_openBrowser());
   }
 
   Future<void> _openBrowser() async {
-    setState(() => _failed = false);
+    if (_failed && mounted) {
+      setState(() => _failed = false);
+    }
     final opened = await openCpeWifiInExternalBrowser();
     if (!mounted) return;
     if (opened) {
@@ -198,19 +252,16 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
   int _elapsedMs = 0;
   static const int _maxWaitMs = 10000;
   bool _openBrowser = false;
-  bool _showNative = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_leaveIfCpeHost());
-    });
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+    unawaited(_leaveIfCpeHost());
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
       if (!mounted) {
         return;
       }
-      _elapsedMs += 500;
+      _elapsedMs += 200;
       final provider = Provider.of<ClientsProvider>(context, listen: false);
       final info = provider.routerInfo ?? MikroTikServiceManager().routerInfo;
       final liveHost = MikroTikServiceManager().currentConnection?.host;
@@ -222,18 +273,18 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
         setState(() => _openBrowser = true);
         return;
       }
-      if (info != null ||
+      if (info != null &&
           WifiSettingsRouter.isMainRouterSession(
             liveHost: liveHost,
             routerInfo: info,
           )) {
         _pollTimer?.cancel();
-        setState(() => _showNative = true);
+        setState(() {});
         return;
       }
       if (_elapsedMs >= _maxWaitMs) {
         _pollTimer?.cancel();
-        setState(() => _showNative = true);
+        setState(() => _openBrowser = true);
       }
     });
   }
@@ -241,20 +292,22 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
   Future<void> _leaveIfCpeHost() async {
     if (!mounted) return;
     final provider = Provider.of<ClientsProvider>(context, listen: false);
-    if (provider.routerInfo == null) {
-      unawaited(provider.loadRouterInfo());
-    }
+    await ensureWifiRouterInfo(provider);
+    if (!mounted) return;
     final live = MikroTikServiceManager().currentConnection?.host;
     final info = provider.routerInfo ?? MikroTikServiceManager().routerInfo;
-    if (!mounted) return;
     if (WifiSettingsRouter.shouldOpenExternally(host: live, routerInfo: info)) {
       _pollTimer?.cancel();
       setState(() => _openBrowser = true);
       return;
     }
-    if (WifiSettingsRouter.isMainRouterSession(liveHost: live, routerInfo: info)) {
+    if (info != null &&
+        WifiSettingsRouter.isMainRouterSession(
+          liveHost: live,
+          routerInfo: info,
+        )) {
       _pollTimer?.cancel();
-      setState(() => _showNative = true);
+      setState(() {});
     }
   }
 
@@ -279,7 +332,11 @@ class _WifiLoadingPlaceholderState extends State<_WifiLoadingPlaceholder> {
       return const _ExternalWifiPanelRedirect();
     }
 
-    if (_showNative || info != null) {
+    if (info != null &&
+        WifiSettingsRouter.isMainRouterSession(
+          liveHost: liveHost,
+          routerInfo: info,
+        )) {
       return const WifiNativeSettingsScreen();
     }
 

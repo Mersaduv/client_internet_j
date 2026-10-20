@@ -1104,6 +1104,12 @@ class ClientsProvider extends ChangeNotifier {
     }
   }
 
+  /// نتیجهٔ خواندن برد را برای صفحهٔ وای‌فای نگه می‌دارد.
+  void rememberRouterInfo(Map<String, dynamic> info) {
+    _routerInfo = info;
+    notifyListeners();
+  }
+
   /// بارگذاری اطلاعات روتر (board-name و platform)
   Future<void> loadRouterInfo({bool notifyChanges = true}) async {
     if (!_serviceManager.isConnected) {

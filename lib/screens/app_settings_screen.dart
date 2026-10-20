@@ -265,29 +265,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       size: 16,
                       color: AppTheme.primaryFor(theme.brightness),
                     ),
-                    onTap: () async {
-                      final live = MikroTikServiceManager().currentConnection?.host;
-                      final info = Provider.of<ClientsProvider>(context, listen: false)
-                              .routerInfo ??
-                          MikroTikServiceManager().routerInfo;
-                      if (info == null) {
-                        await Provider.of<ClientsProvider>(context, listen: false)
-                            .loadRouterInfo();
-                      }
-                      if (!context.mounted) return;
-                      final resolved = Provider.of<ClientsProvider>(context, listen: false)
-                              .routerInfo ??
-                          MikroTikServiceManager().routerInfo;
-                      if (WifiSettingsRouter.shouldOpenExternally(
-                        host: live,
-                        routerInfo: resolved,
-                      )) {
-                        final opened = await openCpeWifiInExternalBrowser();
-                        if (opened || !context.mounted) return;
-                      }
-                      if (!context.mounted) return;
-                      Navigator.of(context).pushNamed('/wifi-settings');
-                    },
+                    onTap: () => openWifiSettings(context),
                   ),
                   const Divider(height: 1),
                   ListTile(
