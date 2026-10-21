@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>فهرست اسکریپت و API دلتاسیب</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #e7e5e4;
+      --paper: #f6f5f4;
+      --card: #fff;
+      --blue: #1d4e89;
+      --orange: #9a3412;
+      --green: #3f6212;
+      --red: #9f1239;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      line-height: 1.7;
+    }
+    header.page, main { max-width: 1080px; margin: 0 auto; }
+    header.page { padding: 1.4rem 1.2rem 0.4rem; }
+    h1 { margin: 0 0 0.35rem; font-size: 1.55rem; }
+    header.page p, .muted { color: var(--muted); }
+    a { color: var(--blue); }
+    nav {
+      position: sticky; top: 0; z-index: 2;
+      background: rgba(246,245,244,.96);
+      border-bottom: 1px solid var(--line);
+    }
+    nav ol {
+      max-width: 1080px; margin: 0 auto; padding: 0.5rem 1rem;
+      display: flex; gap: 0.4rem; overflow-x: auto; list-style: none;
+    }
+    nav a {
+      display: block; text-decoration: none; color: var(--ink);
+      background: #fff; border: 1px solid var(--line); border-radius: 999px;
+      padding: 0.12rem 0.65rem; white-space: nowrap; font-size: 0.84rem;
+    }
+    main { padding: 0.4rem 1.2rem 3rem; }
+    section {
+      background: #fff; border: 1px solid var(--line);
+      border-radius: 16px; padding: 1rem; margin: 1rem 0;
+    }
+    h2 { font-size: 1.15rem; margin: 0 0 0.7rem; }
+    h3 { font-size: 1rem; margin: 1rem 0 0.35rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+    th, td { border-bottom: 1px solid var(--line); text-align: right; padding: 0.38rem 0.3rem; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    code, .ltr {
+      font-family: Consolas, "Cascadia Mono", monospace;
+      direction: ltr; unicode-bidi: isolate; font-size: 0.88em;
+    }
+    .tag {
+      display: inline-block; border-radius: 999px; padding: 0.02rem 0.45rem;
+      font-size: 0.78rem; border: 1px solid var(--line); background: #f5f5f4;
+    }
+    .use { background: #f0fdf4; border-color: #bbf7d0; color: var(--green); }
+    .doc { background: #fff7ed; border-color: #fed7aa; color: var(--orange); }
+    .note { background: #f5f5f4; border-radius: 12px; padding: 0.7rem 0.85rem; margin-top: 0.7rem; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .box { border: 1px solid var(--line); border-radius: 12px; padding: 0.7rem 0.8rem; }
+    .box b { display: block; margin-bottom: 0.15rem; }
+    .blue { border-top: 4px solid var(--blue); }
+    .orange { border-top: 4px solid var(--orange); }
+    .green { border-top: 4px solid var(--green); }
+    .red { border-top: 4px solid var(--red); }
+    @media (max-width: 800px) { .two { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>اسکریپت‌ها و APIهای دلتاسیب، نسخهٔ ۱٫۰</h1>
+    <p>منبع: دو PDF ریشهٔ پروژه، بهمن ۱۴۰۲، شرکت شبکه گستر پیام‌آوران کویر. کنار هر مورد نوشته شده جهان بیت آن را صدا می‌زند یا فقط در مستند است. شرح درگاه خود اپ: <a href="gateway-full.html">gateway-full.html</a></p>
+  </header>
+  <nav>
+    <ol>
+      <li><a href="#src">منبع‌ها</a></li>
+      <li><a href="#doors">دو در</a></li>
+      <li><a href="#setup">دستورهای راه‌اندازی</a></li>
+      <li><a href="#index">فهرست ۱۶ عمل</a></li>
+      <li><a href="#each">شرح هر عمل</a></li>
+      <li><a href="#errors">کد خطا</a></li>
+      <li><a href="#params">پارام‌ها</a></li>
+      <li><a href="#credit">فیلدهای حجم</a></li>
+      <li><a href="#ours">آنچه جهان بیت صدا می‌زند</a></li>
+    </ol>
+  </nav>
+  <main>
+
+    <section id="src">
+      <h2>منبع‌ها</h2>
+      <table>
+        <thead><tr><th>فایل</th><th>چه چیزی تعریف می‌کند</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ltr">WebService1.0_Setup_Help.pdf</span></td><td>ساختن یوزر API، روشن و خاموش کردن سرویس، و صفحهٔ تست ورود.</td></tr>
+          <tr><td><span class="ltr">WebService1.0_Usage_Help.pdf</span></td><td>فهرست رسمی شیءها و عمل‌ها. ۴۴ صفحه. الگوی آدرس، توکن، و جدول خطا.</td></tr>
+        </tbody>
+      </table>
+      <div class="note">راهنمای استفاده یک کتابخانهٔ نمونه را نام می‌برد: <span class="ltr">https://github.com/tcdent/php-restclient</span>. این کتابخانه API دلتاسیب نیست. فقط نمونهٔ کد PHP برای فرستادن درخواست است. الگوی آدرس رسمی داخل همان PDF این است: <span class="ltr">https://Server_IP:1043/1.0/Object/</span>. شمارهٔ نسخه در مسیر، <span class="ltr">1.0</span> است.</div>
+    </section>
+
+    <section id="doors">
+      <h2>دو در جدا</h2>
+      <div class="two">
+        <div class="box blue">
+          <b>در رسمی REST</b>
+          پورت ۱۰۴۳. شیء در مسیر است، مثل <span class="ltr">/1.0/user/</span>. توکن با <span class="ltr">Api_Key</span> ساخته می‌شود و آن کلید، SHA-512 رمز API است، نه خود رمز. درخواست‌های بعدی توکن را در هدر <span class="ltr">Authorization: Bearer</span> می‌گذارند. جواب JSON است. وضعیت ۲۰۰ یعنی موفق.
+        </div>
+        <div class="box orange">
+          <b>صفحهٔ تست، راهنمای راه‌اندازی</b>
+          <span class="ltr">/test/webservice/api/restfull/test.login.php</span>. اینجا فیلدها <span class="ltr">Api_Username</span> و <span class="ltr">Api_Password</span> هستند. رمز خام است، نه هش. خروجی همان توکن و مدت اعتبار است. جهان بیت از همین صفحه توکن می‌گیرد، نه از <span class="ltr">/1.0/auth/</span>.
+        </div>
+      </div>
+      <div class="note">صفحهٔ تست روی خود دلتاسیب، عمل‌های REST را به <span class="ltr">https://127.0.0.1:1043/1.0/</span> می‌رساند. پورت ۱۰۴۳ از بیرون در دسترس نیست. برای همین ورکر به صفحهٔ تست همان سرور حرف می‌زند و صفحهٔ تست با API محلی حرف می‌زند.</div>
+    </section>
+
+    <section id="setup">
+      <h2>دستورها و صفحهٔ راه‌اندازی</h2>
+      <p class="muted">از راهنمای راه‌اندازی. این‌ها API مشترک نیستند. روشن و خاموش کردن خود وب‌سرویس روی سرور دلتاسیب‌اند.</p>
+      <table>
+        <thead><tr><th>نام</th><th>کاربرد</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ltr">pak.www.api.start</span></td><td>بعد از ساختن یوزر API، وب‌سرویس را روشن می‌کند. از SSH خود دلتاسیب اجرا می‌شود.</td></tr>
+          <tr><td><span class="ltr">pak.www.api.debug</span></td><td>اگر تست ورود خطا داد، دیباگ API را روشن می‌کند.</td></tr>
+          <tr><td><span class="ltr">pak.www.api.stop</span></td><td>اگر وب‌سرویس لازم نیست، برای امنیت خاموش می‌شود.</td></tr>
+          <tr><td><span class="ltr">test.login.php</span></td><td>صفحهٔ تست. یوزر و رمز API را می‌گیرد و توکن نشان می‌دهد. جهان بیت همین را از داخل ورکر صدا می‌زند.</td></tr>
+        </tbody>
+      </table>
+      <div class="note">یوزر API در دلتاسیب از مسیر Reseller و Operator، نوع Api ساخته می‌شود. PermitIP فهرست کلاینت‌های مجاز است. SessionTimeout عمر توکن است. ApiDebug دیباگ همان یوزر است. رمز با ChangePass جدا از ساخت یوزر تنظیم می‌شود. این رمز همان Secret ورکر است و داخل اپ نیست.</div>
+    </section>
+
+    <section id="index">
+      <h2>فهرست کامل عمل‌ها، همان ترتیب PDF</h2>
+      <table>
+        <thead><tr><th>شیء</th><th>عمل</th><th>متد</th><th>کاربرد یک‌خطی</th><th>جهان بیت</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ltr">auth</span></td><td><span class="ltr">gettoken</span></td><td>POST</td><td>گرفتن توکن ریسلر</td><td><span class="tag doc">مستند؛ در عمل از test.login.php</span></td></tr>
+          <tr><td><span class="ltr">user</span></td><td><span class="ltr">list</span></td><td>GET</td><td>فهرست یا یک ردیف کاربر</td><td><span class="tag use">فقط یک نام، برای اسم</span></td></tr>
+          <tr><td><span class="ltr">user</span></td><td><span class="ltr">creditinfo</span></td><td>GET</td><td>حجم، زمان و وضعیت سرویس</td><td><span class="tag use">فقط همان یک نام</span></td></tr>
+          <tr><td><span class="ltr">user</span></td><td><span class="ltr">add</span></td><td>POST</td><td>ساختن کاربر تازه</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user</span></td><td><span class="ltr">delete</span></td><td>DELETE</td><td>حذف کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user</span></td><td><span class="ltr">edit</span></td><td>PUT</td><td>ویرایش مشخصات کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.status</span></td><td><span class="ltr">currentstatus</span></td><td>GET</td><td>وضعیت فعلی کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.status</span></td><td><span class="ltr">add</span></td><td>PUT</td><td>گذاشتن وضعیت تازه روی کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">service</span></td><td><span class="ltr">list</span></td><td>GET</td><td>فهرست تعریف سرویس‌ها</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">radius</span></td><td><span class="ltr">list</span></td><td>GET</td><td>کاربران آنلاین</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">radius</span></td><td><span class="ltr">disconnect</span></td><td>DELETE</td><td>قطع نشست آنلاین</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.payment</span></td><td><span class="ltr">list</span></td><td>GET</td><td>فهرست پرداخت‌های یک کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.payment</span></td><td><span class="ltr">add</span></td><td>POST</td><td>ثبت یک پرداخت</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.service.base</span></td><td><span class="ltr">list</span></td><td>GET</td><td>سرویس‌های وصل‌شده به کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.service.base</span></td><td><span class="ltr">add</span></td><td>POST</td><td>وصل کردن یک سرویس به کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.service.base</span></td><td><span class="ltr">cancel</span></td><td>PUT</td><td>لغو سرویس فعلی کاربر</td><td><span class="tag doc">فقط مستند</span></td></tr>
+          <tr><td><span class="ltr">user.param</span></td><td><span class="ltr">add</span></td><td>POST</td><td>گذاشتن یک پارام روی کاربر یا سرویس</td><td><span class="tag doc">فقط مستند</span></td></tr>
+        </tbody>
+      </table>
+      <div class="note">در صفحهٔ radius disconnect خود PDF عمل را <span class="ltr">disconnet</span> نوشته، بدون یکی از nها. نام شیء و عنوان همان disconnect است. اگر نمونه‌ای از روی PDF ساخته شود، املای داخل همان صفحه باید دیده شود.</div>
+    </section>
+
+    <section id="each">
+      <h2>شرح هر عمل</h2>
+
+      <h3>auth / gettoken</h3>
+      <p>POST به <span class="ltr">/1.0/auth/</span>. فیلد الزامی: <span class="ltr">Api_Username</span> و <span class="ltr">Api_Key</span>. کلید، SHA-512 رمز است. عمل: <span class="ltr">gettoken</span>. جواب موفق: <span class="ltr">token</span> و <span class="ltr">SessionTimeout</span> به ثانیه. PDF می‌گوید توکن را یک بار بگیرید و تا خطای باطل شدن، همان را برای بقیهٔ درخواست‌ها نگه دارید. جهان بیت این توصیه را روی گوشی اجرا نمی‌کند. هر خواندن، توکن تازه داخل ورکر می‌سازد و همان‌جا رها می‌کند.</p>
+
+      <h3>user / list</h3>
+      <p>GET به <span class="ltr">/1.0/user/</span>. فهرست کاربر، یا با Filter فقط یک شرط. فیلدهای قابل انتخاب: <span class="ltr">User_Id, Username, Name, Family, Address</span> یا ستاره برای همه. LimitFrom پیش‌فرض ۰ و LimitCount پیش‌فرض ۱۰۰. Filter با عملگرهای مقایسه، like، and و or ساخته می‌شود. جهان بیت فقط فیلدهای شناسه و نام را می‌خواند، Filter را روی یک Username می‌گذارد و سقف را ۵ می‌گذارد، بعد ردیف غریبه را دور می‌ریزد.</p>
+
+      <h3>user / creditinfo</h3>
+      <p>GET به <span class="ltr">/1.0/user/</span>. وضعیت سرویس، حجم و زمان همان کاربر. Filter در این عمل الزامی است. بقیه مثل list سقف و شروع دارد. معنی فیلدهای جواب در بخش فیلدهای حجم است. این همان چیزی است که اپ به‌عنوان بسته نشان می‌دهد.</p>
+
+      <h3>user / add</h3>
+      <p>POST. ساخت کاربر. الزامی: Username، Password، و شناسه‌های Visp و Center و Supporter و Status و Reseller. اگر آن شناسه‌ها در دلتاسیب تعریف نشده باشند PDF می‌گوید مقدار ۱ بگذارید. Name و Family اختیاری‌اند. جواب موفق: <span class="ltr">status = 1</span>. نکتهٔ PDF: بعد از ساخت، اول وضعیت کاربر تعریف شود و بعد سرویس به او اضافه شود. جهان بیت این عمل را نمی‌فرستد.</p>
+
+      <h3>user / delete</h3>
+      <p>DELETE. حذف با Username یا User_Id. اگر هر دو بیاید، نام کاربری اولویت دارد. جواب موفق: status برابر ۱. جهان بیت این عمل را نمی‌فرستد.</p>
+
+      <h3>user / edit</h3>
+      <p>PUT. ویرایش کاربر موجود. Username الزامی است. می‌شود رمز، نام، فامیلی، تلفن، موبایل، ایمیل، آدرس، کد ملی، تاریخ تولد و شناسه‌های ریسلر و visp و مرکز و پشتیبان را فرستاد. صفر در شناسه‌ها یعنی خالی. برای پاک کردن موبایل PDF می‌گوید یک فاصله بگذارید. جواب موفق: status برابر ۱. جهان بیت این عمل را نمی‌فرستد.</p>
+
+      <h3>user.status / currentstatus</h3>
+      <p>GET. وضعیت فعلی یک کاربر با Username یا User_Id. جواب: <span class="ltr">Status_Id</span> و <span class="ltr">Status_Name</span>. جهان بیت این شیء را صدا نمی‌زند. وضعیت سرویس را از ServiceStatus داخل creditinfo می‌خواند.</p>
+
+      <h3>user.status / add</h3>
+      <p>PUT. گذاشتن یک وضعیت روی کاربر. Username یا User_Id، به‌علاوه Status_Name یا Status_Id. جواب موفق: status برابر ۱. جهان بیت این عمل را نمی‌فرستد.</p>
+
+      <h3>service / list</h3>
+      <p>GET به <span class="ltr">/1.0/service/</span>. فهرست سرویس‌هایی که در دلتاسیب تعریف شده‌اند، نه سرویس وصل‌شده به یک مشترک. فیلدها: Service_Id، ServiceName، Description، Price، ServiceType، ISEnable، UserChoosable، ResellerChoosable. Filter و سقف اختیاری است. جهان بیت کاتالوگ بسته را از این API نمی‌گیرد.</p>
+
+      <h3>radius / list</h3>
+      <p>GET. کاربران آنلاین روی RADIUS. Field در نمونهٔ PDF فقط Username است. Filter اختیاری است. سقف پیش‌فرض ۱۰۰. جهان بیت آنلاین بودن دستگاه را از روتر محلی می‌خواند، نه از این عمل.</p>
+
+      <h3>radius / disconnect</h3>
+      <p>DELETE. قطع یک نشست آنلاین. Filter الزامی است. نمونهٔ PDF: <span class="ltr">RUsername='a'</span>. جواب موفق: status برابر ۱. جهان بیت قطع اتصال را از این API نمی‌زند.</p>
+
+      <h3>user.payment / list</h3>
+      <p>GET. پرداخت‌های یک کاربر. User_Id و Field الزامی‌اند. فیلدها شامل شناسهٔ پرداخت، نوع، مبلغ، مانده، شماره و تاریخ چک، نام و کد شعبه، توضیح، پایانه و ارز است. جهان بیت این فهرست را نمی‌خواند.</p>
+
+      <h3>user.payment / add</h3>
+      <p>POST. ثبت پرداخت. الزامی: User_Id، Currency_Id، PriceINCurrency، ExchangeRate. نوع پرداخت یکی از Cash، Cheque، Pos، Deposit، Other، TAX. تاریخ Persian یا Gregorian. فیلدهای چک و بانک اختیاری‌اند. جواب موفق: status برابر ۱. جهان بیت پرداخت ثبت نمی‌کند.</p>
+
+      <h3>user.service.base / list</h3>
+      <p>GET. سرویس‌های پایهٔ وصل‌شده به یک کاربر. Username یا User_Id. Filter و سقف اختیاری. PDF برای جواب موفق status برابر ۱ نوشته است. جهان بیت این فهرست را جدا نمی‌خواند.</p>
+
+      <h3>user.service.base / add</h3>
+      <p>POST. وصل کردن یک سرویس به کاربر. الزامی: User_Id و Service_Id. PayPrice اختیاری است. PayPlan یکی از PrePaid یا PostPaid. جواب موفق: status برابر ۱. جهان بیت سرویس وصل نمی‌کند.</p>
+
+      <h3>user.service.base / cancel</h3>
+      <p>PUT. لغو با User_ServiceBase_Id، یعنی شناسهٔ همان سرویس فعلی کاربر. جواب موفق: status برابر ۱. جهان بیت لغو نمی‌کند.</p>
+
+      <h3>user.param / add</h3>
+      <p>POST. افزودن یک پارام. الزامی: ParamItem_Id، TableName، TableId. TableName یکی از User، Service، Visp، Center، Server است و TableId شناسهٔ همان سطح است. ParamStatus یکی از Passthrough-Yes، Passthrough-No، Disable. Value مقدار پارام است. شناسه‌ها در بخش پارام‌ها هستند. جهان بیت پارام نمی‌نویسد.</p>
+    </section>
+
+    <section id="errors">
+      <h2>کدهای خطا، انتهای راهنمای استفاده</h2>
+      <table>
+        <thead><tr><th>کد</th><th>شرح PDF</th><th>معنی در عمل</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>OK</td><td>خطایی نیست.</td></tr>
+          <tr><td>-1</td><td>Fatal Error</td><td>خطای داخلی سرویس.</td></tr>
+          <tr><td>-2</td><td>Invalid key</td><td>کلید API، یعنی SHA-512 رمز، قبول نشده است.</td></tr>
+          <tr><td>-3</td><td>IP not permit</td><td>IP کلاینت در PermitIP آن یوزر API نیست.</td></tr>
+          <tr><td>-4</td><td>Require item not found</td><td>فیلد الزامی نیامده است. در PDF کنار نام فیلد ستاره دارد.</td></tr>
+          <tr><td>-5</td><td>Invalid Data</td><td>داده با شکل مورد انتظار نمی‌خواند.</td></tr>
+          <tr><td>-6</td><td>Invalid token</td><td>توکن نیست، باطل است، یا عمر SessionTimeout تمام شده.</td></tr>
+        </tbody>
+      </table>
+      <div class="note">هر عمل در خطا دو فیلد برمی‌گرداند: ErrorCode کمتر از صفر، و ErrorDesc برای شرح. PDF می‌گوید پیش از خواندن بدنه، کد وضعیت HTTP چک شود. غیر از ۲۰۰ خطا است.</div>
+    </section>
+
+    <section id="params">
+      <h2>شناسهٔ پارام‌ها برای user.param / add</h2>
+      <p class="muted">فقط فهرست مستند. جهان بیت هیچ‌کدام را نمی‌نویسد.</p>
+      <table>
+        <thead><tr><th>شناسه</th><th>نام</th><th>شناسه</th><th>نام</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Simulation</td><td>2</td><td>LoginTime</td></tr>
+          <tr><td>3</td><td>TimeRate</td><td>4</td><td>TrafficRate</td></tr>
+          <tr><td>5</td><td>ReceiveRate</td><td>6</td><td>SendRate</td></tr>
+          <tr><td>7</td><td>Calendar</td><td>8</td><td>PeriodicUse</td></tr>
+          <tr><td>9</td><td>MikrotikRate</td><td>10</td><td>IPPool</td></tr>
+          <tr><td>11</td><td>FinishRule</td><td>12</td><td>MaxSessionTime</td></tr>
+          <tr><td>13</td><td>OffFormula</td><td>14</td><td>URLReporting</td></tr>
+          <tr><td>15</td><td>ActiveDirectory</td><td>16</td><td>AuthMethod</td></tr>
+          <tr><td>17</td><td>UserType</td><td>18</td><td>SMSProvider</td></tr>
+          <tr><td>19</td><td>InterimTime</td><td>21</td><td>Notify-CreditFinish</td></tr>
+          <tr><td>22</td><td>Notify-ServiceExpire</td><td>23</td><td>Notify-UserDebit</td></tr>
+          <tr><td>24</td><td>WebAccess</td><td>25</td><td>DebitControl</td></tr>
+          <tr><td>26</td><td>CalledId</td><td>27</td><td>AutoResetExtraCredit</td></tr>
+          <tr><td>28</td><td>Firefilter</td><td>100</td><td>Framed-IP-Address</td></tr>
+          <tr><td>101</td><td>Framed-IP-Netmask</td><td>102</td><td>Framed-Route</td></tr>
+          <tr><td>103</td><td>Mikrotik-Address-List</td><td>104</td><td>Cisco-AVPair</td></tr>
+          <tr><td>105</td><td>Mikrotik_Wireless_VLANID</td><td>106</td><td>Mikrotik_Wireless_VLANIDtype</td></tr>
+          <tr><td>107</td><td>Framed-Pool</td><td>108</td><td>Mikrotik-Group</td></tr>
+          <tr><td>109</td><td>Idle-Timeout</td><td></td><td>شناسهٔ ۲۰ در جدول PDF نیست</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="credit">
+      <h2>فیلدهای جواب creditinfo</h2>
+      <p class="muted">اسم‌ها همان PDF است. گروه فقط برای خواندن است.</p>
+      <table>
+        <thead><tr><th>گروه</th><th>فیلدها و کاربرد</th></tr></thead>
+        <tbody>
+          <tr><td>سرویس</td><td>ServiceStatus فعال یا null. ServiceName نام سرویس. StartDate و EndDate شروع و پایان. Period طول دوره. CurrentDT ساعت سرور. ISFairService اگر Yes باشد سرویس منقضی است. FairMikrotikRate پهنای باند در حالت Fair. UPFairStatus وضعیت Fair.</td></tr>
+          <tr><td>هدیه</td><td>User_Gift_Id، GiftEndDT، GiftTrafficRate، GiftTimeRate، GiftExtraTr حجم هدیه به بایت، GiftExtraTi، GiftMikrotikRate، GiftStopOnTrFinish اگر Yes باشد با تمام شدن حجم هدیه خود هدیه هم قطع می‌شود.</td></tr>
+          <tr><td>ترافیک سرویس</td><td>STrA کل، STrU مصرف، STrR مانده. ETr اضافه. ReturnTr برگشتی. Y سال، M ماه، W هفته، D روز، با همان پسوند A و U و R. ServiceFreeTrU و ServiceBufferTr در ابتدای جدول PDF آمده‌اند.</td></tr>
+          <tr><td>زمان</td><td>STi و ETi و YTi و MTi و WTi و DTi با A و U و R. واحد ثانیه. STiR برابر UL یعنی نامحدود.</td></tr>
+          <tr><td>واقعی</td><td>RealReceiveTr دریافت واقعی، RealSendTr ارسال واقعی، RealUsedTime زمان واقعی. BugUsedTr و BugUsedTi مصرف باگ. FinishUsedTr و FinishUsedTi مصرف وقتی IP از نوع finish بوده.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="ours">
+      <h2>آنچه کد جهان بیت واقعاً صدا می‌زند</h2>
+      <table>
+        <thead><tr><th>مسیر</th><th>کجا دیده شده</th><th>کار</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="ltr">/test/webservice/api/restfull/test.login.php</span></td>
+            <td>راهنمای راه‌اندازی، و ورکر</td>
+            <td>گرفتن توکن با یوزر و رمز API. توکن از ورکر خارج نمی‌شود.</td>
+          </tr>
+          <tr>
+            <td><span class="ltr">/test/webservice/api/restfull/test.user.creditinfo.php</span></td>
+            <td>کد ورکر. اسم این فایل در دو PDF نیست</td>
+            <td>فرم تست که Object و Action و Filter را به API محلی <span class="ltr">127.0.0.1:1043/1.0/</span> می‌رساند. ورکر از همین یک صفحه هم creditinfo می‌خواند هم list.</td>
+          </tr>
+          <tr>
+            <td><span class="ltr">test.user.list.php</span></td>
+            <td>فقط توضیح داخل کد پروژه، نه PDF</td>
+            <td>صفحهٔ فهرست تست. استفاده نمی‌شود، چون فیلتر را به API نمی‌رساند. list از همان صفحهٔ creditinfo با Action=list فرستاده می‌شود.</td>
+          </tr>
+          <tr>
+            <td><span class="ltr">/1.0/</span> و بقیهٔ شیءها</td>
+            <td>راهنمای استفاده</td>
+            <td>از اینترنت روی دامنهٔ ورکر بسته است. ورکر این مسیر را به دلتاسیب جلو نمی‌فرستد.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">جمع: مستند ۱٫۰ شانزده عمل دارد. جهان بیت از آن میان فقط دو خواندن را، آن هم برای یک نام کاربری، از پشت صفحهٔ تست اجرا می‌کند: creditinfo برای حجم و list برای نام. ساخت، ویرایش، حذف، پرداخت، قطع RADIUS و نوشتن پارام در این مسیر وجود ندارد.</div>
+    </section>
+  </main>
+</body>
+</html>

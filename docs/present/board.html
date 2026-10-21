@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تختهٔ ورود جهان بیت</title>
+  <style>
+    :root { --ink:#1c1917; --muted:#57534e; --line:#292524; --paper:#f3f4f6; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      line-height: 1.65;
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(rgba(28,25,23,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28,25,23,.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    header, main { max-width: 1100px; margin: 0 auto; }
+    header { padding: 1.3rem 1rem 0.2rem; }
+    h1 { margin: 0 0 .25rem; font-size: 1.55rem; }
+    header p, .cap { color: var(--muted); }
+    a { color: #1d4e89; }
+    nav {
+      position: sticky; top: 0; z-index: 2;
+      background: rgba(243,244,246,.92);
+      border-bottom: 1px solid #e7e5e4;
+    }
+    nav ol {
+      max-width: 1100px; margin: 0 auto; padding: .45rem 1rem;
+      display: flex; gap: .4rem; overflow-x: auto; list-style: none;
+    }
+    nav a {
+      display: block; text-decoration: none; color: var(--ink);
+      background: #fff; border: 1px solid #d6d3d1; border-radius: 999px;
+      padding: .1rem .65rem; white-space: nowrap; font-size: .84rem;
+    }
+    main { padding: .4rem 1rem 3rem; }
+    section { margin: 1.3rem 0 1.8rem; }
+    h2 { font-size: 1.15rem; margin: 0 0 .7rem; }
+    .scene { display: grid; justify-items: center; gap: .15rem; }
+    .box {
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 2px;
+      padding: .7rem .85rem;
+      text-align: center;
+      width: min(440px, 100%);
+      box-shadow: 3px 3px 0 rgba(28,25,23,.04);
+    }
+    .box b { display: block; }
+    .box small, .note small { display: block; color: var(--muted); margin-top: .25rem; font-size: .86rem; }
+    .wide { width: min(640px, 100%); }
+    .narrow { width: min(210px, 46vw); font-size: .9rem; }
+    .pair {
+      width: min(640px, 100%);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1.5px solid var(--line);
+      background: #fff;
+    }
+    .pair div { padding: .75rem .6rem; text-align: center; }
+    .pair div + div { border-right: 1.5px solid var(--line); }
+    .trio {
+      width: min(980px, 100%);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: .45rem;
+      align-items: center;
+    }
+    .note {
+      background: #fff;
+      border: 1.5px solid var(--line);
+      padding: .55rem .65rem;
+      font-size: .9rem;
+      text-align: center;
+    }
+    .v { color: var(--muted); font-size: 1.15rem; line-height: 1; }
+    .path, code {
+      font-family: Consolas, monospace;
+      direction: ltr; unicode-bidi: isolate;
+      font-size: .84em;
+    }
+    .say {
+      width: min(720px, 100%);
+      margin: .65rem auto 0;
+      background: #fff;
+      border-right: 4px solid var(--ink);
+      padding: .45rem .7rem;
+    }
+    table {
+      width: min(760px, 100%);
+      border-collapse: collapse;
+      background: #fff;
+      margin-top: .4rem;
+    }
+    th, td { border: 1.5px solid var(--line); padding: .4rem .5rem; text-align: right; vertical-align: top; }
+    th { background: #fafaf9; }
+    ul.clean { margin: .3rem 0 0; padding-inline-start: 1.1rem; text-align: right; }
+    @media (max-width: 800px) {
+      .trio { grid-template-columns: 1fr; }
+      .pair { grid-template-columns: 1fr; }
+      .pair div + div { border-right: 0; border-top: 1.5px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>تختهٔ سفید مسیر کد و ورود</h1>
+    <p>هر صحنه یک شکل است: جعبهٔ وسط اتفاق است، جعبهٔ کناری دلیل است. از صحنهٔ ۱ پایین بروید. شرح خطی: <a href="timelines.html">timelines.html</a>. معنی Keystore و مهر: <a href="where-things-sit.html">where-things-sit.html</a></p>
+  </header>
+  <nav>
+    <ol>
+      <li><a href="#db">۱ پایگاه</a></li>
+      <li><a href="#token">۲ توکن</a></li>
+      <li><a href="#ticket">۳ ساخت کد</a></li>
+      <li><a href="#hash">۴ هش و مهر</a></li>
+      <li><a href="#send">۵ فرستادن کد</a></li>
+      <li><a href="#gate">۶ درگاه</a></li>
+      <li><a href="#check">۷ چک بلیت</a></li>
+      <li><a href="#read">۸ اسکریپت‌ها</a></li>
+      <li><a href="#lock">۹ قفل‌ها</a></li>
+      <li><a href="#session">۱۰ نشست</a></li>
+      <li><a href="#done">۱۱ جواب و ثبت</a></li>
+    </ol>
+  </nav>
+  <main>
+
+    <section id="db">
+      <h2>۱. ورکر پایگاه دارد، ولی پایگاه دلتاسیب نیست</h2>
+      <div class="scene">
+        <div class="box"><b>ورکر ولایت</b><small>هرات و فراه یکی. نیمروز جدا، با پایگاه جدا.</small></div>
+        <div class="v">↓ داخلش یک پایگاه به نام D1 نشسته، از نوع SQLite</div>
+        <div class="box wide"><b>سه جدول</b>
+          <small>access_codes بلیت‌ها · phone_sessions نشست گوشی‌ها · redeem_attempts شمارش شکست ورود</small>
+        </div>
+        <div class="trio">
+          <div class="note">اینجا مشترک، حجم و پرداخت نیست.<small>آن‌ها در خود دلتاسیب می‌مانند.</small></div>
+          <div class="box narrow"><b>D1</b><small>فقط اثر بلیت، اثر نشست، و نام</small></div>
+          <div class="note">رمز API دلتاسیب داخل این جدول نیست.<small>Secret خود ورکر است.</small></div>
+        </div>
+        <p class="say">جمله: ورکر دفترچهٔ بلیت دارد. دفتر حسابداری دلتاسیب سر جای خودش است.</p>
+      </div>
+    </section>
+
+    <section id="token">
+      <h2>۲. یوزر و رمز دلتاسیب کجاست و توکن کجا می‌رود</h2>
+      <div class="scene">
+        <div class="box"><b>Secret ورکر</b><small>SIB_API_USERNAME و SIB_API_PASSWORD. رمز پنل کارمند جداست: SIB_ADMIN_PASSWORD.</small></div>
+        <div class="v">↓ فقط وقتی باید یک نفر خوانده شود</div>
+        <div class="box"><b>test.login.php</b><small>ورکر یوزر و رمز API را می‌فرستد. دلتاسیب توکن می‌دهد.</small></div>
+        <div class="v">↓ توکن فقط متغیر همان تابع است</div>
+        <div class="box wide"><b>همان لحظه دو خواندن، بعد مرگ توکن</b><small>هیچ ستونی، هیچ کوکی، هیچ فیلدی در جواب گوشی توکن را نگه نمی‌دارد.</small></div>
+        <div class="trio">
+          <div class="note">امن است چون از ساختمان ورکر خارج نمی‌شود.<small>دزدیدن گوشی این کلید را نمی‌دهد.</small></div>
+          <div class="box narrow"><b>توکن</b><small>کلید موقت ریسلر</small></div>
+          <div class="note">اگر خود Secret ورکر لو برود، رمز لو رفته است.<small>برای همین حتی با توکن فقط دو عمل خواندنی مجاز است.</small></div>
+        </div>
+        <p class="say">جمله: توکن زاده می‌شود، مصرف می‌شود، و قبل از برگشت جواب می‌میرد.</p>
+      </div>
+    </section>
+
+    <section id="ticket">
+      <h2>۳. ساخت کد. به دو چیز وصل است، نه به رمز دلتاسیب</h2>
+      <div class="scene">
+        <div class="box"><b>کد ۱۰ نویسه</b><small>حرف انگلیسی و رقم، حداقل یک حرف. کد قدیمیِ فقط‌عددی هنوز موقع ورود قبول است.</small></div>
+        <div class="v">↑ ساخته می‌شود از فرم پایین</div>
+        <div class="box wide"><b>وقتی کد ایجاد می‌شود به این دو رجوع دارد</b></div>
+        <div class="v">↓</div>
+        <div class="trio">
+          <div class="note">لازم نیست با رمز مشتری در دلتاسیب یکی باشد.<small>رمز Winbox فقط روتر خانه را باز می‌کند، پورت ۸۷۲۸. کد همیشگی این رمز را اصلاً ندارد.</small></div>
+          <div class="pair">
+            <div><b>رمز Winbox</b><small>فقط بلیت یک‌بارمصرف</small></div>
+            <div><b>نام کاربری دلتاسیب</b><small>همان مشترک</small></div>
+          </div>
+          <div class="note">باید همان نامی باشد که در دلتاسیب هست.<small>اگر نباشد، کد ساخته نمی‌شود و جواب subscriber not found است.</small></div>
+        </div>
+        <div class="v">↓ قبل از صدور، توکن صحنهٔ ۲ یک لحظه زنده می‌شود و نام را چک می‌کند</div>
+        <div class="box"><b>کارمند با کوکی ۱۲ساعتهٔ پنل این کار را می‌کند</b><small>نشست گوشی این صفحه را باز نمی‌کند. مسیر /jahanbit/admin</small></div>
+        <p class="say">جمله: بلیت به نام یک مشترک بسته است. رمز روتر سوار بلیت یک‌بارمصرف می‌شود و رمز حسابداری سوار هیچ بلیتی نمی‌شود.</p>
+      </div>
+    </section>
+
+    <section id="hash">
+      <h2>۴. در پایگاه چه می‌ماند: هش کلید است، مهر پاکت است</h2>
+      <div class="scene">
+        <div class="box wide"><b>مثال ساختگی</b><small>کد AB12CD34EF و رمز روتر house-router-1. این‌ها واقعی نیستند.</small></div>
+        <div class="v">↓ از کد اثر ساخته می‌شود. از اثر به کد برنمی‌گردیم</div>
+        <div class="box wide"><b>code_hash</b><small class="path">a97c027f6a119ff52b31b26378401caffc023adf18882c210d5fc441d083f284</small></div>
+        <div class="trio">
+          <div class="note"><b>هش</b><small>SHA-256. کلید پیدا کردن ردیف. یک‌طرفه. دزد پایگاه با این رشته کد را دوباره ندارد.</small></div>
+          <div class="box narrow"><b>همان ردیف</b><small>نام مشترک متن عادی است</small></div>
+          <div class="note"><b>مهر AES-GCM</b><small>دوطرفه. code_sealed خود کد را برای کپی کارمند نگه می‌دارد. router_secret رمز روتر را تا اولین ورود نگه می‌دارد. کلید مهر رمز پنل است و در جدول نیست.</small></div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>ستون</th><th>مثال</th><th>چرا این شکل</th></tr></thead>
+        <tbody>
+          <tr><td>code_hash</td><td>اثر بالا</td><td>جستجوی ورود. برگشت‌ناپذیر</td></tr>
+          <tr><td>username</td><td>نام همان مشترک</td><td>جواب ورود نام را از اینجا می‌دهد، نه از حرف گوشی</td></tr>
+          <tr><td>code_sealed</td><td>پاکت خود کد</td><td>کارمند باید بتواند دوباره کپی کند</td></tr>
+          <tr><td>router_secret</td><td>پاکت house-router-1، یا خالی</td><td>فقط یک‌بارمصرف. بعد از ورود پاک می‌شود. همیشگی از اول خالی است</td></tr>
+          <tr><td>reusable</td><td>۰ یا ۱</td><td>۰ تا ۲۴ ساعت و یک بار. ۱ تا سال ۲۰۹۹ و بدون رمز روتر</td></tr>
+        </tbody>
+      </table>
+      <p class="say">جمله: اگر فقط پایگاه لو برود، کد و رمز روتر از اثر انگشت درنمی‌آیند. پاکت‌ها هم بدون رمز پنل باز نمی‌شوند.</p>
+    </section>
+
+    <section id="send">
+      <h2>۵. کد در اپ نوشته می‌شود و دکمهٔ ورود زده می‌شود</h2>
+      <div class="scene">
+        <div class="box"><b>گوشی</b><small>ولایت: هرات و فراه یک ورکر، نیمروز ورکر خودش. فاصله حذف، حروف بزرگ. اگر ۱۰ حرف و رقم نباشد، درخواست نمی‌رود.</small></div>
+        <div class="v">↓ فقط این JSON، با HTTPS و POST</div>
+        <div class="box"><b class="path">{ "code": "AB12CD34EF" }</b><small>نام فرستاده نمی‌شود. رمز Winbox فرستاده نمی‌شود. رمز API فرستاده نمی‌شود. خود کد ذخیره نمی‌شود.</small></div>
+        <div class="v">↓ مقصد</div>
+        <div class="box"><b class="path">/jahanbit/sib/redeem</b><small>redeem یعنی بلیت را بسوزان و کارت نشست بده. مهلت وصل ۱۲ ثانیه، مهلت جواب ۲۰ ثانیه.</small></div>
+        <p class="say">جمله: گوشی فقط بلیت را می‌دهد. اگر نام را هم می‌فرستاد می‌توانست دروغ بگوید.</p>
+      </div>
+    </section>
+
+    <section id="gate">
+      <h2>۶. رسید به ورکر. درگاه همین انتخابِ در است</h2>
+      <div class="scene">
+        <div class="box"><b>اولین خط ورکر</b><small>به مسیر نگاه می‌کند. درگاه برنامهٔ جدا نیست.</small></div>
+        <div class="v">↓</div>
+        <div class="trio">
+          <div class="note">این درها باز می‌شوند<small>admin برای کارمند · redeem همین ورود · volume حجم · logout حذف نشست</small></div>
+          <div class="box narrow"><b>درگاه</b></div>
+          <div class="note">این درها ۴۰۳ می‌گیرند و به دلتاسیب نمی‌رسند<small>/1.0 · webservice · test.login.php · test.user</small></div>
+        </div>
+        <div class="box wide"><b>پنج وظیفه</b><small>بستن اسکریپت عمومی · نگه داشتن رمز ریسلر · تبدیل بلیت به یک نام · اجازهٔ فقط خواندن همان نفر · شناختن گوشی با نشست، نه با توکن سیب</small></div>
+        <div class="trio">
+          <div class="note">درگاه امنیتی همین ورکر است.<small>اگر نبود، یک توکن برای دیدن همه کافی بود.</small></div>
+          <div class="v">جدا بماند از</div>
+          <div class="note">دروازهٔ شبکه آدرس روتر خانه است.<small>پورت ۸۷۲۸. از ورکر رد نمی‌شود.</small></div>
+        </div>
+        <p class="say">جمله: مثال بزنید: زدن آدرس اسکریپت دلتاسیب روی دامنهٔ ورکر همان‌جا می‌ایستد.</p>
+      </div>
+    </section>
+
+    <section id="check">
+      <h2>۷. چک بلیت تا خروج از درگاه. دلتاسیب اینجا صدا نمی‌شود</h2>
+      <div class="scene">
+        <div class="box"><b>۱</b> فقط POST. وگرنه ۴۰۵.</div>
+        <div class="v">↓</div>
+        <div class="box"><b>۲</b> سی شکست در ۱۰ دقیقه برای این IP، توقف ۴۲۹.<small>ورود موفق شمرده نمی‌شود.</small></div>
+        <div class="v">↓</div>
+        <div class="box"><b>۳</b> اثر کد در access_codes.<small>ردیف باشد، نسوخته باشد، تاریخ‌گذشته نباشد.</small></div>
+        <div class="v">↓</div>
+        <div class="box"><b>۴</b> یک‌بارمصرف: پاکت رمز Winbox باز می‌شود، ردیف می‌سوزد، ستون رمز خالی می‌شود.<small>دو گوشی هم‌زمان، فقط یکی برنده است.</small></div>
+        <div class="v">↓ نام از همین ردیف می‌آید، نه از دلتاسیب</div>
+        <div class="box"><b>۵ خروج</b> ۳۲ بایت تصادفی می‌شود نشست. جدول فقط اثر آن را برمی‌دارد.</div>
+        <p class="say">جمله: قبول بلیت یعنی این کارت مال این نام است. برای همین جمله لازم نیست دلتاسیب بیدار شود.</p>
+      </div>
+    </section>
+
+    <section id="read">
+      <h2>۸. اسکریپت‌ها. بعد از ورود، فقط برای حجم همان یک نفر</h2>
+      <div class="scene">
+        <div class="box"><b>خانه باز شده</b><small>درخواست بعدی /jahanbit/sib/volume است. تازه اینجا توکن صحنهٔ ۲ دوباره زاده می‌شود.</small></div>
+        <div class="v">↓ ترتیب ثابت، انتخاب گوشی نیست</div>
+        <div class="box"><b>اسکریپت ۱</b> test.login.php<small>توکن</small></div>
+        <div class="v">↓</div>
+        <div class="box"><b>اسکریپت ۲</b> creditinfo<small>فیلتر Username همان نشست. سقف ۱ ردیف. حجم و وضعیت سرویس.</small></div>
+        <div class="v">↓</div>
+        <div class="box"><b>اسکریپت ۳</b> list<small>فقط شناسه، نام کاربری، نام و فامیلی. سقف ۵ ردیف.</small></div>
+        <div class="v">↓</div>
+        <div class="box wide"><b>فهرست مجاز داخل کد فقط همین دو کلمه است</b><small>creditinfo و list. ساخت، ویرایش، حذف، پرداخت، قطع RADIUS و پارام اصلاً نوشته نشده‌اند. ردیفی که نامش یکی نباشد دور ریخته می‌شود. توکن می‌میرد.</small></div>
+        <div class="trio">
+          <div class="note">گوشی نمی‌تواند بگوید Action را خودم می‌دهم.<small>ورکر عمل را خودش می‌نویسد.</small></div>
+          <div class="box narrow"><b>فیلتر اجباری</b></div>
+          <div class="note">اگر نام شخص دیگری در بدنه باشد، ۴۰۳.<small>نام داخل نشست مهم‌تر از ادعای گوشی است.</small></div>
+        </div>
+        <p class="say">جمله: کسی که راه یک نشست را پیدا کند، فهرست همه را نمی‌گیرد و هیچ کاربری را عوض نمی‌کند.</p>
+      </div>
+    </section>
+
+    <section id="lock">
+      <h2>۹. آنچه نفوذگر ندارد</h2>
+      <div class="scene">
+        <div class="box wide" style="text-align:right">
+          <ul class="clean">
+            <li>اسکریپت عمومی روی دامنهٔ ورکر: ۴۰۳.</li>
+            <li>حدس کد: بعد از ۳۰ شکست در ۱۰ دقیقه می‌ایستد.</li>
+            <li>خواندن جدول: کلید هش است. پاکت بدون رمز پنل باز نمی‌شود.</li>
+            <li>مصرف دوبارهٔ بلیت یک‌بارمصرف: رد. رمز روتر همان بار اول پاک شده.</li>
+            <li>حجم بدون نشست: ۴۰۱. حجم شخص دیگر: ۴۰۳.</li>
+            <li>فهرست بدون نام یک نفر ساخته نمی‌شود.</li>
+            <li>دستور نوشتن به دلتاسیب فرستاده نمی‌شود.</li>
+            <li>کوکی کارمند با نشست گوشی یکی نیست.</li>
+            <li>کلید قدیمی توکن روی گوشی موقع ورود پاک می‌شود.</li>
+          </ul>
+        </div>
+        <p class="say">جمله: این قفل‌ها روی ورکر هستند، نه روی حسن نیت گوشی.</p>
+      </div>
+    </section>
+
+    <section id="session">
+      <h2>۱۰. نشست چطور تازه می‌شود</h2>
+      <div class="scene">
+        <div class="trio">
+          <div class="note"><b>دست گوشی</b><small>خود نشست، کلید sib_session، در صندوق سیستم‌عامل.</small></div>
+          <div class="box narrow"><b>یک کارت</b><small>۶۴ نویسه. ۳۲ بایت تصادفی.</small></div>
+          <div class="note"><b>دست سرور</b><small>فقط SHA-256 همان کارت، به‌اضافهٔ نام و ساعت آخرین دیدار.</small></div>
+        </div>
+        <div class="v">↓ هر بار حجم</div>
+        <div class="box"><b>بیش از ۳۶۵ روز دیده نشده</b><small>ردیف پاک می‌شود. گوشی باید کد را دوباره بزند.</small></div>
+        <div class="v">↓ وگرنه</div>
+        <div class="box"><b>بیش از ۲۴ ساعت گذشته</b><small>فقط ساعت تازه می‌شود. هر درخواست پایگاه را نمی‌نویسد. تاریخ ۲۰۹۹ قانون خروج نیست.</small></div>
+        <div class="v">↓ اگر خودش خروج بزند</div>
+        <div class="box"><b>/jahanbit/sib/logout</b><small>ورکر اثر کارت را حذف می‌کند. گوشی صندوق را پاک می‌کند.</small></div>
+        <p class="say">جملهٔ انسانی: کارت دست کاربر است و دفتر فقط شمارهٔ کارت را دارد. جملهٔ فنی: دزدیدن پایگاه، کارت آماده تحویل نمی‌دهد.</p>
+      </div>
+    </section>
+
+    <section id="done">
+      <h2>۱۱. جواب به اپ، و چه چیز بعد از ورود ثبت است</h2>
+      <div class="scene">
+        <div class="box wide"><b>جواب ۲۰۰</b><small>username نام از جدول · session کارت حجم · routerPassword فقط اگر بلیت یک‌بارمصرف بوده</small></div>
+        <div class="trio">
+          <div class="note">در جواب نیست<small>توکن دلتاسیب · رمز API · خود کد</small></div>
+          <div class="v">↓ خطا باشد خانه باز نمی‌شود</div>
+          <div class="note">موفق<small>خانه منتظر روتر نمی‌ماند</small></div>
+        </div>
+        <div class="pair wide">
+          <div><b>روتر محلی</b><small>اگر رمز Winbox آمده باشد، دروازهٔ شبکه، پورت ۸۷۲۸. خارج از ورکر.</small></div>
+          <div><b>حجم</b><small>صحنهٔ ۸. توکن داخل ورکر زاده و کشته می‌شود.</small></div>
+        </div>
+        <div class="v">↓ ثبت روی گوشی</div>
+        <div class="box wide" style="text-align:right">
+          <b>صندوق سیستم، Keystore یا Keychain</b>
+          <small>sib_session نشست خام. sib_username نام. رمز Winbox فقط اگر واقعاً برگشته باشد. صندوق یعنی گاوصندوق خود سیستم‌عامل، نه یک فایل متنی.</small>
+          <b style="margin-top:.45rem">تنظیم معمولی</b>
+          <small>ولایت، آدرس ورکر، ساعت ورود، آخرین فعالیت، و اگر پیدا شود آدرس روتر.</small>
+        </div>
+        <div class="box"><b>ثبت نمی‌شود</b><small>خود کد. توکن دلتاسیب. رمز API. نشست خام روی سرور. رمز Winbox بعد از سوختن بلیت.</small></div>
+        <p class="say">جملهٔ آخر: گوشی بلیت می‌دهد و کارت حجم می‌گیرد. کلید کل حسابداری داخل ورکر می‌ماند.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

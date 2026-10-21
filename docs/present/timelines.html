@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>دو خط زمانی: ساخت کد و ورود</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #e7e5e4;
+      --paper: #f3f1ee;
+      --card: #fff;
+      --amber: #9a3412;
+      --amber-soft: #fff7ed;
+      --blue: #1d4e89;
+      --blue-soft: #eef6ff;
+      --green: #3f6212;
+      --red: #9f1239;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 100% 0, rgba(154,52,18,.08), transparent 28rem),
+        radial-gradient(circle at 0 40%, rgba(29,78,137,.08), transparent 26rem),
+        var(--paper);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      line-height: 1.7;
+    }
+    header.page, main { max-width: 920px; margin: 0 auto; }
+    header.page { padding: 1.6rem 1.2rem 0.4rem; }
+    h1 { margin: 0 0 0.3rem; font-size: 1.7rem; }
+    header.page p { margin: 0; color: var(--muted); }
+    a { color: var(--blue); }
+    nav {
+      position: sticky; top: 0; z-index: 3;
+      background: rgba(243,241,238,.94);
+      border-bottom: 1px solid var(--line);
+    }
+    nav div {
+      max-width: 920px; margin: 0 auto; padding: 0.55rem 1rem;
+      display: flex; gap: 0.5rem;
+    }
+    nav a {
+      text-decoration: none; color: #fff; border-radius: 999px;
+      padding: 0.25rem 0.8rem; font-size: 0.9rem;
+    }
+    nav a.a { background: var(--amber); }
+    nav a.b { background: var(--blue); }
+    main { padding: 0.6rem 1.2rem 3.5rem; }
+    .lead {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 0.85rem 1rem; margin: 1rem 0 0.4rem;
+    }
+    h2 { margin: 1.4rem 0 0.3rem; font-size: 1.35rem; }
+    .tl { position: relative; margin: 0.6rem 0 1rem; padding: 0.2rem 0 0.2rem 0; }
+    .tl::before {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0; right: 15px;
+      width: 3px; border-radius: 99px;
+      background: linear-gradient(var(--rail), var(--rail-end));
+    }
+    .amber-rail { --rail: #fdba74; --rail-end: #9a3412; }
+    .blue-rail { --rail: #93c5fd; --rail-end: #1d4e89; }
+    .step { position: relative; margin: 0 0 0.85rem; padding-right: 52px; }
+    .dot {
+      position: absolute; right: 0; top: 14px;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: grid; place-items: center;
+      color: #fff; font-weight: 700; font-size: 0.85rem;
+      box-shadow: 0 0 0 4px var(--paper);
+    }
+    .amber-rail .dot { background: var(--amber); }
+    .blue-rail .dot { background: var(--blue); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.85rem 0.95rem 0.95rem;
+      box-shadow: 0 8px 24px rgba(28,25,23,.04);
+    }
+    .card h3 { margin: 0 0 0.55rem; font-size: 1.05rem; }
+    .split { display: grid; grid-template-columns: 1.15fr .85fr; gap: 0.55rem; }
+    .pane { border-radius: 12px; padding: 0.6rem 0.7rem; }
+    .happens { background: #fafaf9; }
+    .why { background: #f5f5f4; }
+    .pane b.k {
+      display: block; font-size: 0.75rem; letter-spacing: 0;
+      color: var(--muted); margin-bottom: 0.15rem;
+    }
+    .say {
+      margin: 0.55rem 0 0; padding: 0.45rem 0.65rem;
+      border-radius: 10px; font-size: 0.95rem;
+    }
+    .amber-rail .say { background: var(--amber-soft); }
+    .blue-rail .say { background: var(--blue-soft); }
+    .tree, .tree ul { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+    .tree ul { margin-right: 0.8rem; border-right: 2px solid #d6d3d1; }
+    .tree li { padding: 0.12rem 0.65rem 0.12rem 0; }
+    code, .path {
+      font-family: Consolas, "Cascadia Mono", monospace;
+      direction: ltr; unicode-bidi: isolate;
+      font-size: 0.86em; background: #f5f5f4; border-radius: 6px;
+      padding: 0.02rem 0.32rem;
+    }
+    .end {
+      margin-right: 52px; border-radius: 16px; color: #fff; padding: 0.9rem 1rem;
+    }
+    .end.amber { background: var(--amber); }
+    .end.blue { background: var(--blue); }
+    .end b { display: block; font-size: 1.05rem; }
+    @media (max-width: 720px) {
+      .split { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>دو خط، از بالا به پایین</h1>
+    <p>خط نارنجی ساخت کد است. خط آبی ورود همان کد است. داخل هر قاب، اتفاق و دلیل کنار هم‌اند. جملهٔ رنگی را می‌شود همان‌طور گفت. تختهٔ جعبه و فلش: <a href="board.html">board.html</a></p>
+  </header>
+  <nav>
+    <div>
+      <a class="a" href="#make">خط ساخت کد</a>
+      <a class="b" href="#enter">خط ورود</a>
+    </div>
+  </nav>
+  <main>
+
+    <section id="make">
+      <h2>خط اول. پنل کد</h2>
+      <div class="lead">کارمند نام یک مشترک را می‌دهد. اگر آن نام در دلتاسیب باشد، یک بلیت ۱۰ نویسه‌ای ساخته می‌شود. رمز ریسلر از این ساختمان بیرون نمی‌رود.</div>
+      <div class="tl amber-rail">
+
+        <article class="step">
+          <div class="dot">۱</div>
+          <div class="card">
+            <h3>سه رمز، سه جای مختلف</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                رمز API دلتاسیب دو Secret روی خود ورکر است: <span class="path">SIB_API_USERNAME</span> و <span class="path">SIB_API_PASSWORD</span>. رمز پنل کارمند Secret دیگری است: <span class="path">SIB_ADMIN_PASSWORD</span>. رمز Winbox مال روتر همان خانه است و فقط اگر کد یک‌بارمصرف باشد، مهرشده داخل جدول می‌ماند.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                رمز API مال همهٔ مشترکین است. اگر روی گوشی یا در فایل اپ باشد، دزدیدن گوشی برابر است با دیدن کل حسابداری. برای همین فقط روی سرور ولایت می‌نشیند. هرات و فراه یک ورکر دارند. نیمروز ورکر و پایگاه جدا دارد.
+              </div>
+            </div>
+            <p class="say">جمله: رمز دلتاسیب داخل ورکر است، نه داخل اپ و نه داخل جدول کد.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۲</div>
+          <div class="card">
+            <h3>توکن چطور زاده می‌شود و کجا می‌میرد</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                فقط وقتی ورکر باید دلتاسیب را بخواند، به <span class="path">test.login.php</span> یوزر و رمز API را می‌فرستد. دلتاسیب یک توکن و یک مدت اعتبار برمی‌گرداند. توکن فیلد فرمِ خواندن بعدی است. با تمام شدن همان تابع، متغیر از حافظه می‌رود.
+                <ul class="tree">
+                  <li>ست نمی‌شود در جدول
+                    <ul>
+                      <li>ست نمی‌شود در جواب گوشی</li>
+                      <li>ست نمی‌شود در کوکی کارمند</li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                توکن کلید موقت ریسلر است. اگر ذخیره شود، دزدیدن پایگاه یا دزدیدن گوشی همان کلید را زنده نگه می‌دارد. ساختن دوباره برای هر خواندن ارزان‌تر از نگه داشتن کلید است. امن است چون از ساختمان ورکر خارج نمی‌شود. اگر کسی Secret خود ورکر را بگیرد، رمز را دارد. برای همین حتی با توکن هم فقط دو خواندنِ یک نام مجاز است.
+              </div>
+            </div>
+            <p class="say">جمله: توکن ساخته می‌شود، همان لحظه مصرف می‌شود، و هیچ جا نوشته نمی‌شود.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۳</div>
+          <div class="card">
+            <h3>کارمند وارد پنل می‌شود</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                صفحه <span class="path">/jahanbit/admin</span> رمز پنل را می‌گیرد. اگر درست باشد کوکی <span class="path">jb_staff</span> برای ۱۲ ساعت ست می‌شود: HttpOnly، Secure، SameSite=Lax، فقط روی مسیر ادمین. کوکی امضای زمان‌دار است، نه خود رمز.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                ساخت کد کار مشترک نیست. نشست گوشی این در را باز نمی‌کند. HttpOnly یعنی اسکریپت صفحه کوکی را نمی‌خواند. Secure یعنی روی HTTP عمومی فرستاده نمی‌شود.
+              </div>
+            </div>
+            <p class="say">جمله: پنل کد درِ کارمند است. کارت ورود گوشی این در را باز نمی‌کند.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۴</div>
+          <div class="card">
+            <h3>نام مشترک و، اگر لازم باشد، رمز Winbox</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                فرم نام را می‌گیرد. کد یک‌بارمصرف بدون رمز Winbox ساخته نمی‌شود. کد همیشگی رمز روتر نمی‌گیرد. رمز بلندتر از ۱۲۸ نویسه رد می‌شود.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                اپ برای فهرست دستگاه و وای‌فای باید به روتر همان خانه، پورت ۸۷۲۸، وصل شود. آن رمز مال دلتاسیب نیست. اگر همیشه روی سرور بماند، دزدیدن جدول برابر رمز روتر است. بلیت یک‌بارمصرف آن را فقط تا اولین ورود نگه می‌دارد. بلیت همیشگی عمداً این قدرت را ندارد و فقط حجم را باز می‌کند.
+              </div>
+            </div>
+            <p class="say">جمله: رمز Winbox سوار بلیت یک‌بارمصرف می‌شود تا روتر خانه یک بار باز شود، نه تا حسابداری باز شود.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۵</div>
+          <div class="card">
+            <h3>قبل از ساخت کد، نام در دلتاسیب چک می‌شود</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                همین‌جا توکن گام ۲ زاده می‌شود. ورکر فقط می‌پرسد این نام هست یا نه. اگر نباشد جواب دقیقاً subscriber not found است و ردیفی ساخته نمی‌شود. اگر رمز API روی ورکر تنظیم نشده باشد، کد هم ساخته نمی‌شود.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                بلیت برای نامی که در حسابداری نیست، بعداً حجم دروغین می‌سازد. چک قبل از صدور جلوی بلیت یتیم را می‌گیرد.
+              </div>
+            </div>
+            <p class="say">جمله: اول باید مشترک وجود داشته باشد. بعد بلیت صادر می‌شود.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۶</div>
+          <div class="card">
+            <h3>کد ۱۰ نویسه ساخته و سه جور ذخیره می‌شود</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                الفبا حرف و رقم است، بدون حرف‌های شبیه هم مثل O و صفر. حداقل یک حرف اجباری است. کد قدیمیِ فقط‌عددی هنوز موقع ورود قبول می‌شود.
+                <ul class="tree">
+                  <li><span class="path">code_hash</span> اثر انگشت SHA-256. کلید جستجو. از اثر به کد برنمی‌گردیم.
+                    <ul>
+                      <li><span class="path">code_sealed</span> خود کد، قفل AES-GCM، تا کارمند دوباره کپی کند.</li>
+                      <li><span class="path">router_secret</span> رمز Winbox با همان قفل. فقط یک‌بارمصرف.</li>
+                    </ul>
+                  </li>
+                </ul>
+                کلید قفل از رمز پنل ساخته می‌شود و در جدول نیست.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                هش برای پیدا کردن بلیت است، چون برگشت‌ناپذیر است. قفل برای چیزهایی است که باید یک بار باز شوند: نشان دادن کد به کارمند، و دادن رمز روتر به گوشی. بدون رمز پنل، ستون‌های قفل‌شده باز نمی‌شوند.
+              </div>
+            </div>
+            <p class="say">جمله: جدول خود کد را به عنوان کلید ندارد. اثر انگشت دارد، و دو پاکت قفل‌شده.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۷</div>
+          <div class="card">
+            <h3>بلیت آماده است</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                یک‌بارمصرف ۲۴ ساعت عمر دارد. همیشگی تا ۲۰۹۹ می‌ماند و رمز روتر ندارد. کارمند کد را از فیلد می‌بیند و با دکمه یا با انتخاب دستی کپی می‌کند. حروف و رقم با هم کپی می‌شوند.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                بلیت دست مشترک یا پشتیبان می‌رسد. سرور از این لحظه فقط اثر انگشت را برای ورود لازم دارد.
+              </div>
+            </div>
+            <p class="say">جمله: کد صادر شد. خط ورود از وقتی شروع می‌شود که این کد در اپ نوشته شود.</p>
+          </div>
+        </article>
+
+      </div>
+      <div class="end amber"><b>پایان خط ساخت کد</b>بلیت به یک نام بسته است. توکن دلتاسیب این وسط مرده است. رمز ریسلر هنوز فقط روی ورکر است.</div>
+    </section>
+
+    <section id="enter">
+      <h2>خط دوم. ورود کاربر</h2>
+      <div class="lead">این خط از نوشتن کد در اپ شروع می‌شود و با باز شدن خانه تمام می‌شود. ورود خودش دلتاسیب را صدا نمی‌زند. توکن ریسلر یک قدم بعد، فقط برای خواندن حجم همان یک نفر، داخل ورکر زاده می‌شود.</div>
+      <div class="tl blue-rail">
+
+        <article class="step">
+          <div class="dot">۱</div>
+          <div class="card">
+            <h3>ولایت و کد، هنوز هیچ درخواستی نرفته</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                هرات و فراه به ورکر هرات می‌روند. نیمروز به ورکر خودش. فیلد فقط حرف انگلیسی و رقم می‌گیرد و بیشتر از ۱۰ نویسه نمی‌پذیرد. فاصله حذف می‌شود و حروف بزرگ می‌شوند. اگر شکل غلط باشد دکمه درخواست نمی‌سازد.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                کاربر نام و رمز حسابداری نمی‌نویسد. فقط بلیت را می‌دهد. تا شکل بلیت درست نباشد، خرج شبکه بی‌دلیل است.
+              </div>
+            </div>
+            <p class="say">جمله: اینجا هنوز نه روتر صدا شده، نه دلتاسیب.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۲</div>
+          <div class="card">
+            <h3>دکمهٔ ورود و بستهٔ ارسالی</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                اپ فقط این JSON را با HTTPS و POST می‌فرستد: <span class="path">{ "code": "…" }</span> به <span class="path">/jahanbit/sib/redeem</span>. مهلت وصل ۱۲ ثانیه و مهلت جواب ۲۰ ثانیه است. نام، رمز Winbox، رمز API و توکن فرستاده نمی‌شوند. خود کد روی گوشی ذخیره نمی‌شود.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                اگر گوشی نام را هم بفرستد می‌تواند دروغ بگوید. سرور نام را از ردیف همان کد می‌خواند. معنی redeem این است: بلیت را بسوزان و کارت نشست بده.
+              </div>
+            </div>
+            <p class="say">جمله: اپ فقط بلیت را می‌فرستد. نام را سرور پیدا می‌کند.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۳</div>
+          <div class="card">
+            <h3>رسید به ورکر. درگاه همین‌جاست</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                درگاه برنامهٔ جدا نیست. اولین کار ورکر این است که از روی مسیر، در را انتخاب کند.
+                <ul class="tree">
+                  <li><span class="path">/jahanbit/sib/redeem</span> همین ورود
+                    <ul>
+                      <li><span class="path">/volume</span> حجم، بعد از نشست</li>
+                      <li><span class="path">/logout</span> حذف نشست</li>
+                      <li><span class="path">/jahanbit/admin</span> فقط کوکی کارمند</li>
+                      <li><span class="path">/1.0</span> و <span class="path">test.login.php</span> و <span class="path">test.user</span> جواب ۴۰۳، بدون رفتن به دلتاسیب</li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                مثال: اگر کسی آدرس اسکریپت دلتاسیب را روی دامنهٔ ورکر بزند، ورکر همان‌جا می‌ایستد. درِ حسابداری از سمت اینترنت باز نیست. این درگاه را با دروازهٔ شبکه قاطی نکنید. دروازهٔ شبکه آدرس روتر خانه است و پورت ۸۷۲۸ است و از ورکر رد نمی‌شود.
+              </div>
+            </div>
+            <p class="say">جمله: ورکر خودش درگاه است. مسیر را می‌بیند و فقط درِ مربوط را باز می‌کند.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۴</div>
+          <div class="card">
+            <h3>وظیفهٔ درگاه</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                پنج کار، همیشه به همین ترتیب ذهنی: اسکریپت عمومی را ببندد، رمز ریسلر را بیرون ندهد، بلیت را به یک نام تبدیل کند، فقط خواندن همان یک نفر را اجازه بدهد، گوشی را با نشست خودش بشناسد نه با توکن سیب.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                اگر گوشی مستقیم به دلتاسیب وصل بود، یک رمز یا یک توکن برای دیدن یا عوض کردن همه کافی بود. درگاه وسط می‌ایستد و به گوشی فقط نتیجهٔ یک نفر را می‌دهد.
+              </div>
+            </div>
+            <p class="say">جمله: درگاه برای این است که کلید کل دلتاسیب از سرور خارج نشود.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۵</div>
+          <div class="card">
+            <h3>چک بلیت، تا خروج از درگاه</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                <ul class="tree">
+                  <li>فقط POST. وگرنه ۴۰۵.
+                    <ul>
+                      <li>اگر این IP در ۱۰ دقیقه ۳۰ بار شکست خورده باشد، ۴۲۹. ورود موفق شمرده نمی‌شود.</li>
+                      <li>کد نرمال می‌شود. شکل غلط، ۴۰۰.</li>
+                      <li>SHA-256 در جدول جستجو می‌شود. ردیف باید باشد، نسوخته باشد، تاریخ‌گذشته نباشد.</li>
+                      <li>یک‌بارمصرف: مهر رمز Winbox باز می‌شود، ردیف می‌سوزد، ستون رمز خالی می‌شود. دو گوشی هم‌زمان، فقط یکی برنده است.</li>
+                      <li>۳۲ بایت تصادفی می‌شود نشست. در جدول فقط هش آن با نام و ساعت ذخیره می‌شود.</li>
+                    </ul>
+                  </li>
+                </ul>
+                دلتاسیب در این گام‌ها صدا زده نمی‌شود. نام از جدول کد می‌آید.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                قبول بلیت یعنی «این کارت مال این نام است». برای همین جمله لازم نیست دوباره به حسابداری برویم. توکن ریسلر داخل این جواب نیست. هش را برای این می‌گذاریم که دزدیدن جدول، خود بلیت و خود نشست را تحویل ندهد.
+              </div>
+            </div>
+            <p class="say">جمله: ورود، بلیت را با اثر انگشتش پیدا می‌کند. دلتاسیب را این وسط بیدار نمی‌کند.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۶</div>
+          <div class="card">
+            <h3>جوابی که به اپ می‌رسد</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                سه فیلد، نه بیشتر: <span class="path">username</span> نامی که سرور پیدا کرد، <span class="path">session</span> کارت حجم، و اگر بلیت یک‌بارمصرف بوده <span class="path">routerPassword</span>. اگر خطا باشد خانه باز نمی‌شود.
+                <ul class="tree">
+                  <li>نیست در جواب
+                    <ul>
+                      <li>توکن دلتاسیب</li>
+                      <li>رمز API</li>
+                      <li>خود کد</li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                جواب ورود فقط می‌گوید این گوشی مال کیست و کارت حجمش چیست. رمز روتر فقط وقتی لازم است که روتر محلی باید باز شود، و فقط یک بار.
+              </div>
+            </div>
+            <p class="say">جمله: گوشی نام، کارت نشست، و گاهی رمز روتر را می‌گیرد. کلید حسابداری را نه.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۷</div>
+          <div class="card">
+            <h3>خانه باز می‌شود، بعد حجم، و تازه اینجا توکن</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                خانه منتظر روتر نمی‌ماند. اگر رمز Winbox آمده باشد، اتصال روتر روی دروازهٔ محلی و پورت ۸۷۲۸ جداگانه شروع می‌شود. هم‌زمان درخواست حجم به <span class="path">/jahanbit/sib/volume</span> می‌رود. ورکر آنجا توکن را می‌سازد و سه اسکریپت را، فقط از داخل، به ترتیب می‌زند.
+                <ul class="tree">
+                  <li><span class="path">test.login.php</span> توکن
+                    <ul>
+                      <li><span class="path">creditinfo</span> حجم همان نام، سقف ۱ ردیف</li>
+                      <li><span class="path">list</span> فقط شناسه و نام و فامیلی، سقف ۵ ردیف</li>
+                    </ul>
+                  </li>
+                </ul>
+                عمل مجاز فقط همین دو کلمه است. گوشی Action را انتخاب نمی‌کند. فیلتر را هم ورکر با نام داخل نشست می‌نویسد. ردیف غریبه دور ریخته می‌شود. توکن قبل از برگشت جواب می‌میرد.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                کسی که یک نشست دارد نمی‌تواند بگوید فهرست همه را بده، کاربر بساز، یا کاربر را حذف کن. آن دستورها در کد ورکر نوشته نمی‌شوند. اگر نام شخص دیگری را در بدنه بفرستد، نام داخل نشست مهم‌تر است و جواب ۴۰۳ است. صفحهٔ تست و مسیر <span class="path">/1.0</span> هم از روی دامنهٔ عمومی به دلتاسیب نمی‌رسند.
+              </div>
+            </div>
+            <p class="say">جمله: توکن مال درخواست حجم است، داخل ورکر می‌ماند، و فقط حجم همان یک نفر را می‌خواند.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۸</div>
+          <div class="card">
+            <h3>آنچه برای نفوذگر بسته است</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                اسکریپت عمومی ۴۰۳. حدس کد بعد از ۳۰ شکست در ۱۰ دقیقه می‌ایستد. کلید جدول هش است. مهرها بدون رمز پنل باز نمی‌شوند. بلیت یک‌بارمصرف بار دوم رد می‌شود و رمز روترش همان بار اول پاک شده. حجم بدون نشست ۴۰۱ است. حجم شخص دیگر ۴۰۳ است. نوشتن کاربر، پرداخت، قطع RADIUS و پارام فرستاده نمی‌شود. فهرست بدون نام یک نفر ساخته نمی‌شود. کوکی کارمند با نشست گوشی یکی نیست. کلید قدیمی توکن روی گوشی پاک می‌شود.
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل</b>
+                راه ورود یک نفر کلید بقیه نیست. این قفل‌ها روی ورکر هستند، نه روی حسن نیت گوشی.
+              </div>
+            </div>
+            <p class="say">جمله: یک نشست دزدیده‌شده فقط همان یک نام را می‌خواند و هیچ چیز را عوض نمی‌کند.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۹</div>
+          <div class="card">
+            <h3>نشست چطور زنده می‌ماند</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">اتفاق</b>
+                دست گوشی خود نشست است، کلید <span class="path">sib_session</span> در صندوق سیستم‌عامل. دست سرور فقط SHA-256 همان نشست است، با نام و ساعت آخرین دیدار.
+                <ul class="tree">
+                  <li>هر خواندن حجم
+                    <ul>
+                      <li>اگر ردیف نباشد، نشست مرده است.</li>
+                      <li>اگر بیش از ۳۶۵ روز دیده نشده باشد، ردیف پاک می‌شود.</li>
+                      <li>اگر بیش از ۲۴ ساعت گذشته باشد، فقط ساعت تازه می‌شود. هر درخواست پایگاه را نمی‌نویسد.</li>
+                      <li>تاریخ ۲۰۹۹ روی ردیف قانون خروج نیست.</li>
+                    </ul>
+                  </li>
+                  <li>خروج: گوشی نشست را به <span class="path">/logout</span> می‌فرستد، ورکر همان هش را حذف می‌کند، گوشی هم صندوق را پاک می‌کند.</li>
+                </ul>
+              </div>
+              <div class="pane why">
+                <b class="k">دلیل انسانی</b>
+                کارت دست کاربر است. دفتر فقط شمارهٔ کارت را دارد. یک سال نیاید، خطش زده می‌شود.
+                <b class="k">دلیل فنی</b>
+                دزدیدن پایگاه نشست آماده نمی‌سازد، چون مقدار خام آنجا نیست.
+              </div>
+            </div>
+            <p class="say">جمله: سرور اثر انگشت کارت را دارد، نه خود کارت را.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="dot">۱۰</div>
+          <div class="card">
+            <h3>بعد از ورود موفق دقیقاً چه چیز ثبت است</h3>
+            <div class="split">
+              <div class="pane happens">
+                <b class="k">روی گوشی می‌ماند</b>
+                <ul class="tree">
+                  <li>در صندوق امن سیستم، Keystore یا Keychain: نشست خام و نام مشترک. رمز Winbox فقط اگر واقعاً برگشته باشد.
+                    <ul>
+                      <li>در تنظیم معمولی، نه در صندوق رمز: ولایت، آدرس ورکر، ساعت ورود، آخرین فعالیت، و اگر پیدا شود آدرس روتر محلی.</li>
+                    </ul>
+                  </li>
+                </ul>
+                Keystore یعنی گاوصندوق خود سیستم‌عامل. برنامهٔ دیگر آن را نمی‌خواند و اپ رمز را در یک فایل متنی نمی‌نویسد.
+              </div>
+              <div class="pane why">
+                <b class="k">ثبت نمی‌شود</b>
+                خود کد ۱۰ نویسه‌ای. توکن دلتاسیب. رمز API. نشست خام روی سرور. رمز Winbox بعد از سوختن بلیت، چون ستونش خالی شده است.
+                <b class="k">روی سرور</b>
+                بلیت یک‌بارمصرف سوخته و رمز روترش پاک است. بلیت همیشگی می‌ماند. یک ردیف نشست با هش و نام و ساعت ساخته شده است.
+              </div>
+            </div>
+            <p class="say">جمله: ورود تمام شد. گوشی کارت حجم دارد. کلید کل حسابداری هنوز داخل ورکر است.</p>
+          </div>
+        </article>
+
+      </div>
+      <div class="end blue"><b>ورود موفق</b>خانه باز است. حجم همان یک نفر، اگر دلتاسیب جواب بدهد، از درگاه رد شده و توکن همان لحظه مرده است. روتر خانه راه جداگانهٔ شبکهٔ محلی است.</div>
+    </section>
+  </main>
+</body>
+</html>

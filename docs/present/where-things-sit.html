@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>صندوق گوشی و پاکت ورکر</title>
+  <style>
+    :root { --ink:#1c1917; --muted:#57534e; --line:#d6d3d1; --blue:#1d4e89; --amber:#9a3412; --green:#3f6212; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#f6f5f4; color:var(--ink); font-family:"Segoe UI",Tahoma,sans-serif; line-height:1.7; }
+    header, main { max-width:980px; margin:0 auto; }
+    header { padding:1.3rem 1rem .3rem; }
+    h1 { margin:0 0 .3rem; font-size:1.5rem; }
+    h2 { margin:0 0 .7rem; font-size:1.15rem; }
+    header p, .muted { color:var(--muted); }
+    a { color:var(--blue); }
+    main { padding:.3rem 1rem 3rem; }
+    section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1rem; margin:1rem 0; }
+    .map { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+    .place { border:1.5px solid var(--ink); border-radius:14px; overflow:hidden; background:#fff; }
+    .place h3 { margin:0; padding:.55rem .75rem; color:#fff; font-size:1rem; }
+    .phone h3 { background:var(--blue); }
+    .worker h3 { background:var(--amber); }
+    .room { margin:.65rem; border:1px dashed var(--line); border-radius:12px; padding:.6rem .7rem; }
+    .room b { display:block; }
+    .safe { background:#eef6ff; }
+    .note { background:#fafaf9; }
+    .shelf { background:#fff7ed; }
+    .cab { background:#f5f5f4; }
+    .air { background:#f0fdf4; }
+    .ico { font-size:1.15rem; margin-left:.25rem; }
+    ul.plain { margin:.25rem 0 0; padding-inline-start:1.1rem; }
+    .say { margin:.7rem 0 0; background:#f5f5f4; border-radius:12px; padding:.6rem .75rem; }
+    .story { display:grid; grid-template-columns:88px 1fr; gap:.55rem; align-items:center; margin:.45rem 0; }
+    .bubble {
+      width:78px; height:78px; border-radius:18px; display:grid; place-items:center;
+      text-align:center; font-size:.78rem; font-weight:700; line-height:1.25; color:#fff;
+    }
+    .b1 { background:var(--blue); } .b2 { background:var(--amber); } .b3 { background:var(--green); } .b4 { background:#44403c; }
+    table { width:100%; border-collapse:collapse; font-size:.95rem; }
+    th, td { border-bottom:1px solid var(--line); text-align:right; padding:.45rem .3rem; vertical-align:top; }
+    th { color:var(--muted); font-weight:600; }
+    code, .ltr { font-family:Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:.88em; }
+    .env { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.4rem; }
+    .chip { border:1px solid var(--line); border-radius:999px; padding:.05rem .55rem; background:#fff; font-size:.82rem; }
+    @media (max-width:800px) { .map, .story { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>دو جا، دو نوع نگهبانی</h1>
+    <p>صندوق مال گوشی است. پاکت قفل‌شده مال پایگاه ورکر است. این دو یکی نیستند. تختهٔ کل مسیر: <a href="board.html">board.html</a>. عمر نشست: <a href="session-life.html">session-life.html</a></p>
+  </header>
+  <main>
+
+    <section>
+      <h2>اول موقعیت را ببین</h2>
+      <div class="map">
+        <div class="place phone">
+          <h3><span class="ico">📱</span>گوشی مشترک</h3>
+          <div class="room safe">
+            <b><span class="ico">🔐</span>صندوق سیستم‌عامل</b>
+            واژه‌های بازاری‌اش: در اندروید Keystore، در آیفون Keychain، در ویندوز فایل قفل‌شدهٔ همان کاربر.
+            <ul class="plain">
+              <li><span class="ltr">sib_session</span> کارت ورود، همان نشست خام</li>
+              <li><span class="ltr">sib_username</span> نام مشترکی که سرور از روی کد پیدا کرد</li>
+              <li><span class="ltr">secure_password</span> رمز Winbox، فقط اگر بلیت یک‌بارمصرف بوده</li>
+            </ul>
+          </div>
+          <div class="room note">
+            <b><span class="ico">📝</span>یادداشت معمولی</b>
+            اسم فنی‌اش SharedPreferences است. قفل صندوق را ندارد.
+            <ul class="plain">
+              <li>ولایت، آدرس ورکر، زبان، تم</li>
+              <li>ساعت ورود و آخرین فعالیت</li>
+              <li>آدرس روتر خانه، اگر پیدا شود</li>
+            </ul>
+          </div>
+        </div>
+        <div class="place worker">
+          <h3><span class="ico">🏢</span>ورکر، سرور ولایت</h3>
+          <div class="room shelf">
+            <b><span class="ico">🗝️</span>قفسهٔ رمز، خارج از پایگاه</b>
+            Cloudflare به این‌ها Secret می‌گوید. در جدول نوشته نمی‌شوند.
+            <div class="env">
+              <span class="chip">SIB_API_USERNAME</span>
+              <span class="chip">SIB_API_PASSWORD</span>
+              <span class="chip">SIB_ADMIN_PASSWORD</span>
+            </div>
+          </div>
+          <div class="room cab">
+            <b><span class="ico">🗄️</span>کمد پرونده، پایگاه D1</b>
+            <ul class="plain">
+              <li>اثر انگشت کد، برای پیدا کردن ردیف</li>
+              <li>پاکت قفل‌شدهٔ خود کد، برای نمایش در پنل</li>
+              <li>پاکت قفل‌شدهٔ رمز Winbox، تا اولین ورود</li>
+              <li>اثر انگشت نشست، نه خود کارت</li>
+            </ul>
+          </div>
+          <div class="room air">
+            <b><span class="ico">💨</span>برگهٔ روی میز</b>
+            توکن دلتاسیب همین‌جاست. با تمام شدن همان درخواست دور ریخته می‌شود. نه در صندوق گوشی، نه در کمد.
+          </div>
+        </div>
+      </div>
+      <p class="say">جمله: چیز خطرناک یا روی گوشی داخل صندوق سیستم است، یا روی سرور داخل قفسهٔ رمز. کمد پرونده به‌تنهایی آن‌ها را خوانا ندارد.</p>
+    </section>
+
+    <section>
+      <h2>صندوق گوشی چه کار می‌کند</h2>
+      <div class="story">
+        <div class="bubble b1">خانه</div>
+        <div>گوشی مثل یک خانه است. یادداشت روی یخچال را هر کس به پوشهٔ برنامه برسد می‌خواند: زبان، ولایت، آدرس ورکر. این‌ها رمز نیستند.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b4">گاوصندوق دیوار</div>
+        <div>کارت ورود و رمز روتر را داخل گاوصندوق دیوار می‌گذاریم. کلید این گاوصندوق دست سیستم‌عامل است، نه داخل کد جهان بیت. برنامهٔ دیگر همان گوشی این کشو را باز نمی‌کند.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b3">سه اسم، یک کار</div>
+        <div>
+          <b>Keystore</b> کلمهٔ گوگل برای اندروید است. از «key» به معنی کلید و «store» به معنی انبار. انبار کلیدهای دستگاه.
+          <b>Keychain</b> کلمهٔ اپل است. از قدیم در مک، دستهٔ کلید کاربر. همان انبار، روی آیفون.
+          <b>در ویندوز</b> فایل <span class="ltr">flutter_secure_storage.dat</span> است و ویندوز آن را برای همان کاربر قفل می‌کند. نقشش همان گاوصندوق است.
+        </div>
+      </div>
+      <p class="say">مثال: مشترک با کد یک‌بارمصرف وارد می‌شود. جواب سرور رمز Winbox را یک بار می‌آورد. اپ آن را در گاوصندوق می‌گذارد تا فردا، بدون پرسیدن دوبارهٔ کد، به روتر خانه وصل شود. اگر آن رمز روی یادداشت یخچال بود، هر نسخهٔ پشتیبان سادهٔ گوشی آن را خوانا نشان می‌داد.</p>
+    </section>
+
+    <section>
+      <h2>مهر AES-GCM یعنی چه</h2>
+      <p>این قفلِ پاکت روی سرور است. روی گوشی استفاده نمی‌شود. صندوق گوشی کار دیگری است.</p>
+      <div class="story">
+        <div class="bubble b2">برگه</div>
+        <div>کارمند کد <span class="ltr">AB12CD34EF</span> را ساخته. این متنِ خوانا است. اگر همین متن کلید جدول باشد، هر کس فایل پایگاه را بردارد همهٔ کدها را می‌خواند.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b4">اثر انگشت</div>
+        <div>از روی برگه یک مهر یک‌طرفه زده می‌شود. اسم این کار SHA-256 است. SHA اسم یک استاندارد اثر انگشت است و ۲۵۶ طول نتیجه است. از اثر به برگه برنمی‌گردیم. این اثر، ستون <span class="ltr">code_hash</span>، فقط برای پیدا کردن پرونده است وقتی گوشی همان کد را آورد.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b2">پاکت</div>
+        <div>خود برگه را جداگانه داخل پاکت می‌گذاریم تا کارمند بعداً در لیست، کد را دوباره ببیند و کپی کند. قفل پاکت AES-GCM است. AES اسم قفل استاندارد است، از سال ۲۰۰۱. GCM روش استفاده از آن قفل است: هم متن را ناخوانا می‌کند، هم اگر کسی یک حرف پاکت را عوض کند، موقع باز کردن می‌فهمد و پاکت را باطل می‌کند.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b1">کلید دفتر</div>
+        <div>کلید پاکت از رمز پنل کارمند ساخته می‌شود و در کمد نیست. برای همین دزدیدن فقط پایگاه، پاکت را باز نمی‌کند. باز کردن یعنی تابع <span class="ltr">openSeal</span> در ورکر، فقط وقتی کارمند وارد پنل شده یا وقتی بلیت یک‌بارمصرف همان یک بار رمز روتر را پس می‌دهد.</div>
+      </div>
+      <p class="say">مثال انسانی: روی جلد پرونده اثر انگشت نامه چسبانده شده تا نامه را گم نکنیم. خود نامه داخل پاکت مومی است. موم را فقط کلید کشوی مدیر آب می‌کند. مشتری با دیدن اثر انگشت روی جلد، متن نامه را ندارد. کارمند با کلید کشو پاکت را باز می‌کند و کد را برایش می‌خواند.</p>
+      <p class="say">یک برچسب تصادفی هم به پاکت چسبانده می‌شود، به اسم IV، دوازده بایت. اگر همان کد را دو بار پاکت کنیم، دو پاکت شبیه هم دیده نشوند. این برچسب رمز نیست. کنار پاکت در خود ستون ذخیره می‌شود.</p>
+    </section>
+
+    <section>
+      <h2>واژه‌ها از کجا آمده‌اند</h2>
+      <table>
+        <thead><tr><th>واژه</th><th>از کجا آمده</th><th>در این پروژه یعنی چه</th></tr></thead>
+        <tbody>
+          <tr><td>Keystore</td><td>اصطلاح اندروید، انبار کلید دستگاه</td><td>گاوصندوق گوشی اندرویدی. کارت نشست و رمز Winbox اینجاست.</td></tr>
+          <tr><td>Keychain</td><td>اصطلاح اپل، دستهٔ کلید کاربر</td><td>همان گاوصندوق روی آیفون.</td></tr>
+          <tr><td>SharedPreferences</td><td>اصطلاح اندروید برای یادداشت سادهٔ برنامه</td><td>یخچال: ولایت، زبان، ساعت فعالیت. رمز این‌جا نیست.</td></tr>
+          <tr><td>Secret</td><td>اصطلاح Cloudflare برای متغیر محرمانهٔ ورکر</td><td>قفسهٔ رمز سرور. یوزر و رمز API دلتاسیب، و رمز پنل کارمند.</td></tr>
+          <tr><td>D1</td><td>اسم پایگاه SQLite خود Cloudflare</td><td>کمد پروندهٔ ورکر. هرات یکی، نیمروز یکی دیگر.</td></tr>
+          <tr><td>SHA-256</td><td>استاندارد اثر انگشت یک‌طرفه</td><td>ستون <span class="ltr">code_hash</span> و ستون <span class="ltr">token_hash</span>. برای پیدا کردن، نه برای خواندن متن.</td></tr>
+          <tr><td>AES-GCM</td><td>استاندارد قفل دوطرفه، به‌اضافهٔ تشخیص دستکاری</td><td>پاکت <span class="ltr">code_sealed</span> و پاکت <span class="ltr">router_secret</span>.</td></tr>
+          <tr><td>IV</td><td>مخفف بردار آغاز، یک برچسب تصادفی</td><td>دوازده بایت اول پاکت، تا دو پاکت هم‌متن شبیه هم نباشند.</td></tr>
+          <tr><td>توکن دلتاسیب</td><td>کلید موقتی که خود دلتاسیب بعد از ورود API می‌دهد</td><td>برگهٔ روی میز ورکر. در جواب گوشی و در کمد نیست.</td></tr>
+          <tr><td>نشست</td><td>کارت خود ما، نه توکن دلتاسیب</td><td>مقدار خام در صندوق گوشی. اثرش در جدول <span class="ltr">phone_sessions</span>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>یک کد، از تولد تا فردا</h2>
+      <div class="story">
+        <div class="bubble b2">۱</div>
+        <div>کارمند نام مشترک و، اگر بلیت یک‌بارمصرف است، رمز Winbox را می‌نویسد. ورکر با رمز API که در قفسه است یک لحظه از دلتاسیب می‌پرسد این نام هست یا نه. توکن همان لحظه می‌میرد.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b2">۲</div>
+        <div>کد ساخته می‌شود. اثرش در کمد می‌رود. خود کد داخل پاکت می‌رود تا لیست پنل بتواند نشانش دهد. رمز Winbox هم داخل پاکت جدا می‌رود.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b1">۳</div>
+        <div>مشترک کد را در اپ می‌نویسد. گوشی فقط خود کد را می‌فرستد. ورکر اثر را حساب می‌کند، پرونده را پیدا می‌کند، پاکت رمز روتر را باز می‌کند و همان ستون را خالی می‌کند.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b1">۴</div>
+        <div>جواب سه چیز است: نام، کارت نشست، و همان یک بار رمز Winbox. گوشی نام و کارت و رمز روتر را در گاوصندوق دیوار می‌گذارد. خود کد را نگه نمی‌دارد. توکن دلتاسیب هنوز به گوشی نرسیده، چون در جواب نبوده.</div>
+      </div>
+      <div class="story">
+        <div class="bubble b3">۵</div>
+        <div>فردا اپ کارت را از گاوصندوق درمی‌آورد و حجم را می‌خواهد. ورکر اثر کارت را در کمد پیدا می‌کند. دوباره توکن دلتاسیب را روی میز می‌سازد، حجم همان یک نفر را می‌خواند، و توکن را دور می‌ریزد.</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

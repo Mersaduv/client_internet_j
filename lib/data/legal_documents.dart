@@ -88,13 +88,13 @@ class LegalDocuments {
 اعتبارنامهٔ روتر یا فهرست دستگاه‌های LAN برای تبلیغات فروخته یا ارسال نمی‌شود. ورود حسابداری فقط به نشانی HTTPS همان ولایت می‌رود.
 
 ۹. نگه‌داری و حذف
-خروج و «پاک‌سازی داده‌های محلی» هم دادهٔ روی دستگاه را پاک می‌کنند و هم نشست ورود را از ورکر همان ولایت حذف می‌کنند. اگر یک سال هیچ فعالیتی نباشد، صفحهٔ ورود نشان داده می‌شود. حذف اپ دادهٔ محلی را طبق سیستم‌عامل پاک می‌کند. حساب ISP جدا است و تابع قرارداد همان ارائه‌دهنده می‌ماند.
+«حذف حساب از این برنامه» فقط کد همین ورود را از ورکر همان ولایت پاک می‌کند و دادهٔ برنامه را از گوشی حذف می‌کند. کدهای دیگر می‌مانند. خروج فقط نشست همین ورود را می‌بندد. اگر یک سال هیچ فعالیتی نباشد، صفحهٔ ورود نشان داده می‌شود.
 
 ۱۰. کودکان
 ابزار شبکهٔ عمومی است؛ محتوای کودک‌محور ندارد و عمداً دادهٔ کودکان را برای تبلیغات جمع‌آوری نمی‌کند.
 
 ۱۱. حقوق شما
-بسته به حوزهٔ قضایی ممکن است حق دسترسی/حذف داشته باشید؛ سریع‌ترین مسیر معمولاً پاک‌سازی محلی یا حذف اپ است.
+بسته به حوزهٔ قضایی ممکن است حق دسترسی/حذف داشته باشید؛ سریع‌ترین مسیر معمولاً «حذف حساب از این برنامه» یا حذف اپ است.
 
 ۱۲. تغییرات
 تاریخ «آخرین به‌روزرسانی» معیار است. این متن و URL عمومی باید هم‌خوان بمانند.
@@ -147,13 +147,13 @@ Volume, time, service name, and the subscriber name are read over HTTPS from tha
 Router credentials and LAN device lists are not sold or sent to advertisers. The accounting login goes only to that province’s HTTPS address.
 
 9. Retention and Deletion
-Logout and Clear local data both remove the data stored on the device and delete the sign-in session from that province’s worker. If there is no activity for one year, the sign-in screen is shown again. Uninstall removes on-device app data per OS behavior. The ISP subscriber account is separate and stays subject to the ISP’s contract.
+Delete account from this app removes only the access code used for this sign-in on the province worker, and deletes the app data kept on the phone. Other codes stay. Logout only ends the current sign-in. If there is no activity for one year, the sign-in screen is shown again. Uninstall removes on-device app data per OS behavior.
 
 10. Children
 General network utility; not child-directed; does not knowingly collect children’s data for advertising.
 
 11. Your Rights
-Depending on jurisdiction you may have access/deletion rights; the fastest path is usually Clear local data or uninstall.
+Depending on jurisdiction you may have access/deletion rights; the fastest path is usually Delete account from this app or uninstall.
 
 12. Changes
 The “Last updated” date controls. Keep this in-app text aligned with the public URL.

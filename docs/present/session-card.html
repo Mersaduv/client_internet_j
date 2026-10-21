@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>کارت ۶۴ نویسه و دادهٔ دلتاسیب</title>
+  <style>
+    :root { --ink:#1c1917; --muted:#57534e; --line:#d6d3d1; --blue:#1d4e89; --amber:#9a3412; --green:#3f6212; --red:#9f1239; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#f6f5f4; color:var(--ink); font-family:"Segoe UI",Tahoma,sans-serif; line-height:1.7; }
+    header, main { max-width:880px; margin:0 auto; }
+    header { padding:1.3rem 1rem .2rem; }
+    h1 { margin:0 0 .3rem; font-size:1.45rem; }
+    h2 { margin:0 0 .6rem; font-size:1.1rem; }
+    header p, .muted { color:var(--muted); }
+    a { color:var(--blue); }
+    main { padding:.2rem 1rem 3rem; }
+    section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1rem; margin:1rem 0; }
+    .tl { position:relative; margin-right:18px; padding-right:28px; }
+    .tl::before { content:""; position:absolute; top:0; bottom:0; right:0; width:3px; background:#d6d3d1; border-radius:99px; }
+    .node { position:relative; margin:0 0 .75rem; }
+    .node::before {
+      content:""; position:absolute; right:-34px; top:16px; width:14px; height:14px;
+      border-radius:50%; background:var(--ink); box-shadow:0 0 0 4px #f6f5f4;
+    }
+    .card { border:1px solid var(--line); border-radius:14px; padding:.7rem .8rem; background:#fafaf9; }
+    .card b { display:block; }
+    .blue { background:#eef6ff; } .amber { background:#fff7ed; } .green { background:#f0fdf4; } .red { background:#fff7f7; }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    .say { margin:.7rem 0 0; background:#f5f5f4; border-radius:12px; padding:.6rem .75rem; }
+    code, .ltr { font-family:Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:.86em; }
+    @media (max-width:720px) { .two { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>کارت ۶۴ نویسه از کجا می‌آید و چطور به دلتاسیب می‌رسد</h1>
+    <p>این کارت نشست دلتاسیب نیست. دلتاسیب را همیشگی نکرده‌ایم. عمر نشست گوشی: <a href="session-life.html">session-life.html</a></p>
+  </header>
+  <main>
+
+    <section>
+      <h2>جواب کوتاه، قبل از خط</h2>
+      <div class="two">
+        <div class="card blue">
+          <b>کارت ما</b>
+          ۳۲ بایت تصادفی است که به شکل هگز نوشته می‌شود و می‌شود ۶۴ نویسه. از کد ورود، از نام، و از دلتاسیب ساخته نمی‌شود. فقط یک بار، همان لحظه‌ای که کد ورود قبول شد، ساخته می‌شود.
+        </div>
+        <div class="card red">
+          <b>نشست دلتاسیب</b>
+          توکن کوتاهی است که خود دلتاسیب می‌دهد. عمرش را تنظیمات یوزر API در دلتاسیب تعیین می‌کند، نه اپ. ما آن را ذخیره نمی‌کنیم و همیشگی‌اش نکرده‌ایم. هر خواندن حجم، یکی تازه می‌گیرد و همان لحظه دور می‌ریزد.
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>خط زمان</h2>
+      <div class="tl">
+        <div class="node"><div class="card">
+          <b>۱. هنوز کارتی وجود ندارد</b>
+          کارمند کد ۱۰ نویسه را می‌سازد. در پایگاه اثر انگشت کد و نام مشترک هست. کارت ۶۴ نویسه این‌جا ساخته نمی‌شود. دلتاسیب فقط یک لحظه چک می‌کند که نام وجود دارد و توکنش می‌میرد.
+        </div></div>
+        <div class="node"><div class="card blue">
+          <b>۲. تولد کارت، لحظهٔ قبول کد</b>
+          گوشی کد را به <span class="ltr">/jahanbit/sib/redeem</span> می‌فرستد. ورکر ردیف را پیدا می‌کند. بعد تابع <span class="ltr">randomHex(32)</span> از مولد تصادفی خود سیستم ۳۲ بایت برمی‌دارد. هر بایت دو رقم هگز است، پس روی سیم ۶۴ نویسه دیده می‌شود. مثال شکل، نه یک کارت واقعی: <span class="ltr">a4f0…c91b</span> به طول ۶۴.
+        </div></div>
+        <div class="node"><div class="card">
+          <b>۳. دو نیمه می‌شود</b>
+          نیمهٔ خام به گوشی می‌رود و در صندوق می‌ماند، کلید <span class="ltr">sib_session</span>. نیمهٔ سرور فقط SHA-256 همان متن است، در جدول <span class="ltr">phone_sessions</span>، کنار نام مشترک. از اثر انگشت به خود کارت برنمی‌گردیم.
+        </div></div>
+        <div class="node"><div class="card green">
+          <b>۴. روز بعد گوشی باز می‌شود</b>
+          خانه با همان کارت دیروز باز می‌شود. کارت تازه ساخته نمی‌شود. برای دیدن حجم، گوشی همان ۶۴ نویسه را به <span class="ltr">/jahanbit/sib/volume</span> می‌فرستد. این هنوز حرف زدن با دلتاسیب نیست.
+        </div></div>
+        <div class="node"><div class="card">
+          <b>۵. ورکر کارت را به یک نام ترجمه می‌کند</b>
+          اثر کارت را حساب می‌کند. اگر ردیف باشد و یک سال از آخرین دیدار نگذشته باشد، نام همان ردیف را برمی‌دارد. اگر گوشی نام شخص دیگری فرستاده باشد، رد می‌شود. تا این خط دلتاسیب دخالت ندارد.
+        </div></div>
+        <div class="node"><div class="card amber">
+          <b>۶. تازه این‌جا دلتاسیب بیدار می‌شود</b>
+          ورکر با یوزر و رمز API که در قفسهٔ Secret است به <span class="ltr">test.login.php</span> می‌رود. دلتاسیب یک توکن و یک <span class="ltr">SessionTimeout</span> برمی‌گرداند. آن مدت مال تنظیم یوزر API داخل خود دلتاسیب است. ما آن عدد را در جدول ننوشته‌ایم و بی‌نهایت نکرده‌ایم.
+        </div></div>
+        <div class="node"><div class="card amber">
+          <b>۷. توکن فقط همان نام را می‌خواند</b>
+          با فیلتر <span class="ltr">Username='همان نام'</span> اول <span class="ltr">creditinfo</span> حجم را می‌گیرد، بعد <span class="ltr">list</span> نام و تخلص را. سقف ردیف کم است. دستور نوشتن فرستاده نمی‌شود. توکن در جواب گوشی نیست.
+        </div></div>
+        <div class="node"><div class="card green">
+          <b>۸. توکن می‌میرد، کارت می‌ماند</b>
+          تابع که تمام شد توکن از حافظه می‌رود. اگر دلتاسیب فردا آن توکن را باطل کند هیچ اثری روی گوشی ندارد، چون نگه‌اش نداشته‌ایم. دفعهٔ بعد باز از مرحلهٔ ۶ توکن نو گرفته می‌شود. کارت ۶۴ نویسه همان کارت مرحلهٔ ۲ است.
+        </div></div>
+        <div class="node"><div class="card">
+          <b>۹. چه چیزی به صفحه می‌رسد</b>
+          فقط نام، تخلص و حجم همان مشترک. گوشی این‌ها را برای نمایش نگه می‌دارد. کارت را عوض نمی‌کند. توکن دلتاسیب را جایی نمی‌نویسد.
+        </div></div>
+      </div>
+      <p class="say">جمله: کارت، معرفی‌نامهٔ گوشی پیش ورکر است. ورکر با معرفی‌نامه نام را می‌فهمد، بعد با کلید خودش یک بار در دلتاسیب را باز می‌کند و پشت سرش می‌بندد.</p>
+    </section>
+
+    <section>
+      <h2>پس چه چیزی همیشگی شده؟</h2>
+      <div class="two">
+        <div class="card green">
+          <b>کارت گوشی، طولانی</b>
+          تا خروج، یا تا یک سال هیچ تماسی نباشد. این تصمیم مال جدول خود ماست. تاریخ ۲۰۹۹ روی ردیف نوشته شده ولی قانون واقعی همان یک سال ندیدن است.
+        </div>
+        <div class="card red">
+          <b>نشست دلتاسیب، همیشگی نشده</b>
+          هر خواندن یک توکن نو می‌گیرد. عمر همان توکن را دلتاسیب در <span class="ltr">SessionTimeout</span> می‌گوید. چون توکن را نگه نمی‌داریم، تمام شدن آن عمر کاربر را از اپ بیرون نمی‌اندازد.
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

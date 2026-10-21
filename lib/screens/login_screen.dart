@@ -131,15 +131,39 @@ class _LoginScreenState extends State<LoginScreen> {
     final province = _province!;
     final serviceManager = MikroTikServiceManager();
     try {
-      unawaited(_settingsService.setPackageProvinceId(province.id));
+      await _settingsService.setPackageProvinceId(province.id);
       final hostFuture = NetworkInfoService().discoverRouterApiHost();
       final settingsFuture = _settingsService.getAllSettings();
       final savedFuture = _settingsService.getSavedCredentials();
-      final codeOrigin = DeltaSibAuthService.codeWorkerFor(province);
-      final redeemed = await DeltaSibAuthService().redeemAccessCode(
-        code: _accessCodeController.text,
-        origin: codeOrigin,
-      );
+      final codeText = _accessCodeController.text;
+      var activeProvince = province;
+      late final RedeemedAccess redeemed;
+      try {
+        redeemed = await DeltaSibAuthService().redeemAccessCode(
+          code: codeText,
+          origin: DeltaSibAuthService.codeWorkerFor(activeProvince),
+        );
+      } catch (error) {
+        if (province != PackageProvince.nimroz) rethrow;
+        final heratOrigin =
+            DeltaSibAuthService.codeWorkerFor(PackageProvince.herat);
+        try {
+          redeemed = await DeltaSibAuthService().redeemAccessCode(
+            code: codeText,
+            origin: heratOrigin,
+          );
+        } catch (_) {
+          throw error;
+        }
+        await _settingsService.setSibWorkerOrigin(heratOrigin);
+        if (!ReviewDemoAccount.isTester(redeemed.username)) {
+          await DeltaSibAuthService().logout();
+          throw error;
+        }
+        activeProvince = PackageProvince.herat;
+        await _settingsService.setPackageProvinceId(activeProvince.id);
+      }
+      final codeOrigin = DeltaSibAuthService.codeWorkerFor(activeProvince);
       await _settingsService.setSibWorkerOrigin(codeOrigin);
       if (!mounted) return;
       final username = redeemed.username;

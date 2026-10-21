@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS phone_sessions (
   username TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL,
-  last_seen_at INTEGER
+  last_seen_at INTEGER,
+  code_hash TEXT
 );
 
 CREATE INDEX IF NOT EXISTS access_codes_user ON access_codes (username, created_at);

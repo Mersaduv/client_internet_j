@@ -7,7 +7,7 @@
  *
  * Never surfaces Cloudflare edge DNS errors (1016) when any candidate works.
  */
-import { handleAdmin, handleLogout, handleRedeem } from "../../shared/sib-gate.js";
+import { handleAdmin, handleDeleteAccount, handleLogout, handleRedeem } from "../../shared/sib-gate.js";
 import {
   handleStaffSubscriber,
   handleSubscriberVolume,
@@ -40,6 +40,9 @@ export default {
     }
     if (incoming.pathname === "/jahanbit/sib/logout") {
       return handleLogout(request, withOrigin);
+    }
+    if (incoming.pathname === "/jahanbit/sib/delete-account") {
+      return handleDeleteAccount(request, withOrigin);
     }
     if (incoming.pathname === "/jahanbit/sib/volume") {
       return handleSubscriberVolume(request, withOrigin);

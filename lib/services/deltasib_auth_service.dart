@@ -77,6 +77,32 @@ class DeltaSibAuthService {
     await SettingsService().clearSibWorkerOrigin();
   }
 
+  /// حذف حساب: نشست‌ها و کدهای همین نام روی ورکر، بعد دادهٔ گوشی.
+  Future<void> deleteAccount() async {
+    final session = await savedSession();
+    final origin = await SettingsService().getSibWorkerOrigin();
+    final base = (origin == null || origin.isEmpty) ? defaultOrigin : origin;
+    if (session != null && session.isNotEmpty) {
+      final uri = Uri.parse('$base/jahanbit/sib/delete-account');
+      final request = await SibHttp.client
+          .postUrl(uri)
+          .timeout(const Duration(seconds: 8));
+      request.headers.contentType = ContentType(
+        'application',
+        'json',
+        charset: 'utf-8',
+      );
+      request.write(jsonEncode({'session': session}));
+      final response = await request.close().timeout(const Duration(seconds: 12));
+      await response.drain();
+      if (response.statusCode != 200) {
+        throw DeltaSibAuthException('حذف حساب روی سرور انجام نشد.');
+      }
+    }
+    await clear();
+    await SettingsService().clearSibWorkerOrigin();
+  }
+
   /// کد ۱۰ نویسه‌ای (حرف انگلیسی و رقم) را با نام مشترک روی سرور عوض می‌کند.
   /// کد یک‌بارمصرف می‌سوزد و رمز Winbox را فقط همین یک بار برمی‌گرداند.
   /// کد همیشگی دوباره قابل استفاده است و رمز روتر ندارد.

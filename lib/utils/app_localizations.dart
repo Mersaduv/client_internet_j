@@ -60,17 +60,18 @@ class AppLocalizations {
       locale.languageCode == 'en' ? 'Terms of Use' : 'شرایط استفاده';
   String get legalSection =>
       locale.languageCode == 'en' ? 'Legal & Privacy' : 'حریم خصوصی و قوانین';
-  String get clearLocalData =>
-      locale.languageCode == 'en' ? 'Clear local data' : 'پاک‌سازی داده‌های محلی';
+  String get clearLocalData => locale.languageCode == 'en'
+      ? 'Delete account from this app'
+      : 'حذف حساب از این برنامه';
   String get clearLocalDataSubtitle => locale.languageCode == 'en'
-      ? 'Delete the sign-in session and the data stored on this device'
-      : 'حذف نشست ورود و داده‌های ذخیره‌شده روی این دستگاه';
+      ? 'Deletes only the code used for this sign-in, and the app data on this phone'
+      : 'فقط همان کد این ورود، و دادهٔ برنامه روی گوشی را پاک می‌کند';
   String get clearLocalDataConfirm => locale.languageCode == 'en'
-      ? 'This deletes the sign-in session on the server and the credentials stored on this device. Continue?'
-      : 'این کار نشست ورود را روی سرور و اعتبارنامه‌های ذخیره‌شده روی این دستگاه را پاک می‌کند. ادامه می‌دهید؟';
+      ? 'This deletes only the access code used for this sign-in, and removes the saved data from this phone. Other codes stay. Continue?'
+      : 'فقط همان کد این ورود پاک می‌شود و دادهٔ ذخیره‌شده از این گوشی حذف می‌شود. کدهای دیگر می‌مانند. ادامه می‌دهید؟';
   String get clearLocalDataDone => locale.languageCode == 'en'
-      ? 'Local data cleared'
-      : 'داده‌های محلی پاک شد';
+      ? 'Account removed from this app'
+      : 'حساب از این برنامه حذف شد';
 
   // 连接设置
   String get mikrotikRouterOS => locale.languageCode == 'en'

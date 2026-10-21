@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>چرا نشست گوشی زود تمام نمی‌شود</title>
+  <style>
+    :root { --ink:#1c1917; --muted:#57534e; --line:#d6d3d1; --blue:#1d4e89; --amber:#9a3412; --green:#3f6212; --red:#9f1239; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#f6f5f4; color:var(--ink); font-family:"Segoe UI",Tahoma,sans-serif; line-height:1.7; }
+    header, main { max-width:920px; margin:0 auto; }
+    header { padding:1.3rem 1rem .3rem; }
+    h1 { margin:0 0 .3rem; font-size:1.5rem; }
+    h2 { margin:0 0 .65rem; font-size:1.12rem; }
+    header p, .muted { color:var(--muted); }
+    a { color:var(--blue); }
+    main { padding:.3rem 1rem 3rem; }
+    section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1rem; margin:1rem 0; }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; }
+    .card { border:1.5px solid var(--ink); border-radius:14px; padding:.75rem .8rem; }
+    .card h3 { margin:0 0 .35rem; font-size:1rem; }
+    .phone { background:#eef6ff; }
+    .server { background:#fff7ed; }
+    .no { background:#fff7f7; }
+    .yes { background:#f0fdf4; }
+    .step { display:grid; grid-template-columns:46px 1fr; gap:.6rem; margin:.4rem 0; }
+    .n {
+      width:46px; height:46px; border-radius:50%; background:var(--ink); color:#fff;
+      display:grid; place-items:center; font-weight:700;
+    }
+    .box { border:1px solid var(--line); border-radius:12px; padding:.55rem .7rem; background:#fafaf9; }
+    .v { text-align:center; color:var(--muted); margin:.15rem 0; }
+    ul.plain { margin:.3rem 0 0; padding-inline-start:1.1rem; }
+    .say { margin:.7rem 0 0; background:#f5f5f4; border-radius:12px; padding:.6rem .75rem; }
+    code, .ltr { font-family:Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:.88em; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border-bottom:1px solid var(--line); text-align:right; padding:.42rem .3rem; vertical-align:top; }
+    th { color:var(--muted); font-weight:600; }
+    @media (max-width:760px) { .two { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>باز کردن گوشی، نشست را منقضی نمی‌کند</h1>
+    <p>دو ساعت جدا وجود دارد. هیچ‌کدام توکن دلتاسیب نیستند. جای واژه‌ها: <a href="where-things-sit.html">where-things-sit.html</a>. تولد کارت و دلتاسیب: <a href="session-card.html">session-card.html</a></p>
+  </header>
+  <main>
+
+    <section>
+      <h2>ریشه: کدام چیز «نشست» است</h2>
+      <div class="two">
+        <div class="card yes">
+          <h3>نشست جهان بیت</h3>
+          یک کارت تصادفی ۶۴ نویسه‌ای است. موقع ورود ساخته می‌شود. اصلش در صندوق گوشی با کلید <span class="ltr">sib_session</span> می‌ماند. سرور فقط اثر انگشت SHA-256 آن را در جدول <span class="ltr">phone_sessions</span> دارد.
+          <p class="muted">این کارت تاریخ انقضای کوتاه ندارد. تا خروج، یا تا یک سال ندیدن، معتبر است.</p>
+        </div>
+        <div class="card no">
+          <h3>توکن دلتاسیب این نیست</h3>
+          توکن ریسلر هر بار که حجم خوانده می‌شود روی میز ورکر ساخته می‌شود و همان‌جا دور ریخته می‌شود. روی گوشی ذخیره نمی‌شود و با باز شدن برنامه تازه نمی‌شود، چون از اول روی گوشی نیست.
+        </div>
+      </div>
+      <p class="say">جمله: کاربر توکن دلتاسیب ندارد. کارتی دارد که ما خودمان ساختیم. آن کارت هر روز باطل نمی‌شود.</p>
+    </section>
+
+    <section>
+      <h2>دو ساعت، دو جا</h2>
+      <div class="two">
+        <div class="card phone">
+          <h3>ساعت گوشی</h3>
+          یادداشت معمولی، کلید <span class="ltr">last_activity_at</span>.
+          <ul class="plain">
+            <li>هر بار که برنامه از اول باز شود، یا از پس‌زمینه برگردد، این ساعت نگاه می‌شود.</li>
+            <li>اگر از آخرین یادداشت کمتر از ۱۲ ساعت گذشته باشد، دوباره نوشته نمی‌شود.</li>
+            <li>اگر ۳۶۵ روز از آن یادداشت گذشته باشد، برنامه خودش خروج می‌کند.</li>
+            <li>اگر یادداشت اصلاً نباشد، این را به معنی انقضا حساب نمی‌کند.</li>
+          </ul>
+        </div>
+        <div class="card server">
+          <h3>ساعت سرور</h3>
+          ستون <span class="ltr">last_seen_at</span> در جدول نشست.
+          <ul class="plain">
+            <li>باز شدن تنها، این ستون را دست نمی‌زند.</li>
+            <li>وقتی خانه حجم را می‌خواهد، ورکر اثر کارت را پیدا می‌کند و این ساعت را می‌بیند.</li>
+            <li>اگر بیش از ۲۴ ساعت از آخرین دیدار گذشته باشد، همان لحظه ساعت را به الان عوض می‌کند.</li>
+            <li>اگر بیش از ۳۶۵ روز گذشته باشد، ردیف را پاک می‌کند.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="say">ستون <span class="ltr">expires_at</span> روی ردیف نشست سال ۲۰۹۹ است و در این بررسی خوانده نمی‌شود. قانون خروج، آن تاریخ نیست. قانون، یک سال ندیدن است.</p>
+    </section>
+
+    <section>
+      <h2>از ریشه، وقتی کاربر گوشی را باز می‌کند</h2>
+      <div class="step"><div class="n">۱</div><div class="box"><b>صفحهٔ شروع</b><br>تابع <span class="ltr">autoConnect</span> صندوق را می‌خواند: نام مشترک هست؟ کارت <span class="ltr">sib_session</span> هست؟ یادداشت فعالیت مال پارسال است یا نه؟</div></div>
+      <div class="v">↓ اگر یک سال گوشی باز نشده باشد</div>
+      <div class="step"><div class="n">✕</div><div class="box">خروج کامل: کارت از سرور و از گوشی پاک می‌شود و صفحهٔ کد می‌آید. توکنی این وسط تازه نمی‌شود.</div></div>
+      <div class="v">↓ اگر کارت در صندوق باشد و سال نگذشته باشد</div>
+      <div class="step"><div class="n">۲</div><div class="box"><b>خانه فوراً باز می‌شود.</b> منتظر روتر و منتظر دلتاسیب نمی‌ماند. یادداشت فعالیت گوشی، اگر ۱۲ ساعت گذشته باشد، همین حالا نو می‌شود. این نو شدن محلی است و به سرور نمی‌رود.</div></div>
+      <div class="v">↓ حجم ذخیره‌شده روی دیسک فوراً نشان داده می‌شود</div>
+      <div class="step"><div class="n">۳</div><div class="box"><b>سرصفحهٔ خانه</b> یک درخواست حجم می‌فرستد: همان کارت، به‌اضافهٔ نام، به <span class="ltr">/jahanbit/sib/volume</span>.</div></div>
+      <div class="v">↓ تازه اینجا سرور بیدار می‌شود</div>
+      <div class="step"><div class="n">۴</div><div class="box">ورکر اثر کارت را حساب می‌کند. ردیف را پیدا می‌کند. اگر آخرین دیدار بیشتر از یک روز مانده باشد، <span class="ltr">last_seen_at</span> را به همین لحظه عوض می‌کند. بعد توکن دلتاسیب را فقط برای خواندن حجم همان نفر می‌سازد و دور می‌ریزد.</div></div>
+      <div class="v">↓ اگر سرور بگوید نشست مرده است</div>
+      <div class="step"><div class="n">۵</div><div class="box">خانه به صفحهٔ کد برمی‌گردد. این فقط وقتی است که ردیف سرور پاک شده باشد، نه چون یک توکن کوتاه‌عمر تمام شده.</div></div>
+      <p class="say">جمله: باز کردن روزانه دو کار می‌کند. گوشی یادداشت محلی را تازه نگه می‌دارد. درخواست حجم، ساعت سرور را حداکثر روزی یک بار جلو می‌برد.</p>
+    </section>
+
+    <section>
+      <h2>چه چیزی هر روز عوض می‌شود و چه چیزی نه</h2>
+      <table>
+        <thead><tr><th>چیز</th><th>کجا</th><th>با باز شدن گوشی</th></tr></thead>
+        <tbody>
+          <tr><td>کارت نشست</td><td>صندوق گوشی</td><td>همان کارت دیروز می‌ماند. عوض نمی‌شود.</td></tr>
+          <tr><td>اثر کارت</td><td>جدول سرور</td><td>همان ردیف می‌ماند. فقط ساعت دیدار، اگر کهنه باشد، نو می‌شود.</td></tr>
+          <tr><td>یادداشت فعالیت</td><td>گوشی، خارج از صندوق</td><td>حداکثر هر ۱۲ ساعت یک بار نوشته می‌شود.</td></tr>
+          <tr><td>توکن دلتاسیب</td><td>حافظهٔ همان درخواست حجم</td><td>اگر حجم خوانده شود ساخته می‌شود و می‌میرد. ذخیره نمی‌شود.</td></tr>
+          <tr><td>رمز Winbox</td><td>صندوق گوشی</td><td>دست نمی‌خورد. برای وصل شدن دوباره به روتر همان خانه است.</td></tr>
+          <tr><td>کد ۱۰ نویسه‌ای</td><td>هیچ‌جا بعد از ورود</td><td>هر روز دوباره پرسیده نمی‌شود.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>کی واقعاً تمام می‌شود</h2>
+      <div class="two">
+        <div class="card">
+          <h3>یک سال گوشی باز نشود</h3>
+          باز شدن بعدی، پیش از خانه، یادداشت محلی را کهنه می‌بیند. خروج می‌زند. هم صندوق گوشی خالی می‌شود، هم ردیف سرور پاک می‌شود.
+        </div>
+        <div class="card">
+          <h3>یک سال حجم به سرور نرسد</h3>
+          حتی اگر یادداشت محلی تازه باشد، سرور ردیف را پاک می‌کند. اولین درخواست حجم جواب «نشست پایان یافته» می‌دهد و صفحهٔ کد می‌آید.
+        </div>
+        <div class="card">
+          <h3>خودش خروج بزند</h3>
+          همان لحظه اثر کارت از سرور حذف می‌شود و صندوق گوشی پاک می‌شود.
+        </div>
+        <div class="card">
+          <h3>هر روز برنامه را باز کند</h3>
+          کارت همان است. ساعت‌ها جلو می‌روند. کد دوباره خواسته نمی‌شود. توکن دلتاسیب روی گوشی جمع نمی‌شود.
+        </div>
+      </div>
+      <p class="say">جمع: نشست منقضی نمی‌شود چون عمر کوتاه برایش نوشته نشده. فقط سکوت یک‌ساله یا خروج، آن را برمی‌دارد. تشخیص از دو ریشه است: یادداشت فعالیت روی خود گوشی، و ساعت آخرین دیدار در پایگاه ورکر وقتی حجم خواسته می‌شود.</p>
+    </section>
+  </main>
+</body>
+</html>

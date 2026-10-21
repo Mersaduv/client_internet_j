@@ -487,7 +487,18 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     final provider = Provider.of<ClientsProvider>(context, listen: false);
     provider.clear();
     _serviceManager.disconnect();
-    await DeltaSibAuthService().logout();
+    try {
+      await DeltaSibAuthService().deleteAccount();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     await SibPackageStore.clear();
     await _settingsService.clearAllLocalData();
 

@@ -102,9 +102,9 @@ export async function handleRedeem(request, env) {
   }
   const session = randomHex(32);
   await env.SIB_DB.prepare(
-    "INSERT INTO phone_sessions (token_hash, username, created_at, expires_at, last_seen_at) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO phone_sessions (token_hash, username, created_at, expires_at, last_seen_at, code_hash) VALUES (?, ?, ?, ?, ?, ?)",
   )
-    .bind(await sha256Hex(session), row.username, now, PERMANENT_EXPIRES_AT, now)
+    .bind(await sha256Hex(session), row.username, now, PERMANENT_EXPIRES_AT, now, hash)
     .run();
   const payload = { username: row.username, session };
   if (routerPassword) payload.routerPassword = routerPassword;
@@ -153,6 +153,37 @@ export async function handleLogout(request, env) {
   await env.SIB_DB.prepare("DELETE FROM phone_sessions WHERE token_hash = ?")
     .bind(await sha256Hex(token))
     .run();
+  return json({ ok: true });
+}
+
+export async function handleDeleteAccount(request, env) {
+  if (request.method !== "POST") return json({ error: "POST required" }, 405);
+  if (!env.SIB_DB) return json({ ok: true });
+  let body = {};
+  try {
+    body = await request.json();
+  } catch (_) {
+    body = {};
+  }
+  const token = String(body.session || "").trim();
+  if (token.length < 32) return json({ ok: true });
+  const hash = await sha256Hex(token);
+  const row = await env.SIB_DB.prepare(
+    "SELECT code_hash FROM phone_sessions WHERE token_hash = ?",
+  )
+    .bind(hash)
+    .first();
+  const codeHash = String(row?.code_hash || "").trim();
+  if (!codeHash) {
+    await env.SIB_DB.prepare("DELETE FROM phone_sessions WHERE token_hash = ?")
+      .bind(hash)
+      .run();
+    return json({ ok: true });
+  }
+  await env.SIB_DB.batch([
+    env.SIB_DB.prepare("DELETE FROM phone_sessions WHERE code_hash = ?").bind(codeHash),
+    env.SIB_DB.prepare("DELETE FROM access_codes WHERE code_hash = ?").bind(codeHash),
+  ]);
   return json({ ok: true });
 }
 
