@@ -66,7 +66,7 @@ class LegalDocuments {
 - تنظیمات اتصال: IP/هاست روتر، پورت، SSL، ولایت، زبان، تم
 - شناسه‌های محلی دستگاه‌های LAN (نام/MAC/IP محلی/وضعیت مسدود) برای نمایش و اقدام محلی شما
 - برچسب زمانی نشست محلی در صورت فعال بودن
-نام کاربری و رمز ورود با HTTPS به ورکر همان ولایت فرستاده می‌شود. رمز Winbox فقط روی رمز یک‌بارمصرف، یک بار و فقط با HTTPS برمی‌گردد و بعد از آن روی سرور نمی‌ماند. رمز Api دلتاسیب روی گوشی نیست. ترافیک روتر بین دستگاه شما و روتر روی شبکهٔ محلی است.
+نام کاربری و رمز ورود با HTTPS به ورکر همان ولایت فرستاده می‌شود. رمز Winbox یک‌بارمصرف یک بار با HTTPS برمی‌گردد و بعد از آن از ورکر پاک می‌شود. رمز Winbox مربوط به رمز همیشگی مهرشده روی همان ورکر می‌ماند و در هر ورود با HTTPS به گوشی می‌آید تا روتر واقعی باز شود. رمز Api دلتاسیب روی گوشی نیست. ترافیک روتر بین دستگاه شما و روتر روی شبکهٔ محلی است.
 
 ۴. داده‌هایی که جمع‌آوری نمی‌کنیم
 موقعیت GPS برای ردیابی، Advertising ID، دفترچه تلفن/پیامک/تماس/دوربین/میکروفون، فروش داده به کارگزاران. SDK تبلیغات یا analytics تبلیغاتی نداریم.
@@ -125,7 +125,7 @@ Product brand: Jahan Bit
 - Connection settings: router host/IP, port, SSL preference, province, language, theme
 - LAN device identifiers (hostname/MAC/local IP/ban state) for listing and local actions you initiate
 - Local session timestamp when enabled
-The subscriber username and sign-in password are sent over HTTPS to that province’s worker. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never on the phone. Router API traffic stays between your device and the router on the local network.
+The subscriber username and sign-in password are sent over HTTPS to that province’s worker. A one-time Winbox password is returned once over HTTPS and is then removed from the worker. A permanent sign-in keeps that Winbox password sealed on the same worker and sends it over HTTPS on each sign-in so the app can open the real router. The DeltaSIB API password is never on the phone. Router API traffic stays between your device and the router on the local network.
 
 4. Data We Do Not Collect
 No GPS tracking, Advertising ID, contacts/SMS/calls/camera/microphone, or sale of personal data to brokers. No advertising or ad-analytics SDKs.

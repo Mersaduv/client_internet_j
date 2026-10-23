@@ -139,7 +139,7 @@
       <p>Depending on use, the following may be stored or processed <strong>on your device</strong>:</p>
       <ul>
         <li><strong>Router credentials:</strong> RouterOS username/password in platform secure storage (Android Keystore / iOS Keychain) when Remember Me / local session is used.</li>
-        <li><strong>Sign-in:</strong> the subscriber username and session token in that secure storage. The username and sign-in password are sent over HTTPS to that province’s worker so the package and name can be shown. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never stored on the phone.</li>
+        <li><strong>Sign-in:</strong> the subscriber username and session token in that secure storage. The username and sign-in password are sent over HTTPS to that province’s worker so the package and name can be shown. A one-time Winbox password is returned once over HTTPS and is then removed from that worker. A permanent sign-in keeps the Winbox password sealed on the same worker and sends it to the phone over HTTPS on each sign-in, only so the app can open the real router. The DeltaSIB API password is never stored on the phone.</li>
         <li><strong>Connection settings:</strong> router host/IP, port, SSL preference, selected province, language, theme.</li>
         <li><strong>LAN device information:</strong> hostname, MAC address, local IP, and ban state for listing and local policy actions you initiate.</li>
         <li><strong>Local session timestamp:</strong> the session stays until you log out. If the app is unused for one year, the sign-in screen is shown again.</li>
@@ -209,7 +209,7 @@
 
       <h2>13. International Transfers</h2>
       <p>
-        The subscriber username and sign-in password are sent over HTTPS only to that province’s worker. A one-time router password is returned once over HTTPS and is then removed from the server. Router management traffic stays on the local network. The app does not load ISP subscriber pages.
+        The subscriber username and sign-in password are sent over HTTPS only to that province’s worker. A one-time router password is returned once over HTTPS and is then removed from that worker. A permanent sign-in keeps the router password sealed on the same worker and returns it over HTTPS on each sign-in. Router management traffic stays on the local network. The app does not load ISP subscriber pages.
       </p>
 
       <h2>14. Changes</h2>

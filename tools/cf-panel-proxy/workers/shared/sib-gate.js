@@ -81,7 +81,7 @@ export async function handleRedeem(request, env) {
     return json({ error: "نام کاربری یا رمز نادرست است." }, 401);
   }
   let routerPassword = "";
-  if (!reusable && row.router_secret) {
+  if (row.router_secret) {
     try {
       routerPassword = await openSeal(env, row.router_secret);
     } catch (_) {
@@ -217,8 +217,8 @@ async function createCode(request, env) {
   if (!isName(username)) return fail(request, "نام کاربری معتبر نیست.", 400);
   const reusable = form.get("reusable") === "1";
   const routerPassword = String(form.get("router_password") || "");
-  if (!reusable && !routerPassword.trim()) {
-    return fail(request, "برای کد یک‌بارمصرف، رمز Winbox همان مشترک لازم است.", 400);
+  if (!routerPassword.trim()) {
+    return fail(request, "رمز Winbox همان مشترک لازم است.", 400);
   }
   if (routerPassword.length > 128) return fail(request, "رمز Winbox خیلی بلند است.", 400);
   const found = await lookupSubscriber(env, username);
@@ -230,7 +230,7 @@ async function createCode(request, env) {
   const now = Date.now();
   const expiresAt = reusable ? PERMANENT_EXPIRES_AT : now + CODE_TTL_MS;
   const [secret, codeSealed, codeHash] = await Promise.all([
-    reusable || !routerPassword ? Promise.resolve(null) : seal(env, routerPassword),
+    seal(env, routerPassword),
     seal(env, code),
     sha256Hex(code),
   ]);
@@ -253,7 +253,7 @@ async function createCode(request, env) {
     reusable,
     createdAt: now,
     expiresAt,
-    router: secret ? "waiting" : "none",
+    router: reusable ? "kept" : "waiting",
   };
   if ((request.headers.get("accept") || "").includes("application/json")) {
     return json(payload);
@@ -305,7 +305,11 @@ async function listCodes(env, url) {
         usedAt: row.used_at,
         reusable: permanent,
         state,
-        router: Number(row.has_router) === 1 ? "waiting" : "none",
+        router: Number(row.has_router) === 1
+          ? permanent
+            ? "kept"
+            : "waiting"
+          : "none",
       };
     }),
   );
@@ -323,11 +327,11 @@ function panelShell(env) {
     </header>
     <form id="make" class="make">
       <label>نام کاربری<input name="username" required maxlength="64" autocomplete="off" dir="ltr" placeholder="jb.user"></label>
-      <label>رمز Winbox<input name="router_password" type="password" maxlength="128" autocomplete="new-password" dir="ltr" placeholder="فقط برای رمز یک‌بارمصرف"></label>
+      <label>رمز Winbox<input name="router_password" type="password" required maxlength="128" autocomplete="new-password" dir="ltr" placeholder="رمز Winbox همین مشترک"></label>
       <label class="tick"><input type="checkbox" name="reusable" value="1"><span>همیشگی</span></label>
       <button id="makeBtn" type="submit">ساخت رمز ورود</button>
     </form>
-    <p class="hint">نام کاربری و رمز ساخته‌شده را با هم به مشترک بدهید. رمز یک‌بارمصرف بعد از اولین ورود پاک می‌شود و رمز روتر را هم برمی‌دارد. رمز همیشگی رمز روتر نگه نمی‌دارد.</p>
+    <p class="hint">رمز Winbox را برای هر دو نوع بنویسید. نام کاربری و رمز ساخته‌شده را به مشترک بدهید. رمز یک‌بارمصرف بعد از اولین ورود پاک می‌شود و رمز Winbox را هم از ورکر برمی‌دارد. رمز همیشگی همان رمز Winbox را مهرشده نگه می‌دارد و در هر ورود به اپ می‌دهد تا اول روتر واقعی بررسی شود.</p>
     <section id="fresh" class="result" hidden>
       <p class="who" id="freshUser"></p>
       <div class="codeLine">
