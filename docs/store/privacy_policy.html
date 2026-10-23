@@ -106,7 +106,7 @@
       <span class="chip" style="background:rgba(0,198,255,.15);color:#e8f7ff;border-color:rgba(0,198,255,.35)">Privacy Policy</span>
       <h1>Privacy Policy — Jahan Bit</h1>
       <p class="meta">
-        Last updated: October 20, 2026<br />
+        Last updated: October 23, 2026<br />
         App Store seller: Muhammad Aref Abdul Hadi<br />
         © 2026 Jahan Bit
       </p>
@@ -139,13 +139,13 @@
       <p>Depending on use, the following may be stored or processed <strong>on your device</strong>:</p>
       <ul>
         <li><strong>Router credentials:</strong> RouterOS username/password in platform secure storage (Android Keystore / iOS Keychain) when Remember Me / local session is used.</li>
-        <li><strong>Sign-in:</strong> the subscriber username and session token in that secure storage. The 10-character sign-in code and username are sent over HTTPS to that province’s worker so the package and name can be shown. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never stored on the phone.</li>
+        <li><strong>Sign-in:</strong> the subscriber username and session token in that secure storage. The username and sign-in password are sent over HTTPS to that province’s worker so the package and name can be shown. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never stored on the phone.</li>
         <li><strong>Connection settings:</strong> router host/IP, port, SSL preference, selected province, language, theme.</li>
         <li><strong>LAN device information:</strong> hostname, MAC address, local IP, and ban state for listing and local policy actions you initiate.</li>
         <li><strong>Local session timestamp:</strong> the session stays until you log out. If the app is unused for one year, the sign-in screen is shown again.</li>
       </ul>
       <p>
-        Jahan Bit does not create its own cloud user account. The sign-in code is sent only to the province HTTPS worker. Router API traffic stays on the local network. The DeltaSIB API password is not on the phone.
+        Jahan Bit does not create its own cloud user account. The username and sign-in password are sent only to the province HTTPS worker. Router API traffic stays on the local network. The DeltaSIB API password is not on the phone.
       </p>
 
       <h2>4. Data We Do Not Collect (within app scope)</h2>
@@ -192,8 +192,8 @@
 
       <h2>10. Retention and Deletion</h2>
       <ul>
-        <li><strong>Logout:</strong> ends the current sign-in and removes the session stored on the device.</li>
-        <li><strong>Delete account from this app:</strong> in Settings, deletes only the access code used for this sign-in, and removes the app data kept on the phone. Other codes stay.</li>
+        <li><strong>Delete account</strong> (Settings → Delete account from this app) removes that username completely from the worker that issued the current sign-in. Every session and every sign-in password for that username on that worker is deleted, including any sealed one-time Winbox password. Herat and Farah share one worker. Nimroz has its own worker, so a Nimroz deletion removes the username only there. The ISP subscriber account in DeltaSIB is not deleted. The app then deletes the data stored on the device.</li>
+        <li><strong>Logout</strong> deletes only the current session on that worker. The username and its other sign-in passwords stay until Delete account is used.</li>
         <li>Uninstalling the app removes on-device app data according to OS behavior.</li>
       </ul>
 
@@ -204,12 +204,12 @@
 
       <h2>12. Your Rights</h2>
       <p>
-        Depending on your jurisdiction, you may have rights to access, correct, delete, or restrict processing. Logout or Delete account from this app deletes the app sign-in session and the data stored on the device. Contact support for further requests.
+        Depending on your jurisdiction, you may have rights to access, correct, delete, or restrict processing. Delete account removes that username completely from the worker for the current sign-in and deletes the app data stored on the device. Contact support for further requests.
       </p>
 
       <h2>13. International Transfers</h2>
       <p>
-        The sign-in code and subscriber username are sent over HTTPS only to that province’s worker. A one-time router password is returned once over HTTPS and is then removed from the server. Router management traffic stays on the local network. The app does not load ISP subscriber pages.
+        The subscriber username and sign-in password are sent over HTTPS only to that province’s worker. A one-time router password is returned once over HTTPS and is then removed from the server. Router management traffic stays on the local network. The app does not load ISP subscriber pages.
       </p>
 
       <h2>14. Changes</h2>

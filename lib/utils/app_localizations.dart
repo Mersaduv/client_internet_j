@@ -64,11 +64,11 @@ class AppLocalizations {
       ? 'Delete account from this app'
       : 'حذف حساب از این برنامه';
   String get clearLocalDataSubtitle => locale.languageCode == 'en'
-      ? 'Deletes only the code used for this sign-in, and the app data on this phone'
-      : 'فقط همان کد این ورود، و دادهٔ برنامه روی گوشی را پاک می‌کند';
+      ? 'Removes this username from this province’s worker, and the app data on this phone'
+      : 'این نام کاربری را از ورکر همین ولایت، و دادهٔ برنامه را از گوشی پاک می‌کند';
   String get clearLocalDataConfirm => locale.languageCode == 'en'
-      ? 'This deletes only the access code used for this sign-in, and removes the saved data from this phone. Other codes stay. Continue?'
-      : 'فقط همان کد این ورود پاک می‌شود و دادهٔ ذخیره‌شده از این گوشی حذف می‌شود. کدهای دیگر می‌مانند. ادامه می‌دهید؟';
+      ? 'This removes this username from the worker for this sign-in: every session and every sign-in password for that name. App data on this phone is deleted too. The ISP subscriber account is not deleted. Continue?'
+      : 'این نام کاربری از ورکر همین ورود کامل حذف می‌شود: همهٔ نشست‌ها و همهٔ رمزهای ورود همان نام. دادهٔ برنامه روی گوشی هم پاک می‌شود. حساب مشترک در دلتاسیب حذف نمی‌شود. ادامه می‌دهید؟';
   String get clearLocalDataDone => locale.languageCode == 'en'
       ? 'Account removed from this app'
       : 'حساب از این برنامه حذف شد';

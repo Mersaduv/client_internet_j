@@ -61,33 +61,31 @@ export async function handleRedeem(request, env) {
     return json({ error: "چند لحظه بعد دوباره تلاش کنید." }, 429);
   }
   const username = String(body.username || "").trim();
-  const code = normalizeAccessCode(body.code);
-  if (!code || (username && !isName(username))) {
+  const secret = normalizeAccessCode(body.password || body.code);
+  if (!secret || !isName(username)) {
     await noteAttempt(env, request);
-    return json({ error: "کد یا نام کاربری نادرست است." }, 400);
+    return json({ error: "نام کاربری یا رمز نادرست است." }, 400);
   }
   const now = Date.now();
-  const hash = await sha256Hex(code);
+  const hash = await sha256Hex(secret);
   const row = await env.SIB_DB.prepare(
     "SELECT username, expires_at, used_at, reusable, router_secret FROM access_codes WHERE code_hash = ?",
   )
     .bind(hash)
     .first();
   const reusable = row && Number(row.reusable) === 1;
-  if (!row || (!reusable && row.used_at) || Number(row.expires_at) < now) {
+  const usernameMatches =
+    row && String(row.username).toLowerCase() === username.toLowerCase();
+  if (!row || !usernameMatches || (!reusable && row.used_at) || Number(row.expires_at) < now) {
     await noteAttempt(env, request);
-    return json({ error: "کد منقضی یا مصرف شده است." }, 401);
-  }
-  if (username && String(row.username).toLowerCase() !== username.toLowerCase()) {
-    await noteAttempt(env, request);
-    return json({ error: "این کد برای نام کاربری دیگری است." }, 403);
+    return json({ error: "نام کاربری یا رمز نادرست است." }, 401);
   }
   let routerPassword = "";
   if (!reusable && row.router_secret) {
     try {
       routerPassword = await openSeal(env, row.router_secret);
     } catch (_) {
-      return json({ error: "رمز روتر خوانده نشد. کد تازه بسازید." }, 502);
+      return json({ error: "رمز روتر خوانده نشد. رمز ورود تازه بسازید." }, 502);
     }
   }
   if (!reusable) {
@@ -97,7 +95,7 @@ export async function handleRedeem(request, env) {
       .bind(now, hash)
       .run();
     if (!spent.meta || spent.meta.changes !== 1) {
-      return json({ error: "کد قبلاً استفاده شده است." }, 401);
+      return json({ error: "نام کاربری یا رمز نادرست است." }, 401);
     }
   }
   const session = randomHex(32);
@@ -169,20 +167,24 @@ export async function handleDeleteAccount(request, env) {
   if (token.length < 32) return json({ ok: true });
   const hash = await sha256Hex(token);
   const row = await env.SIB_DB.prepare(
-    "SELECT code_hash FROM phone_sessions WHERE token_hash = ?",
+    "SELECT username FROM phone_sessions WHERE token_hash = ?",
   )
     .bind(hash)
     .first();
-  const codeHash = String(row?.code_hash || "").trim();
-  if (!codeHash) {
+  const username = String(row?.username || "").trim();
+  if (!username) {
     await env.SIB_DB.prepare("DELETE FROM phone_sessions WHERE token_hash = ?")
       .bind(hash)
       .run();
     return json({ ok: true });
   }
   await env.SIB_DB.batch([
-    env.SIB_DB.prepare("DELETE FROM phone_sessions WHERE code_hash = ?").bind(codeHash),
-    env.SIB_DB.prepare("DELETE FROM access_codes WHERE code_hash = ?").bind(codeHash),
+    env.SIB_DB.prepare(
+      "DELETE FROM phone_sessions WHERE LOWER(username) = LOWER(?)",
+    ).bind(username),
+    env.SIB_DB.prepare(
+      "DELETE FROM access_codes WHERE LOWER(username) = LOWER(?)",
+    ).bind(username),
   ]);
   return json({ ok: true });
 }
@@ -311,21 +313,21 @@ async function listCodes(env, url) {
 }
 
 function panelShell(env) {
-  return layout(provinceTitle(env, "کدهای ورود"), `
+  return layout(provinceTitle(env, "رمز ورود"), `
     <header>
       <div>
-        <h1>${provinceTitle(env, "کد ورود مشترک")}</h1>
+        <h1>${provinceTitle(env, "نام کاربری و رمز ورود")}</h1>
         <p class="hint" id="summary">در حال خواندن فهرست…</p>
       </div>
       <form method="post" action="/jahanbit/admin/logout"><button class="ghost" type="submit">خروج</button></form>
     </header>
     <form id="make" class="make">
       <label>نام کاربری<input name="username" required maxlength="64" autocomplete="off" dir="ltr" placeholder="jb.user"></label>
-      <label>رمز Winbox<input name="router_password" type="password" maxlength="128" autocomplete="new-password" dir="ltr" placeholder="فقط برای کد یک‌بارمصرف"></label>
+      <label>رمز Winbox<input name="router_password" type="password" maxlength="128" autocomplete="new-password" dir="ltr" placeholder="فقط برای رمز یک‌بارمصرف"></label>
       <label class="tick"><input type="checkbox" name="reusable" value="1"><span>همیشگی</span></label>
-      <button id="makeBtn" type="submit">ساخت کد</button>
+      <button id="makeBtn" type="submit">ساخت رمز ورود</button>
     </form>
-    <p class="hint">رمز یک‌بارمصرف بعد از اولین ورود پاک می‌شود. کد همیشگی رمز روتر نگه نمی‌دارد.</p>
+    <p class="hint">نام کاربری و رمز ساخته‌شده را با هم به مشترک بدهید. رمز یک‌بارمصرف بعد از اولین ورود پاک می‌شود و رمز روتر را هم برمی‌دارد. رمز همیشگی رمز روتر نگه نمی‌دارد.</p>
     <section id="fresh" class="result" hidden>
       <p class="who" id="freshUser"></p>
       <div class="codeLine">
@@ -339,7 +341,7 @@ function panelShell(env) {
     </div>
     <div class="tableWrap">
       <table>
-        <thead><tr><th>کد</th><th>مشترک</th><th>زمان</th><th>وضعیت</th><th></th></tr></thead>
+        <thead><tr><th>رمز ورود</th><th>نام کاربری</th><th>زمان</th><th>وضعیت</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>

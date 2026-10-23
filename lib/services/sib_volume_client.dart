@@ -54,7 +54,7 @@ class SibVolumeClient {
     final review = user == ReviewDemoAccount.username;
     final session = await DeltaSibAuthService().savedSession();
     if (session == null || session.isEmpty) {
-      throw DeltaSibAuthException('برای دیدن حجم، کد ورود را یک‌بار وارد کنید.');
+      throw DeltaSibAuthException('برای دیدن حجم، یک بار با نام کاربری و رمز وارد شوید.');
     }
 
     try {

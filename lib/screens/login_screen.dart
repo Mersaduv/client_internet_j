@@ -27,9 +27,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _accessCodeController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   bool _isConnecting = false;
+  bool _obscurePassword = true;
   PackageProvince? _province;
   bool _provinceDialogOpen = false;
   String? _errorMessage;
@@ -98,7 +100,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _accessCodeController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -135,12 +138,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final hostFuture = NetworkInfoService().discoverRouterApiHost();
       final settingsFuture = _settingsService.getAllSettings();
       final savedFuture = _settingsService.getSavedCredentials();
-      final codeText = _accessCodeController.text;
+      final signInUsername = _usernameController.text;
+      final signInPassword = _passwordController.text;
       var activeProvince = province;
       late final RedeemedAccess redeemed;
       try {
-        redeemed = await DeltaSibAuthService().redeemAccessCode(
-          code: codeText,
+        redeemed = await DeltaSibAuthService().signIn(
+          username: signInUsername,
+          password: signInPassword,
           origin: DeltaSibAuthService.codeWorkerFor(activeProvince),
         );
       } catch (error) {
@@ -148,8 +153,9 @@ class _LoginScreenState extends State<LoginScreen> {
         final heratOrigin =
             DeltaSibAuthService.codeWorkerFor(PackageProvince.herat);
         try {
-          redeemed = await DeltaSibAuthService().redeemAccessCode(
-            code: codeText,
+          redeemed = await DeltaSibAuthService().signIn(
+            username: signInUsername,
+            password: signInPassword,
             origin: heratOrigin,
           );
         } catch (_) {
@@ -310,8 +316,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     Text(
                       Localizations.localeOf(context).languageCode == 'en'
-                          ? 'Enter the 10-character code from support'
-                          : 'کد ۱۰ نویسه‌ای پشتیبانی را وارد کنید',
+                          ? 'Sign in with the username and password from support'
+                          : 'با نام کاربری و رمز پشتیبانی وارد شوید',
                           style: TextStyle(
                             fontSize: 16,
                             color: isDark
@@ -336,41 +342,103 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                     const SizedBox(height: 20),
 
-                    TextFormField(
-                      controller: _accessCodeController,
-                      keyboardType: TextInputType.visiblePassword,
-                      textCapitalization: TextCapitalization.characters,
-                      textDirection: TextDirection.ltr,
-                      textInputAction: TextInputAction.done,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                        LengthLimitingTextInputFormatter(10),
-                      ],
-                      onFieldSubmitted: (_) => _handleLogin(),
-                      decoration: InputDecoration(
-                        labelText:
-                            Localizations.localeOf(context).languageCode == 'en'
-                                ? 'Sign-in code'
-                                : 'کد ورود',
-                        hintText:
-                            Localizations.localeOf(context).languageCode == 'en'
-                                ? 'Letters and digits'
-                                : 'حرف و رقم',
-                        prefixIcon: Icon(Icons.pin_outlined, color: primaryColor),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    AutofillGroup(
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _usernameController,
+                            keyboardType: TextInputType.text,
+                            textDirection: TextDirection.ltr,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.username],
+                            inputFormatters: [
+                              LengthLimitingTextInputFormatter(64),
+                            ],
+                            decoration: InputDecoration(
+                              labelText: Localizations.localeOf(context)
+                                          .languageCode ==
+                                      'en'
+                                  ? 'Username'
+                                  : 'نام کاربری',
+                              prefixIcon: Icon(
+                                Icons.person_outline,
+                                color: primaryColor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (DeltaSibAuthService.normalizeUsername(
+                                    value ?? '',
+                                  ) ==
+                                  null) {
+                                return Localizations.localeOf(context)
+                                            .languageCode ==
+                                        'en'
+                                    ? 'Enter your username'
+                                    : 'نام کاربری را وارد کنید';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _passwordController,
+                            keyboardType: TextInputType.visiblePassword,
+                            textDirection: TextDirection.ltr,
+                            textInputAction: TextInputAction.done,
+                            obscureText: _obscurePassword,
+                            autofillHints: const [AutofillHints.password],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'[A-Za-z0-9]'),
+                              ),
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            onFieldSubmitted: (_) => _handleLogin(),
+                            decoration: InputDecoration(
+                              labelText: Localizations.localeOf(context)
+                                          .languageCode ==
+                                      'en'
+                                  ? 'Password'
+                                  : 'رمز عبور',
+                              prefixIcon: Icon(
+                                Icons.lock_outline,
+                                color: primaryColor,
+                              ),
+                              suffixIcon: IconButton(
+                                onPressed: () {
+                                  setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  );
+                                },
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (DeltaSibAuthService.normalizeAccessCode(
+                                    value ?? '',
+                                  ) ==
+                                  null) {
+                                return Localizations.localeOf(context)
+                                            .languageCode ==
+                                        'en'
+                                    ? 'Enter the password from support'
+                                    : 'رمز پشتیبانی را وارد کنید';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                       ),
-                      validator: (value) {
-                        if (DeltaSibAuthService.normalizeAccessCode(value ?? '') ==
-                            null) {
-                          return Localizations.localeOf(context).languageCode ==
-                                  'en'
-                              ? 'Enter 10 English letters and digits'
-                              : 'کد باید ۱۰ حرف انگلیسی و رقم باشد';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 24),
 

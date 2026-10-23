@@ -77,7 +77,7 @@ class DeltaSibAuthService {
     await SettingsService().clearSibWorkerOrigin();
   }
 
-  /// حذف حساب: نشست‌ها و کدهای همین نام روی ورکر، بعد دادهٔ گوشی.
+  /// حذف حساب: همهٔ نشست‌ها و رمزهای همین نام روی ورکر همین ورود، بعد دادهٔ گوشی.
   Future<void> deleteAccount() async {
     final session = await savedSession();
     final origin = await SettingsService().getSibWorkerOrigin();
@@ -103,22 +103,34 @@ class DeltaSibAuthService {
     await SettingsService().clearSibWorkerOrigin();
   }
 
-  /// کد ۱۰ نویسه‌ای (حرف انگلیسی و رقم) را با نام مشترک روی سرور عوض می‌کند.
-  /// کد یک‌بارمصرف می‌سوزد و رمز Winbox را فقط همین یک بار برمی‌گرداند.
-  /// کد همیشگی دوباره قابل استفاده است و رمز روتر ندارد.
+  /// رمز ورود همان راز ۱۰ نویسه‌ای پنل است، نه رمز Winbox و نه رمز API دلتاسیب.
   static String? normalizeAccessCode(String raw) {
     final code = raw.replaceAll(RegExp(r'\s'), '').toUpperCase();
     if (!RegExp(r'^[A-Z0-9]{10}$').hasMatch(code)) return null;
     return code;
   }
 
-  Future<RedeemedAccess> redeemAccessCode({
-    required String code,
+  /// نام کاربری مشترک. همان شکلی که ورکر در isName می‌پذیرد.
+  static String? normalizeUsername(String raw) {
+    final name = raw.trim();
+    if (!RegExp(r'^[\p{L}\p{N}._@-]{1,64}$', unicode: true).hasMatch(name)) {
+      return null;
+    }
+    return name;
+  }
+
+  /// نام کاربری و رمز را با HTTPS به ورکر ولایت می‌فرستد.
+  /// رمز یک‌بارمصرف می‌سوزد و رمز Winbox را فقط همین یک بار برمی‌گرداند.
+  /// رمز همیشگی دوباره قابل استفاده است و رمز روتر ندارد.
+  Future<RedeemedAccess> signIn({
+    required String username,
+    required String password,
     required String origin,
   }) async {
-    final normalized = normalizeAccessCode(code);
-    if (normalized == null) {
-      throw DeltaSibAuthException('کد باید ۱۰ حرف انگلیسی و رقم باشد.');
+    final name = normalizeUsername(username);
+    final secret = normalizeAccessCode(password);
+    if (name == null || secret == null) {
+      throw DeltaSibAuthException('نام کاربری یا رمز نادرست است.');
     }
     final base = origin.endsWith('/') ? origin.substring(0, origin.length - 1) : origin;
     final uri = Uri.parse('$base/jahanbit/sib/redeem');
@@ -130,7 +142,7 @@ class DeltaSibAuthService {
       'json',
       charset: 'utf-8',
     );
-    request.write(jsonEncode({'code': normalized}));
+    request.write(jsonEncode({'username': name, 'password': secret}));
     final response = await request.close().timeout(const Duration(seconds: 20));
     final text = await response.transform(utf8.decoder).join();
     if (response.statusCode != 200) {
@@ -138,21 +150,25 @@ class DeltaSibAuthService {
     }
     final decoded = jsonDecode(text);
     final session = decoded is Map ? decoded['session']?.toString() : null;
-    final username = decoded is Map ? decoded['username']?.toString().trim() : null;
+    final signedInUsername =
+        decoded is Map ? decoded['username']?.toString().trim() : null;
     final routerPassword = decoded is Map
         ? decoded['routerPassword']?.toString()
         : null;
-    if (session == null || session.isEmpty || username == null || username.isEmpty) {
+    if (session == null ||
+        session.isEmpty ||
+        signedInUsername == null ||
+        signedInUsername.isEmpty) {
       throw DeltaSibAuthException('نشست حجم ساخته نشد.');
     }
     try {
       await _storage.write(key: _keySession, value: session);
-      await _storage.write(key: _keyUsername, value: username);
+      await _storage.write(key: _keyUsername, value: signedInUsername);
     } catch (e) {
       debugPrint('[SIB] session persist failed: $e');
     }
     return RedeemedAccess(
-      username: username,
+      username: signedInUsername,
       routerPassword: routerPassword != null && routerPassword.isNotEmpty
           ? routerPassword
           : null,
@@ -199,7 +215,7 @@ class DeltaSibAuthService {
         return decoded['error'].toString();
       }
     } catch (_) {}
-    return 'کد ورود پذیرفته نشد (HTTP $status)';
+    return 'نام کاربری یا رمز پذیرفته نشد (HTTP $status)';
   }
 
   /// HTML صفحهٔ test.login.php یا JSON خام را به توکن تبدیل می‌کند.

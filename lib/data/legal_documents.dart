@@ -66,7 +66,7 @@ class LegalDocuments {
 - تنظیمات اتصال: IP/هاست روتر، پورت، SSL، ولایت، زبان، تم
 - شناسه‌های محلی دستگاه‌های LAN (نام/MAC/IP محلی/وضعیت مسدود) برای نمایش و اقدام محلی شما
 - برچسب زمانی نشست محلی در صورت فعال بودن
-کد ورود و نام مشترک با HTTPS به ورکر همان ولایت فرستاده می‌شود. رمز Winbox فقط روی کد یک‌بارمصرف، یک بار و فقط با HTTPS برمی‌گردد و بعد از آن روی سرور نمی‌ماند. رمز Api دلتاسیب روی گوشی نیست. ترافیک روتر بین دستگاه شما و روتر روی شبکهٔ محلی است.
+نام کاربری و رمز ورود با HTTPS به ورکر همان ولایت فرستاده می‌شود. رمز Winbox فقط روی رمز یک‌بارمصرف، یک بار و فقط با HTTPS برمی‌گردد و بعد از آن روی سرور نمی‌ماند. رمز Api دلتاسیب روی گوشی نیست. ترافیک روتر بین دستگاه شما و روتر روی شبکهٔ محلی است.
 
 ۴. داده‌هایی که جمع‌آوری نمی‌کنیم
 موقعیت GPS برای ردیابی، Advertising ID، دفترچه تلفن/پیامک/تماس/دوربین/میکروفون، فروش داده به کارگزاران. SDK تبلیغات یا analytics تبلیغاتی نداریم.
@@ -88,7 +88,7 @@ class LegalDocuments {
 اعتبارنامهٔ روتر یا فهرست دستگاه‌های LAN برای تبلیغات فروخته یا ارسال نمی‌شود. ورود حسابداری فقط به نشانی HTTPS همان ولایت می‌رود.
 
 ۹. نگه‌داری و حذف
-«حذف حساب از این برنامه» فقط کد همین ورود را از ورکر همان ولایت پاک می‌کند و دادهٔ برنامه را از گوشی حذف می‌کند. کدهای دیگر می‌مانند. خروج فقط نشست همین ورود را می‌بندد. اگر یک سال هیچ فعالیتی نباشد، صفحهٔ ورود نشان داده می‌شود.
+«حذف حساب از این برنامه» این نام کاربری را از ورکر همان ورود کامل حذف می‌کند: همهٔ نشست‌ها و همهٔ رمزهای ورود همان نام، از جمله رمز Winbox مهرشده. هرات و فراه یک ورکر دارند و نیمروز ورکر جدا. حساب مشترک در دلتاسیب حذف نمی‌شود. دادهٔ برنامه از گوشی هم پاک می‌شود. خروج فقط نشست همین ورود را می‌بندد. اگر یک سال هیچ فعالیتی نباشد، صفحهٔ ورود نشان داده می‌شود.
 
 ۱۰. کودکان
 ابزار شبکهٔ عمومی است؛ محتوای کودک‌محور ندارد و عمداً دادهٔ کودکان را برای تبلیغات جمع‌آوری نمی‌کند.
@@ -125,7 +125,7 @@ Product brand: Jahan Bit
 - Connection settings: router host/IP, port, SSL preference, province, language, theme
 - LAN device identifiers (hostname/MAC/local IP/ban state) for listing and local actions you initiate
 - Local session timestamp when enabled
-The sign-in code and subscriber username are sent over HTTPS to that province’s worker. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never on the phone. Router API traffic stays between your device and the router on the local network.
+The subscriber username and sign-in password are sent over HTTPS to that province’s worker. A one-time Winbox password is returned once over HTTPS and is not kept on the server afterward. The DeltaSIB API password is never on the phone. Router API traffic stays between your device and the router on the local network.
 
 4. Data We Do Not Collect
 No GPS tracking, Advertising ID, contacts/SMS/calls/camera/microphone, or sale of personal data to brokers. No advertising or ad-analytics SDKs.
@@ -147,7 +147,7 @@ Volume, time, service name, and the subscriber name are read over HTTPS from tha
 Router credentials and LAN device lists are not sold or sent to advertisers. The accounting login goes only to that province’s HTTPS address.
 
 9. Retention and Deletion
-Delete account from this app removes only the access code used for this sign-in on the province worker, and deletes the app data kept on the phone. Other codes stay. Logout only ends the current sign-in. If there is no activity for one year, the sign-in screen is shown again. Uninstall removes on-device app data per OS behavior.
+Delete account from this app removes that username completely from the worker that issued this sign-in: every session and every sign-in password for that name, including a sealed one-time Winbox password. Herat and Farah share one worker. Nimroz has its own worker, so a Nimroz deletion removes the name only there. The ISP subscriber account in DeltaSIB is not deleted. App data on the phone is deleted too. Logout only ends the current session. If there is no activity for one year, the sign-in screen is shown again. Uninstall removes on-device app data per OS behavior.
 
 10. Children
 General network utility; not child-directed; does not knowingly collect children’s data for advertising.

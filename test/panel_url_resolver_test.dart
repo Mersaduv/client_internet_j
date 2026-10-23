@@ -4,11 +4,17 @@ import 'package:jahan_bit/services/deltasib_auth_service.dart';
 import 'package:jahan_bit/utils/panel_url_resolver.dart';
 
 void main() {
-  test('access code accepts letters and digits', () {
+  test('sign-in password is the 10-character secret', () {
     expect(DeltaSibAuthService.normalizeAccessCode('ab12cd34ef'), 'AB12CD34EF');
     expect(DeltaSibAuthService.normalizeAccessCode('1234567890'), '1234567890');
     expect(DeltaSibAuthService.normalizeAccessCode('abc'), isNull);
     expect(DeltaSibAuthService.normalizeAccessCode('کد۱۲۳۴۵۶۷۸۹۰'), isNull);
+  });
+
+  test('sign-in username matches the worker name rule', () {
+    expect(DeltaSibAuthService.normalizeUsername(' jb.admin '), 'jb.admin');
+    expect(DeltaSibAuthService.normalizeUsername(''), isNull);
+    expect(DeltaSibAuthService.normalizeUsername('bad name'), isNull);
   });
 
   test('herat uses HTTPS worker only (no public cleartext)', () {

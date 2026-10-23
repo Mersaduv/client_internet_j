@@ -38,6 +38,7 @@ export default {
     ) {
       return handleAdmin(request, withOrigin);
     }
+    // ورود اپ: نام کاربری و رمز، هر دو اجباری. منطق در handleRedeem.
     if (incoming.pathname === "/jahanbit/sib/redeem") {
       return handleRedeem(request, withOrigin);
     }

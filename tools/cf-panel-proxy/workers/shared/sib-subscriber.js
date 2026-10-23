@@ -43,7 +43,7 @@ export async function handleSubscriberVolume(request, env) {
   if (!sessionUser) {
     return json(
       {
-        error: "نشست پایان یافته است. کد ورود را دوباره وارد کنید.",
+        error: "نشست پایان یافته است. نام کاربری و رمز را دوباره وارد کنید.",
         code: "session_expired",
       },
       401,

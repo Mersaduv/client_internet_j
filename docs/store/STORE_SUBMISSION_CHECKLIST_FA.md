@@ -16,19 +16,19 @@
 |------|-----------|---------|-----|
 | App info / settings | بله (محلی روی دستگاه) | خیر | عملکرد اپ |
 | Device or other IDs (MAC/hostname محلی) | بله (محلی) | خیر | مدیریت دستگاه‌های LAN |
-| Account info (sign-in code, username, session) | بله، به ورکر HTTPS همان ولایت | خیر (فروش نمی‌شود) | ورود و نمایش بسته |
+| Account info (username, password, session) | بله، به ورکر HTTPS همان ولایت | خیر (فروش نمی‌شود) | ورود و نمایش بسته |
 | Credentials (RouterOS) | بله، روی دستگاه؛ رمز یک‌بارمصرف یک بار با HTTPS برمی‌گردد | خیر | ورود به روتر |
 | Location | خیر | — | — |
 | Advertising ID | خیر | — | — |
 
 Encryption in transit: برای پنل‌های HTTP محلی/ISP محدود، در صورت ارسال از دستگاه اعلام دقیق کنید؛ اعتبارنامه روتر به سرور جهان بیت ارسال نمی‌شود.
-Data deletion: «حذف حساب از این برنامه» فقط کد همین ورود و دادهٔ گوشی را پاک می‌کند. کدهای دیگر می‌مانند. در فرم Play همان URL سیاست حریم خصوصی را برای حذف داده بدهید.
+Data deletion: «حذف حساب از این برنامه» آن نام کاربری را از ورکر همان ورود کامل حذف می‌کند (همهٔ نشست‌ها و رمزهای ورود) و دادهٔ گوشی را پاک می‌کند. حساب دلتاسیب حذف نمی‌شود. هرات و فراه یک ورکر دارند؛ نیمروز جداست. در فرم Play همان URL سیاست حریم خصوصی را برای حذف داده بدهید.
 
 ## Apple — Privacy Nutrition Labels
 
 مطابق `PrivacyInfo.xcprivacy`. این‌ها Collected، Linked to the user، و Not used for tracking هستند. هدف: App Functionality.
 
-- User ID: کد ورود و نشست
+- User ID: نام کاربری و نشست
 - Name: نام کاربری مشترک
 - Other Data Types: رمز Winbox یک‌بارمصرف که یک بار برمی‌گردد و روی سرور نمی‌ماند
 - Tracking: خیر
@@ -38,12 +38,14 @@ Data deletion: «حذف حساب از این برنامه» فقط کد همین
 ## App Review Notes (نمونه)
 
 ```
-Sign-in required. Choose province Herat, then enter the 10-character code
-(English letters and digits) issued for username jb.admin.
-Code: PASTE_THE_PERMANENT_REVIEW_CODE_HERE
+Sign-in required. Choose province Herat, then sign in with the username and
+password issued for the review account. The app shows Username and Password
+fields, the same pair requested in App Review Information.
+Username: jb.admin
+Password: PASTE_THE_PERMANENT_REVIEW_PASSWORD_HERE
 
-Do not commit that code. The router password bound to it will not match the
-review network. After the code is accepted the app still opens every screen
+Do not commit that password. The router password bound to a one-time sign-in
+will not match the review network. After sign-in the app still opens every screen
 (devices, packages, Wi-Fi, settings) so the review can be completed.
 A normal subscriber still needs their own router on the local network.
 
