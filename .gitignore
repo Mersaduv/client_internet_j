@@ -63,3 +63,4 @@ app.*.map.json
 *.keystore
 docs/store/screenshots/_raw/
 docs/store/screenshots/*.rar
+docs/store/screenshots
